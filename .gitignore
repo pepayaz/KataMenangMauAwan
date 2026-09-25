@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.next/
+out/
+coverage/
+
+# Kunci API tidak pernah masuk repositori (bab 7.1)
+.env
+.env.*
+!.env.example
+
+*.log
+.DS_Store
+Thumbs.db
+
+# Rekaman replay berisi respons mentah Sectors; hanya rekaman demo yang di-commit
+recordings/*.jsonl
+!recordings/demo.jsonl

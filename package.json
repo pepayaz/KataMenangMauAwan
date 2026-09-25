@@ -1,0 +1,29 @@
+{
+  "name": "cek-dulu",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Agen pemeriksa klaim saham di media sosial terhadap data resmi Sectors.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @cek-dulu/web",
+    "build": "npm run build --workspace @cek-dulu/web",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "pull:demo": "tsx scripts/pull-demo-data.ts",
+    "seed:aliases": "tsx scripts/seed-aliases.ts",
+    "report:credits": "tsx scripts/credit-report.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}
