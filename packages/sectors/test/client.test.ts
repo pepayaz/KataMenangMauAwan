@@ -27,6 +27,9 @@ function makeClient(opts: {
     cache,
     ledger,
     ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}),
+    // Perekam dimatikan: tanpa ini klien mode live akan menulis berkas rekaman
+    // ke direktori kerja setiap kali uji dijalankan.
+    recorder: new Recorder('', 'off'),
     config: {
       mode: opts.mode ?? 'live',
       apiKey: 'kunci-uji',
@@ -34,7 +37,6 @@ function makeClient(opts: {
       budgetPerCheck: opts.budgetPerCheck ?? 40,
       member: 'B',
       maxRetries: 0,
-      recordingPath: './tidak-ada.jsonl',
     },
   });
   return { client, cache, ledger };
@@ -102,7 +104,7 @@ describe('SectorsClient — mode', () => {
 
   it('mode replay memutar rekaman tanpa kredit', async () => {
     const key = cacheKey('fetchListingPerformance', { symbol: 'ADRO' });
-    const recorder = new Recorder('./tidak-ada.jsonl', 'replay');
+    const recorder = new Recorder('', 'replay');
     recorder.seed([
       {
         key,
@@ -130,7 +132,7 @@ describe('SectorsClient — mode', () => {
   });
 
   it('mode replay menolak panggilan yang tidak ada di rekaman', async () => {
-    const recorder = new Recorder('./tidak-ada.jsonl', 'replay');
+    const recorder = new Recorder('', 'replay');
     recorder.seed([]);
     const client = new SectorsClient({
       cache: new MemoryCacheStore(),
