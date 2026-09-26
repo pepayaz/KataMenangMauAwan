@@ -12,6 +12,7 @@
     "build": "npm run build --workspace @cek-dulu/web",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
     "test": "vitest run",
+    "check": "tsx scripts/check.ts",
     "test:watch": "vitest",
     "pull:demo": "tsx scripts/pull-demo-data.ts",
     "seed:aliases": "tsx scripts/seed-aliases.ts",

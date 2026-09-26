@@ -5,3 +5,5 @@ export * from './extractor.js';
 export * from './normalizer.js';
 export * from './router.js';
 export * from './hunter/index.js';
+export * from './pipeline.js';
+export * from './output-policy.js';

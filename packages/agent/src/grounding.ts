@@ -2,7 +2,7 @@ import { extractNumbers, parseNumber, type Evidence, type ParsedNumber } from '@
 
 export type UnmatchedNumber = { raw: string; span: [number, number] };
 export type GroundingResult = { ok: boolean; unmatched: UnmatchedNumber[] };
-export type GroundingFeedback = { previousText: string; unmatched: UnmatchedNumber[] };
+export type GroundingFeedback = { previousText: string; unmatched: UnmatchedNumber[]; rejectedByPolicy?: true };
 export type GroundingExclusion = UnmatchedNumber & {
   kind: 'year' | 'date' | 'duration' | 'quarter';
 };
@@ -117,16 +117,19 @@ export async function withGrounding(
   writeFn: (feedback?: GroundingFeedback) => string | Promise<string>,
   evidence: readonly Evidence[],
   templateFn: (evidence: readonly Evidence[]) => string,
+  validateText: (text: string) => boolean = () => true,
 ): Promise<string> {
   let feedback: GroundingFeedback | undefined;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const text = await writeFn(feedback);
     const result = validateGrounding(text, evidence);
-    if (result.ok) return text;
-    feedback = { previousText: text, unmatched: result.unmatched };
+    const policyOk = validateText(text);
+    if (result.ok && policyOk) return text;
+    feedback = { previousText: text, unmatched: result.unmatched, ...(!policyOk ? { rejectedByPolicy: true as const } : {}) };
   }
   const template = templateFn(evidence);
   const result = validateGrounding(template, evidence);
   if (!result.ok) throw new GroundingError(result);
+  if (!validateText(template)) throw new Error('Templat deterministik melanggar kebijakan output.');
   return template;
 }

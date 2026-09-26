@@ -66,6 +66,9 @@ importers:
       '@cek-dulu/shared':
         specifier: workspace:*
         version: link:../shared
+      '@cek-dulu/verifiers':
+        specifier: workspace:*
+        version: link:../verifiers
       openai:
         specifier: ^6.26.0
         version: 6.26.0(zod@3.25.76)

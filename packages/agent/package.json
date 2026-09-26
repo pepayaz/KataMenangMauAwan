@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@cek-dulu/verifiers": "workspace:*",
     "@cek-dulu/sectors": "workspace:*",
     "@cek-dulu/shared": "workspace:*",
     "openai": "^6.26.0",

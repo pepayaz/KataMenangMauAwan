@@ -197,3 +197,66 @@ yang bersumber dari AGENTS.md. Total Rp1.600 dan pembayaran kedua untuk test dom
 ditandai sintetis; tidak diklaim sebagai total/pembayaran ADRO aktual. Valuasi, peer,
 harga, volume, dan contoh corporate-actions tambahan juga sintetis. Test gateway
 memakai MemoryCacheStore B dan spy jaringan, bukan API live.
+
+## Pipeline dan CLI
+
+`runCheck(input, deps, emit)` mengembalikan CheckResult shared, termasuk verdicts,
+evidence, hypotheses, dan creditsUsed. deps membutuhkan client Sectors B dan LLM
+adapter; verifier B tersedia sebagai default atau dapat disuntikkan per tipe.
+Directory, registry/gateway hunter, jam, feature flags, dan concurrency juga dapat
+disuntikkan. Bawaan dua klaim aktif, maksimum konfigurasi enam belas. Setiap klaim
+menjalankan route → verify → hunt → adjudicate → explanation/grounding secara
+berurutan; hasil akhir tetap mengikuti urutan ekstraksi walau klaim paralel.
+Normalizer/extractor dijalankan sekali. Pilihan saham yang belum pasti berhenti
+dengan trace needs_user_choice. Error ekstraksi global menghasilkan trace error
+dan done; error verifier/hunter hanya mempengaruhi klaim terkait. Kegagalan hunter
+tidak membatalkan perbandingan refuted. Konteks belum lengkap menghalangi supported.
+
+Trace diserialkan melalui emit, dapat sinkron atau async, dan setiap event memiliki
+kredit aktual tahap itu. Total disertakan sebagai data pada done sehingga tidak
+menggandakan kredit saat event dijumlahkan. Grounding dicatat sebagai sub-tahap
+adjudicate karena enum TraceEvent shared belum memiliki stage grounding. Error
+emit merupakan kegagalan transport global dan diteruskan ke caller. Input berupa
+rawText; OCR/oEmbed tetap berada di adapter sebelum fungsi ini, bukan dilakukan
+pipeline. Modul ini belum menggantikan route handler Next milik B.
+
+Proxy client menghitung kredit hasil panggilan, bukan menjumlahkan Evidence dari
+panggilan sama. Source Evidence tetap memuat kredit provenance per panggilan.
+Cache/replay tidak menagih kredit. Rentang daily/foreign/broker serta report_date
+kuartalan mengikuti router, walau verifier B memiliki bawaan sendiri. Periodisasi
+valuation eksplisit dan komposisi lintas tahun belum didukung verifier B saat ini;
+pipeline menandainya unverifiable, bukan memakai tahun lain. Estimasi router tetap
+perkiraan sebelum I/O; verifier B dapat menarik data pelengkap sendiri.
+
+Evidence dan computed persen keluaran runCheck memakai pecahan. Adapter mengubah
+poin persen B pada harga/pertumbuhan/komposisi/safety sekali; dividend sudah pecahan.
+Claim.asserted persen tetap angka literal. LLM penjelasan menerima displayEvidence
+berlabel, diformat oleh kode, bukan diminta menghitung. prompts/explainer.md memakai
+Bahasa Indonesia awam. withGrounding menerima validator teks opsional sebagai argumen
+keempat: satu rewrite untuk angka atau kata terlarang, lalu templat deterministik.
+Feedback kebijakan ditandai rejectedByPolicy. Template juga diperiksa. Error provider
+memakai template. MissingContext summary disaring angka dan kebijakannya juga.
+Filter output memakai batas kata, bentuk turunan, NFKC, tanda baca, dan zero-width;
+ini filter leksikal, bukan jaminan klasifikasi semantik seluruh nasihat tersirat.
+
+`pnpm check "<teks>"` memakai LLM dari env dan cache file B di SECTORS_CACHE_DIR
+(bawaan .cache/sectors), selalu Sectors cache_only meskipun env menyebut live.
+Skrip memuat .env.local lewat --env-file Node tanpa mencetak nilainya. Stdout berisi
+ClaimVerdict[] JSON; stderr berisi ringkasan trace, kredit, kebutuhan cache/pilihan,
+dan disclaimer. Gunakan pnpm --silent check saat mengalirkan JSON ke proses lain.
+Tidak ada auto-pull data. Konfigurasi LLM wajib tersedia untuk mode biasa.
+
+Demo eksplisit tanpa jaringan/key:
+
+```sh
+pnpm check --fixture "ADRO yield 25,5% setahun"
+pnpm check --fixture "BBCA PER cuma 3x"
+pnpm check --fixture "BBRI bakal naik 80%"
+```
+
+Flag fixture memakai ketiga contoh shared, provider mock, dan verifier fixture;
+provenance dicetak agar data sintetis tidak dianggap data aktual. Pipeline dan
+adjudicator/hunter tetap dijalankan; ADRO terpicu oleh fakta cash payout negatif,
+bukan membuat total periode yang tidak tersedia. Mode biasa tidak menggunakan
+fixture sebagai pengganti cache kosong. Test juga menjalankan verifier B asli dan
+gateway hunter dari MemoryCacheStore dengan spy jaringan.

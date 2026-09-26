@@ -27,7 +27,7 @@ export type ExtractionRejection = {
 export type ExtractionResult = { claims: Claim[]; rejected: ExtractionRejection[] };
 export type ExtractionOptions = {
   checkId: string;
-  llm: LlmAdapter;
+  llm: Pick<LlmAdapter, 'generate'>;
   signal?: AbortSignal;
   onRejected?: (rejection: ExtractionRejection) => void;
 };
