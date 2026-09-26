@@ -2,7 +2,9 @@
 const nextConfig = {
   // Paket workspace di-ekspor sebagai TypeScript mentah supaya tidak ada langkah
   // build antar-paket; Next yang mentranspilasinya.
-  transpilePackages: ['@cek-dulu/shared', '@cek-dulu/sectors', '@cek-dulu/verifiers'],
+  transpilePackages: ['@cek-dulu/agent', '@cek-dulu/shared', '@cek-dulu/sectors', '@cek-dulu/verifiers'],
+
+  outputFileTracingIncludes: { '/api/check': ['../../packages/agent/prompts/*.md'] },
 
   experimental: {
     // Bab 3.7: satu cek bisa 15-40 detik. Route handler mengalirkan SSE selama itu.

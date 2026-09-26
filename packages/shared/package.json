@@ -7,7 +7,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./fixtures": "./fixtures/index.ts"
+    "./fixtures": "./fixtures/index.ts",
+    "./schemas": "./src/schemas.ts"
   },
   "dependencies": {
     "zod": "^3.24.1"

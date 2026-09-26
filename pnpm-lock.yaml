@@ -23,6 +23,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@cek-dulu/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
       '@cek-dulu/sectors':
         specifier: '*'
         version: link:../../packages/sectors

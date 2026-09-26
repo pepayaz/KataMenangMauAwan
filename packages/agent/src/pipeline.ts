@@ -17,6 +17,7 @@ import type { LlmAdapter } from './llm.js';
 
 export type PipelineDeps = {
   client: SectorsClient; llm: Pick<LlmAdapter, 'generate'>; verifiers?: Partial<VerifierRegistry>;
+  prompts?: { extractor: string; explainer: string };
   directory?: TickerDirectory; concurrency?: number; now?: () => Date;
   flags?: Record<string, boolean>;
   hunterGateway?: (claim: Claim) => HunterToolGateway;
@@ -111,7 +112,7 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
       await trace('done', 'Pilihan saham pengguna diperlukan.', { status: 'needs_user_choice' });
       output.finishedAt = now().toISOString(); return CheckResultSchema.parse(output);
     }
-    const extracted = await extractClaimsWithDiagnostics(normalized.text, output.entities, { checkId: input.checkId, llm: deps.llm });
+    const extracted = await extractClaimsWithDiagnostics(normalized.text, output.entities, { checkId: input.checkId, llm: deps.llm, prompt: deps.prompts?.extractor });
     output.claims = extracted.claims;
     await trace('extract', 'Ekstraksi klaim selesai.', { claimIds: output.claims.map((c) => c.claimId), rejected: extracted.rejected });
   } catch {
@@ -119,7 +120,7 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
     await trace('done', 'Pemeriksaan berhenti sebelum verifikasi.', { status: 'error' });
     output.finishedAt = now().toISOString(); return CheckResultSchema.parse(output);
   }
-  const prompt = await readFile(new URL('../prompts/explainer.md', import.meta.url), 'utf8');
+  const prompt = deps.prompts?.explainer ?? await readFile(new URL('../prompts/explainer.md', import.meta.url), 'utf8');
   const enabled = new Set(enabledClaimTypes(deps.flags ?? {}));
   const results: Array<{ verdict: ClaimVerdict; evidence: Evidence[]; hypotheses: CheckResult['hypothesisRuns']; credits: number }> = [];
   const processClaim = async (claim: Claim) => {

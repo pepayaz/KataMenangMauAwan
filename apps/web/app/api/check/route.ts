@@ -12,6 +12,8 @@ import {
   saveTraceEvent,
 } from '@/lib/persistence';
 import { createPipeline } from '@/lib/pipeline';
+import { isFixtureDemoEnabled } from '@/lib/fixture-demo';
+import { fixtureCheckDeps } from '../../../../../scripts/check-fixture.js';
 import { SSE_HEADERS, createTraceEmitter, encodeSse, startHeartbeat } from '@/lib/sse';
 
 /**
@@ -34,6 +36,7 @@ const BodySchema = z.object({
   source: CheckSourceSchema.default('paste'),
   /** Ticker yang dipilih pengguna saat resolusi ambigu (bab 3.3 nomor 4). */
   ticker: z.string().optional(),
+  demo: z.boolean().default(false),
 });
 
 export async function POST(req: Request): Promise<Response> {
@@ -47,8 +50,18 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  const user = await getUser(req);
-  const { client, db } = createSectorsClient();
+  // Field lama B belum punya pemetaan surface pilihan; jangan diam-diam mengabaikannya.
+  if (body.ticker !== undefined) return Response.json({ error: 'Pilihan ticker belum tersambung. Gunakan kode saham eksplisit pada teks.' }, { status: 400 });
+  if (body.demo && !isFixtureDemoEnabled()) return Response.json({ error: 'Demo fixture tidak aktif.' }, { status: 403 });
+  let demoDeps;
+  if (body.demo) {
+    try { demoDeps = fixtureCheckDeps(body.text).deps; }
+    catch { return Response.json({ error: 'Demo hanya menerima teks fixture yang tersedia.' }, { status: 400 }); }
+  }
+  const user = body.demo ? null : await getUser(req);
+  const bundle = createSectorsClient({ config: { mode: 'cache_only' } });
+  const client = demoDeps?.client ?? bundle.client;
+  const db = body.demo ? null : bundle.db;
   const [flags, aliases] = await Promise.all([loadFlags(db), loadAliases(db)]);
 
   const checkId = randomUUID();
@@ -64,10 +77,11 @@ export async function POST(req: Request): Promise<Response> {
   // Baris checks dibuat lebih dulu supaya trace_events punya induk yang sah.
   if (db) await createCheckRow(db, input);
 
-  const pipeline = createPipeline({ aliases });
+  const pipeline = createPipeline({ aliases, deps: demoDeps });
   const abort = new AbortController();
   req.signal.addEventListener('abort', () => abort.abort());
 
+  let cancelled = false;
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const stopHeartbeat = startHeartbeat(controller);
@@ -88,21 +102,22 @@ export async function POST(req: Request): Promise<Response> {
         });
 
         if (db) await saveCheckResult(db, result);
-        controller.enqueue(encodeSse('result', result));
+        if (!cancelled) controller.enqueue(encodeSse('result', result));
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
+        const message = 'Pemeriksaan gagal. Periksa konfigurasi LLM dan cache Sectors.';
         console.error('[api/check] pipeline gagal:', message);
         if (db) await markCheckFailed(db, checkId);
-        controller.enqueue(encodeSse('error', { checkId, message }));
+        if (!cancelled) controller.enqueue(encodeSse('error', { checkId, message }));
       } finally {
         emitter.close();
         stopHeartbeat();
         // Tunggu penulisan jejak yang masih berjalan supaya riwayat tidak bolong.
         await Promise.allSettled(pending);
-        controller.close();
+        if (!cancelled) controller.close();
       }
     },
     cancel() {
+      cancelled = true;
       abort.abort();
     },
   });
@@ -112,11 +127,12 @@ export async function POST(req: Request): Promise<Response> {
 
 /** Pemeriksaan kesehatan ringan untuk smoke test integrasi harian pukul 21:00. */
 export async function GET(): Promise<Response> {
-  const { client, db } = createSectorsClient();
+  const { client, db } = createSectorsClient({ config: { mode: 'cache_only' } });
   return Response.json({
     ok: true,
     mode: client.mode,
     database: db ? 'supabase' : 'tidak tersambung',
     pipeline: createPipeline().name,
+    fixtureDemo: isFixtureDemoEnabled(),
   });
 }

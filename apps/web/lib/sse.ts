@@ -24,7 +24,7 @@ export const SSE_HEADERS: Record<string, string> = {
 };
 
 export type TraceEmitter = {
-  emit: (event: Omit<TraceEvent, 'checkId' | 'ts'>) => void;
+  emit: (event: Omit<TraceEvent, 'checkId' | 'ts'> & Partial<Pick<TraceEvent, 'ts'>>) => void;
   close: () => void;
 };
 
@@ -45,7 +45,7 @@ export function createTraceEmitter(
   return {
     emit(partial) {
       if (closed) return;
-      const event: TraceEvent = { ...partial, checkId, ts: new Date().toISOString() };
+      const event: TraceEvent = { ...partial, checkId, ts: partial.ts ?? new Date().toISOString() };
       try {
         controller.enqueue(encodeSse('trace', event));
       } catch {

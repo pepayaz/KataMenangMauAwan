@@ -9,6 +9,7 @@ export default defineConfig({
       // Bentuk larik dipakai, bukan objek, supaya prefiks `@/` di apps/web
       // benar-benar diganti dan bukan dicocokkan persis.
       { find: /^@\//, replacement: `${r('./apps/web/')}/` },
+      { find: '@cek-dulu/shared/schemas', replacement: r('./packages/shared/src/schemas.ts') },
       { find: '@cek-dulu/shared', replacement: r('./packages/shared/src/index.ts') },
       { find: '@cek-dulu/agent', replacement: r('./packages/agent/src/index.ts') },
       { find: '@cek-dulu/sectors', replacement: r('./packages/sectors/src/index.ts') },

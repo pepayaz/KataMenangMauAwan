@@ -27,6 +27,7 @@ export type ExtractionRejection = {
 export type ExtractionResult = { claims: Claim[]; rejected: ExtractionRejection[] };
 export type ExtractionOptions = {
   checkId: string;
+  prompt?: string;
   llm: Pick<LlmAdapter, 'generate'>;
   signal?: AbortSignal;
   onRejected?: (rejection: ExtractionRejection) => void;
@@ -108,7 +109,7 @@ export async function extractClaimsWithDiagnostics(
 ): Promise<ExtractionResult> {
   const checkedEntities = z.array(EntitySchema).parse(entities);
   if (text.trim() === '' || checkedEntities.length === 0) return { claims: [], rejected: [] };
-  const prompt = await readFile(new URL('../prompts/extractor.md', import.meta.url), 'utf8');
+  const prompt = options.prompt ?? await readFile(new URL('../prompts/extractor.md', import.meta.url), 'utf8');
   const output = await options.llm.generate({ schema: ExtractionOutputSchema, name: 'extracted_claims',
     prompt, input: JSON.stringify({ text, entities: checkedEntities }), signal: options.signal });
   const result = validateExtractedClaims(text, checkedEntities, output.claims, options.checkId);

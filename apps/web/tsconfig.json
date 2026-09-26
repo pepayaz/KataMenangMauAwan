@@ -21,6 +21,9 @@
       ],
       "@cek-dulu/verifiers": [
         "../../packages/verifiers/src/index.ts"
+      ],
+      "@cek-dulu/agent": [
+        "../../packages/agent/src/index.ts"
       ]
     },
     "allowJs": true,
