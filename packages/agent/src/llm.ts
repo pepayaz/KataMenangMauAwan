@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
-export type LlmErrorCode = 'CONFIG' | 'SCHEMA' | 'PROVIDER' | 'REFUSED' | 'INCOMPLETE' | 'INVALID_OUTPUT';
+export type LlmErrorCode = 'INPUT' | 'CONFIG' | 'SCHEMA' | 'PROVIDER' | 'REFUSED' | 'INCOMPLETE' | 'INVALID_OUTPUT';
 export class LlmError extends Error {
   constructor(readonly code: LlmErrorCode, readonly attempts = 0) {
     super(`LLM gagal secara terkontrol: ${code}.`);
@@ -14,6 +14,7 @@ export type LlmRequest = {
   model: string;
   prompt: string;
   input: string;
+  imageDataUrl?: string;
   format: { type: 'json_schema'; name: string; strict: true; schema: Record<string, unknown> };
   attempt: number;
   feedback: readonly LlmValidationIssue[];
@@ -49,7 +50,10 @@ class OpenAiProvider implements LlmProvider {
       model: request.model, store: false,
       input: [
         { role: 'system', content: request.prompt },
-        { role: 'user', content: request.input },
+        { role: 'user', content: request.imageDataUrl ? [
+          { type: 'input_text', text: request.input },
+          { type: 'input_image', image_url: request.imageDataUrl, detail: 'high' },
+        ] : request.input },
         ...(request.feedback.length > 0 ? [{ role: 'user' as const,
           content: `Keluaran sebelumnya tidak valid. Perbaiki JSON sesuai skema; jangan menambah fakta. Kesalahan: ${JSON.stringify(request.feedback)}` }] : []),
       ],
@@ -104,8 +108,10 @@ export class LlmAdapter {
   }
 
   async generate<S extends z.ZodTypeAny>(options: {
-    schema: S; name: string; prompt: string; input: string; signal?: AbortSignal;
+    schema: S; name: string; prompt: string; input: string; imageDataUrl?: string; signal?: AbortSignal;
   }): Promise<z.infer<S>> {
+    if (options.imageDataUrl !== undefined && (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(options.imageDataUrl)
+      || options.imageDataUrl.length > 4_200_000)) throw new LlmError('INPUT');
     let format: LlmRequest['format'];
     try {
       if (!(options.schema instanceof z.ZodObject) || !isStructuredSchema(options.schema)) throw new LlmError('SCHEMA');
@@ -117,7 +123,8 @@ export class LlmAdapter {
       let output: unknown;
       try {
         output = await this.provider.complete({ model: this.model, prompt: options.prompt,
-          input: options.input, format, attempt, feedback, signal: options.signal });
+          input: options.input, format, attempt, feedback, signal: options.signal,
+          ...(options.imageDataUrl ? { imageDataUrl: options.imageDataUrl } : {}) });
       } catch (error) {
         if (error instanceof LlmError) throw error;
         // Jangan membawa pesan provider, raw response, atau key ke error/log produk.

@@ -114,3 +114,26 @@ describe('provider OpenAI dengan HTTP stub, nol jaringan', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('structured output dengan input gambar', () => {
+  it('mock menyimpan gambar yang sama pada retry validasi', async () => {
+    const provider = new MockLlmProvider([{}, { value: 3 }]);
+    const imageDataUrl = 'data:image/png;base64,aGVsbG8=';
+    expect(await new LlmAdapter({ env, provider }).generate({ ...request, imageDataUrl })).toEqual({ value: 3 });
+    expect(provider.requests.map(request => request.imageDataUrl)).toEqual([imageDataUrl,imageDataUrl]);
+  });
+  it.each(['https://private.invalid/image.png', 'data:image/svg+xml;base64,aA==', 'data:image/png;base64,', 'data:image/png;base64,' + 'A'.repeat(4_200_000)])('menolak input gambar invalid sebelum provider %#', async imageDataUrl => {
+    const provider = new MockLlmProvider([]);
+    await expect(new LlmAdapter({ env, provider }).generate({ ...request, imageDataUrl })).rejects.toMatchObject({ code: 'INPUT' });
+    expect(provider.requests).toHaveLength(0);
+  });
+  it('mengirim input_image dan input_text ke Responses tanpa jaringan', async () => {
+    const network = vi.fn(async () => Response.json({ id: 'r', object: 'response', status: 'completed', output: [
+      { type: 'message', id: 'm', role: 'assistant', status: 'completed', content: [{ type: 'output_text', text: '{"value":3}', annotations: [] }] }] }));
+    await new LlmAdapter({ env: { LLM_PROVIDER:'openai', LLM_MODEL:'test-model', LLM_API_KEY:'dummy-unit-test' }, fetchImpl: network })
+      .generate({ ...request, imageDataUrl:'data:image/png;base64,aA==' });
+    const call = network.mock.calls[0] as unknown as [RequestInfo, RequestInit];
+    expect(JSON.parse(String(call[1].body)).input[1].content).toEqual([
+      { type:'input_text', text:request.input }, { type:'input_image', image_url:'data:image/png;base64,aA==', detail:'high' }]);
+  });
+});

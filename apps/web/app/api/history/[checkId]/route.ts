@@ -82,7 +82,7 @@ export async function GET(
     const restored = restoreStoredCheck({ check, claims: claims ?? [], evidence: evidenceRes.data ?? [],
       verdicts: verdictsRes.data ?? [], hypotheses: hypothesesRes.data ?? [], trace: traceRes.data ?? [] });
     return Response.json({ check: { checkId: check.id, rawText: check.raw_text, createdAt: storedTimestamp(check.created_at),
-      source: check.source, status: check.status, creditsUsed: check.credits_used, finishedAt: restored.result.finishedAt },
+      source: check.source, url: check.url, status: check.status, creditsUsed: check.credits_used, finishedAt: restored.result.finishedAt },
       claims: claims ?? [], evidence: evidenceRes.data ?? [], verdicts: verdictsRes.data ?? [],
       hypothesisRuns: hypothesesRes.data ?? [], result: restored.result, trace: restored.trace });
   } catch {

@@ -22,3 +22,6 @@ Aturan:
 - `parseIndonesianNumber` adalah pembantu skalar kompatibel: invalid/ambigu -> null.
 - Fixture ADRO bersumber dari AGENTS.md bagian 6; fixture PER menggunakan data sintetis,
   dan fixture prediksi sengaja tidak memiliki evidence maupun pengujian hipotesis.
+
+- InputAdaptationSchema memvalidasi hasil OCR/caption sebelum pengguna meninjau
+  dan mengirim CheckInput; status needs_text berarti perlu input manual.

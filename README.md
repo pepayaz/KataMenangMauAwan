@@ -54,12 +54,14 @@ Sudah berjalan:
 - Pipeline agen lengkap, structured output, context hunter P0, grounding angka
   dan filter nasihat investasi
 - Pilihan ticker pengguna yang divalidasi terhadap kandidat server
+- Input screenshot melalui OCR vision dengan peninjauan teks, link TikTok melalui
+  oEmbed resmi, dan penerima Web Share Target di balik feature flag
 - Antarmuka C terintegrasi di Next.js: streaming progres, rapor seluruh klaim,
   pilihan ticker, bookmark dan riwayat lokal; riwayat server memakai sesi Supabase
 - Test otomatis memakai mock dan fixture tanpa API live
 
 Belum tuntas: verifikasi integrasi memakai cache asli, LLM nyata dan Supabase nyata,
-sebagian hipotesis lanjutan (A), PWA/input screenshot (C), ekstensi X dan set
+sebagian hipotesis lanjutan (A), verifikasi PWA/share target di Android, ekstensi X dan set
 evaluasi (D). Demo fixture diberi label jelas; angka demo bukan data pasar terkini.
 
 ## Menjalankan secara lokal
@@ -117,3 +119,5 @@ Zod, Vitest.
 ## Lisensi dan atribusi
 
 Data pasar bersumber dari [Sectors](https://sectors.app).
+
+Panduan screenshot, caption video dan instalasi PWA: [docs/input-adapters.md](docs/input-adapters.md).

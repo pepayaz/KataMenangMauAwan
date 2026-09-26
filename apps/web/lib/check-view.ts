@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CheckResultSchema, TraceEventSchema, type Verdict, type Evidence } from '@cek-dulu/shared/schemas';
+import { CheckResultSchema, TraceEventSchema, CheckSourceSchema, type Verdict, type Evidence } from '@cek-dulu/shared/schemas';
 
 export const examples = [
   { id: 'dividend', ticker: 'ADRO', category: 'Dividen', text: 'ADRO yield 25,5% setahun', number: '01' },
@@ -11,7 +11,7 @@ export const verdictLabels: Record<Verdict, string> = { supported: 'Didukung', r
   misleading: 'Benar tapi menyesatkan', unverifiable: 'Tidak bisa diverifikasi', out_of_scope: 'Di luar cakupan' };
 export const verdictTone: Record<Verdict, string> = { supported: 'green', refuted: 'red', misleading: 'amber', unverifiable: 'neutral', out_of_scope: 'neutral' };
 export const HistoryItemSchema = z.object({ id: z.string(), text: z.string(), createdAt: z.string().datetime(), saved: z.boolean(),
-  demo: z.boolean(), result: CheckResultSchema, traces: z.array(TraceEventSchema) }).superRefine((item, context) => {
+  demo: z.boolean(), source: CheckSourceSchema.optional(), url: z.string().url().optional(), result: CheckResultSchema, traces: z.array(TraceEventSchema) }).superRefine((item, context) => {
   if (item.id !== item.result.checkId || item.traces.some(trace => trace.checkId !== item.id))
     context.addIssue({ code: z.ZodIssueCode.custom, message: 'Identitas rapor tidak cocok.' });
 });

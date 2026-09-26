@@ -170,3 +170,16 @@ export const CheckResultSchema = z.object({
   finishedAt: z.string(),
 });
 export type CheckResult = z.infer<typeof CheckResultSchema>;
+
+/** Tahap input berhenti untuk peninjauan pengguna sebelum pipeline klaim. */
+export const InputAdaptationSchema = z.object({
+  status: z.enum(['ready', 'needs_text']),
+  rawText: z.string().max(5000),
+  source: CheckSourceSchema,
+  url: z.string().url().optional(),
+  warnings: z.array(z.string()),
+}).superRefine((input, context) => {
+  if (input.status === 'ready' && !input.rawText.trim())
+    context.addIssue({ code: z.ZodIssueCode.custom, message: 'Teks siap tidak boleh kosong.' });
+});
+export type InputAdaptation = z.infer<typeof InputAdaptationSchema>;

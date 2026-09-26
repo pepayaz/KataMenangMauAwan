@@ -13,3 +13,11 @@
 .source-record strong { overflow-wrap: anywhere; }
 footer p { max-width: 750px; line-height: 1.6; }
 .remote-history { margin: 20px 0; }
+
+.input-adapter { margin-bottom: 18px; }
+.input-adapter label { display: block; margin: 10px 0; }
+.input-adapter input { width: 100%; max-width: 100%; padding: 10px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.input-adapter p, .input-review p { margin: 10px 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.screenshot-preview { display: block; max-width: 100%; max-height: 240px; object-fit: contain; margin: 14px 0; }
+.input-review { padding: 12px; border: 1px solid var(--accent); border-radius: 8px; }
+.input-origin { overflow-wrap: anywhere; font-size: 13px; }

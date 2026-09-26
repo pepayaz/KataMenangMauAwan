@@ -181,6 +181,13 @@ type TraceEvent = { checkId: string; ts: string;
 ```
 Mengubah kontrak = ubah skema Zod + fixture + file ini dalam PR yang sama.
 
+Kontrak tahap input tambahan: `InputAdaptation = { status: 'ready' | 'needs_text';
+rawText: string; source: CheckSource; url?: string; warnings: string[] }`.
+Skema `InputAdaptationSchema` membatasi teks 5000 karakter dan mewajibkan teks tidak
+kosong untuk ready. Hasil OCR/caption ditinjau pengguna sebelum menjadi CheckInput.
+Link memakai source paste dengan url; screenshot memakai source screenshot,
+Web Share Target memakai source share_target. Tidak ada perubahan Claim atau Evidence.
+
 Fondasi shared juga mengekspor skema `ToolCall` dan `Hypothesis` (bagian 5).
 `Hypothesis.test` adalah fungsi sinkron lokal yang divalidasi Zod, bukan payload JSON LLM.
 Fixture kontrak ada di `packages/shared/fixtures/`; angka sintetis ditandai eksplisit.

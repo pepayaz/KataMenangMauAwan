@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { HistoryItemSchema, type HistoryItem } from './check-view';
-import { TraceEventSchema, CheckResultSchema } from '@cek-dulu/shared/schemas';
+import { TraceEventSchema, CheckResultSchema, CheckSourceSchema } from '@cek-dulu/shared/schemas';
 
 const checkSchema = z.object({ checkId: z.string(), excerpt: z.string(), claimCount: z.number(), createdAt: z.string(), tickers: z.array(z.string()) });
 export type RemoteCheck = z.infer<typeof checkSchema>;
@@ -25,8 +25,8 @@ export async function fetchRemoteHistory(): Promise<{ checks: RemoteCheck[]; mes
 export async function fetchRemoteReport(checkId: string): Promise<HistoryItem> {
   const response = await fetch(`/api/history/${encodeURIComponent(checkId)}`, { headers: await sessionHeaders() });
   if (!response.ok) throw new Error('Rapor server tidak tersedia.');
-  const body = z.object({ check: z.object({ rawText: z.string(), createdAt: z.string() }), result: CheckResultSchema,
+  const body = z.object({ check: z.object({ rawText: z.string(), createdAt: z.string(), source: CheckSourceSchema.optional(), url: z.string().url().nullable().optional() }), result: CheckResultSchema,
     trace: z.array(TraceEventSchema) }).parse(await response.json());
   return HistoryItemSchema.parse({ id: body.result.checkId, text: body.check.rawText, createdAt: body.check.createdAt,
-    saved: false, demo: false, result: body.result, traces: body.trace });
+    saved: false, demo: false, source: body.check.source, url: body.check.url ?? undefined, result: body.result, traces: body.trace });
 }

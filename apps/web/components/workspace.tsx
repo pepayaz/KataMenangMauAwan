@@ -37,6 +37,8 @@ import { readCheckStream } from "../lib/check-stream";
 import { readTickerChoices, type UiTickerChoice } from "../lib/ticker-choices";
 import type { TraceEvent } from "@cek-dulu/shared/schemas";
 import CheckReport from "./check-report";
+import InputAdapter from "./input-adapter";
+import { InputAdaptationSchema, type CheckSource, type InputAdaptation } from "@cek-dulu/shared/schemas";
 import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders, type RemoteCheck } from "../lib/history-client";
 
 type Page = "check" | "history" | "saved" | "guide";
@@ -148,9 +150,13 @@ function SignalArt() {
 export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
   const [page, setPage] = useState<Page>("check");
   const [input, setInput] = useState("");
+  const [inputSource, setInputSource] = useState<CheckSource>('paste');
+  const [inputUrl, setInputUrl] = useState<string | undefined>();
+  const [inputWarnings, setInputWarnings] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [active, setActive] = useState<HistoryItem | null>(null);
   const [running, setRunning] = useState(false);
+  const [inputBusy, setInputBusy] = useState(false);
   const [step, setStep] = useState(0);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [modal, setModal] = useState<"about" | "evidence" | null>(null);
@@ -202,20 +208,35 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
     setQuery("");
     setFilter("Semua");
   }
+  function acceptInput(prepared: InputAdaptation) {
+    setInput(prepared.rawText); setInputSource(prepared.source); setInputUrl(previous => prepared.url ?? previous);
+    setInputWarnings(prepared.warnings); setDemo(false); setChoices([]); setSelections({}); setActive(null); setTraces([]); setError('');
+    inputRef.current?.focus();
+  }
+  useEffect(() => {
+    try {
+      const shared = sessionStorage.getItem('cek-dulu-share-input');
+      if (!shared) return;
+      sessionStorage.removeItem('cek-dulu-share-input');
+      const parsed = InputAdaptationSchema.safeParse(JSON.parse(shared));
+      if (parsed.success) acceptInput(parsed.data);
+    } catch { setError('Input berbagi belum dapat dibuka. Tempel teks atau unggah screenshot.'); }
+  }, []);
   function chooseExample(id: DemoId) {
     const example = examples.find((item) => item.id === id)!;
+    setInputSource('paste'); setInputUrl(undefined); setInputWarnings([]);
     setInput(example.text); setSelections({}); setChoices([]); setError('');
     inputRef.current?.focus();
   }
   async function startCheck() {
-    if (!input.trim() || running) return;
+    if (!input.trim() || running || inputBusy) return;
     const text = input.trim(), isDemo = demo;
     const controller = new AbortController(); abortRef.current = controller;
     setRunning(true); setActive(null); setStep(0); setTraces([]); setChoices([]); setError('');
     const received: TraceEvent[] = [];
     try {
       const response = await fetch('/api/check', { method: 'POST', signal: controller.signal,
-        headers: { ...(isDemo ? {} : await sessionHeaders()), 'Content-Type': 'application/json' }, body: JSON.stringify({ text, source: 'paste', demo: isDemo,
+        headers: { ...(isDemo ? {} : await sessionHeaders()), 'Content-Type': 'application/json' }, body: JSON.stringify({ text, source: inputSource, url: inputUrl, demo: isDemo,
           userSelections: Object.entries(selections).filter(([, ticker]) => ticker).map(([surface, ticker]) => ({ surface, ticker })) }) });
       if (!response.ok) {
         const body: unknown = await response.json();
@@ -231,7 +252,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
         } else if (event.kind === 'error') setError(event.value.message);
         else {
           const item = HistoryItemSchema.parse({ id: event.value.checkId, text, createdAt: new Date().toISOString(),
-            saved: false, demo: isDemo, result: event.value, traces: received });
+            saved: false, demo: isDemo, source: inputSource, url: inputUrl, result: event.value, traces: received });
           setActive(item);
           // Pilihan/kegagalan ekstraksi bukan rapor untuk riwayat.
           if (item.result.verdicts.length) setHistory(previous => [item, ...previous].slice(0, 50));
@@ -259,7 +280,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
     );
   }
   function openReport(item: HistoryItem) {
-    setActive(item); setDemo(fixtureDemo && item.demo);
+    setActive(item); setDemo(fixtureDemo && item.demo); setInputSource(item.source ?? 'paste'); setInputUrl(item.url); setInputWarnings([]);
     setInput(item.text); setTraces(item.traces); setError(''); setChoices([]); setSelections({});
     navigate("check");
     timers.current.push(
@@ -454,6 +475,9 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       startCheck();
                     }}
                   >
+                    <InputAdapter disabled={running || inputBusy} onPrepared={acceptInput} onBusyChange={setInputBusy} />
+                    {inputUrl && <p className="input-origin">Link sumber: <a href={inputUrl} target="_blank" rel="noreferrer">{inputUrl}</a><button type="button" className="text-button" disabled={running || inputBusy} onClick={() => setInputUrl(undefined)}>Lepas link</button></p>}
+                    {inputWarnings.length > 0 && <div role="status" className="input-review">{inputWarnings.map((warning,index) => <p key={index}>{warning}</p>)}<p>Koreksi teks di bawah, lalu tekan Cek klaim ini.</p></div>}
                     <label className="sr-only" htmlFor="claim">
                       Teks klaim saham
                     </label>
@@ -462,7 +486,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       ref={inputRef}
                       value={input}
                       maxLength={5000}
-                      disabled={running}
+                      disabled={running || inputBusy}
                       onChange={(event) => { setInput(event.target.value); setSelections({}); setChoices([]); }}
                       placeholder={
                         "“Katanya yield dividen ADRO 25% setahun.\nBeneran segampang itu?”"
@@ -482,7 +506,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                         <button
                           key={example.id}
                           type="button"
-                          disabled={running}
+                          disabled={running || inputBusy}
                           onClick={() => chooseExample(example.id)}
                           className={`example-chip ${input === example.text ? "selected" : ""}`}
                         >
@@ -493,11 +517,11 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       ))}
                     </div>
                     <div className="integration-controls">
-                      {fixtureDemo && <label><input type="checkbox" checked={demo} disabled={running}
+                      {fixtureDemo && <label><input type="checkbox" checked={demo} disabled={running || inputBusy}
                         onChange={event => { setDemo(event.target.checked); setChoices([]); setSelections({}); }} /> Demo fixture offline</label>}
                       {running && <button type="button" className="text-button" onClick={() => abortRef.current?.abort()}>Batalkan tampilan</button>}
                     </div>
-                    {choices.length > 0 && <fieldset className="ticker-choice" disabled={running}>
+                    {choices.length > 0 && <fieldset className="ticker-choice" disabled={running || inputBusy}>
                       <legend>Pilih saham yang dimaksud, lalu cek kembali</legend>
                       {choices.map(choice => <label key={choice.surface}>Sebutan “{choice.surface}”{' '}
                         {choice.candidates.length ? <select aria-label={`Saham untuk ${choice.surface}`} value={selections[choice.surface] ?? ''}
@@ -514,7 +538,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       <button
                         className="primary-button"
                         type="submit"
-                        disabled={!input.trim() || running || choices.some(choice => !selections[choice.surface])}
+                        disabled={!input.trim() || running || inputBusy || choices.some(choice => !selections[choice.surface])}
                       >
                         {running ? (
                           <>
@@ -654,7 +678,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                 <div className="example-grid">
                   {examples.map((example) => (
                     <button
-                      disabled={running}
+                      disabled={running || inputBusy}
                       className="explore-card"
                       key={example.id}
                       onClick={() => {
