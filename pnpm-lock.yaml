@@ -63,6 +63,12 @@ importers:
       '@cek-dulu/shared':
         specifier: workspace:*
         version: link:../shared
+      openai:
+        specifier: ^6.26.0
+        version: 6.26.0(zod@3.25.76)
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
 
   packages/sectors:
     dependencies:
@@ -951,6 +957,18 @@ packages:
       sass:
         optional: true
 
+  openai@6.26.0:
+    resolution: {integrity: sha512-zd23dbWTjiJ6sSAX6s0HrCZi41JwTA1bQVs0wLQPZ2/5o2gxOJA5wh7yOAUgwYybfhDXyhwlpeQf7Mlgx8EOCA==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
+
   pathe@1.1.2:
     resolution: {integrity: sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ==}
 
@@ -1726,6 +1744,10 @@ snapshots:
       - '@babel/core'
       - '@types/node'
       - babel-plugin-macros
+
+  openai@6.26.0(zod@3.25.76):
+    optionalDependencies:
+      zod: 3.25.76
 
   pathe@1.1.2: {}
 

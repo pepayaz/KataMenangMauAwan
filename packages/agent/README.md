@@ -47,3 +47,37 @@ Refuted lebih dahulu daripada misleading. Safety dengan angka cocok tanpa kontek
 strong menjadi unverifiable; dengan konteks strong menjadi misleading. Prediksi
 lebih dahulu daripada aturan data kosong dan tidak membawa computed/evidence.
 Penjelasan ditambahkan terpisah sesudah status ditentukan dan harus lolos grounding.
+
+## LLM dan extractor
+
+`LlmAdapter` memakai `LLM_PROVIDER`, `LLM_MODEL`, dan `LLM_API_KEY` dari env.
+Tidak ada model/key live bawaan. Provider tersedia: `openai` melalui Responses API
+dan `mock` tanpa jaringan; provider lain dapat mengimplementasikan `LlmProvider`
+dan disuntikkan dengan nama yang sesuai env. SDK OpenAI menghasilkan JSON schema
+dari Zod melalui `zodTextFormat`. Keluaran tetap divalidasi Zod di adapter.
+Lihat [Structured Outputs resmi](https://developers.openai.com/api/docs/guides/structured-outputs).
+Schema wire memakai field nullable yang wajib hadir agar sesuai mode strict.
+Root schema wajib object; subset mendukung object, array, union, nullable, enum,
+literal JSON, string, number, dan boolean. Fungsi, date, optional, atau transform
+ditolak sebelum panggilan agar konverter SDK tidak menghilangkan field diam-diam.
+
+JSON/schema gagal -> satu retry dengan path/kode validasi -> `LlmError`.
+Error konfigurasi, jaringan, refusal, atau respons incomplete tidak di-retry.
+SDK automatic retries dimatikan. Error tidak memuat key, respons mentah, atau pesan
+provider. Respons live memakai `store: false`; model env harus mendukung structured output.
+
+`extractClaims(text, entities, { checkId, llm, onRejected? })` menghasilkan Claim[].
+`extractClaimsWithDiagnostics` menghasilkan `{ claims, rejected }` untuk menyimpan
+alasan penolakan; callback menerima alasan yang sama. Gunakan diagnostics/callback
+saat menyambungkan trace pipeline. Prompt dibaca dari `prompts/extractor.md` dan
+few-shot mengikuti tiga fixture shared. Belum menggantikan pipeline dasar backend.
+
+Payload LLM lokal memiliki quote persis, span UTF-16, dan tickers[]. Setelah Zod,
+kode memeriksa rentang/quote, ticker dalam entities dengan confidence >= 0,7,
+angka/satuan literal melalui number-id, dan periode/window yang benar-benar tertulis.
+Span yang memotong token angka ditolak. LLM mengisi mantissa tanpa menghitung:
+kode menormalkan Rp2,4 T menjadi IDR utuh, sementara 25,5% tetap 25.5 pada Claim.
+Angka ambigu tidak diterima sebagai nilai. Klaim dua ticker menjadi dua Claim
+dengan span sama. ID dibuat kode; duplikasi dibuang. Aturan prediksi/opini eksplisit
+juga mengoreksi inScope menjadi false. Pemeriksaan semantik atom/metrik tetap
+bagian ekstraksi LLM; validator kode tidak mengklaim memahami semua ragam opini.
