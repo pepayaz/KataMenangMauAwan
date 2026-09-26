@@ -4,6 +4,7 @@ import {
   formatIndonesianNumber,
   numbersMatch,
   parseIndonesianNumber,
+  parseNumber,
 } from '../src/number-id.js';
 
 describe('parseIndonesianNumber', () => {
@@ -13,9 +14,9 @@ describe('parseIndonesianNumber', () => {
     expect(parseIndonesianNumber('-0,90')).toBe(-0.9);
   });
 
-  it('membaca pemisah ribuan tanpa desimal', () => {
-    expect(parseIndonesianNumber('1.358')).toBe(1358);
-    expect(parseIndonesianNumber('10.950')).toBe(10950);
+  it('tidak menebak pemisah tunggal yang ambigu', () => {
+    expect(parseIndonesianNumber('1.358')).toBeNull();
+    expect(parseIndonesianNumber('10.950')).toBeNull();
   });
 
   it('membaca desimal gaya Inggris', () => {
@@ -26,6 +27,92 @@ describe('parseIndonesianNumber', () => {
   it('menolak yang bukan angka', () => {
     expect(parseIndonesianNumber('abc')).toBeNull();
     expect(parseIndonesianNumber('')).toBeNull();
+  });
+});
+
+describe('parseNumber — ekspresi lengkap', () => {
+  it.each([
+    ['1.358,18', 1358.18, null, 1358.18],
+    ['25,5%', 25.5, '%', 0.255],
+    ['25,5 persen', 25.5, '%', 0.255],
+    ['Rp2,4 T', 2.4, 'IDR', 2.4e12],
+    ['Rp 349,5 miliar', 349.5, 'IDR', 349.5e9],
+    ['3x', 3, 'x', 3],
+    ['3 kali', 3, 'x', 3],
+    ['-0,90', -0.9, null, -0.9],
+    ['−0,90', -0.9, null, -0.9],
+    ['0.45', 0.45, null, 0.45],
+    ['setengah', 0.5, null, 0.5],
+    ['dua kali lipat', 2, 'x', 2],
+    ['setengah persen', 0.5, '%', 0.005],
+    ['setengah juta', 0.5, null, 500000],
+    ['2 kali lipat', 2, 'x', 2],
+    ['+12,5%', 12.5, '%', 0.125],
+    ['Rp−349,5 miliar', -349.5, 'IDR', -349.5e9],
+    ['Rp 1.358,18', 1358.18, 'IDR', 1358.18],
+    ['1,358.18', 1358.18, null, 1358.18],
+    ['1.234.567', 1234567, null, 1234567],
+    ['1,234,567', 1234567, null, 1234567],
+    ['1.234.567,89', 1234567.89, null, 1234567.89],
+    ['1,234,567.89', 1234567.89, null, 1234567.89],
+    ['0', 0, null, 0],
+    ['100%', 100, '%', 1],
+    ['5.6', 5.6, null, 5.6],
+    ['1,25 juta saham', 1.25, 'shares', 1250000],
+    ['4,28 miliar lembar', 4.28, 'shares', 4.28e9],
+    ['500 shares', 500, 'shares', 500],
+    ['Rp2 jt', 2, 'IDR', 2e6],
+    ['Rp3 ribu', 3, 'IDR', 3000],
+    ['Rp4 triliun', 4, 'IDR', 4e12],
+    ['Rp2 B', 2, 'IDR', 2e9],
+    ['25,5 PERSEN', 25.5, '%', 0.255],
+    ['DUA  KALI LIPAT', 2, 'x', 2],
+    ['Rp\u00a02,4\u00a0T', 2.4, 'IDR', 2.4e12],
+  ] as const)('membaca %s', (raw, value, unit, normalized) => {
+    const parsed = parseNumber(raw);
+    expect(parsed).toMatchObject({ value, unit, raw, span: [0, raw.length], ambiguous: false });
+    expect(parsed?.normalized).toBeCloseTo(normalized, 5);
+    const extracted = extractNumbers(`📈 ${raw}!`);
+    expect(extracted).toHaveLength(1);
+    expect(extracted[0]).toMatchObject({ value, unit, raw, span: [3, 3 + raw.length], ambiguous: false });
+  });
+
+  it.each(['1.358', '10.950', '1,358', '0.255', '0,255', 'Rp1.358', 'Rp2,4 M', '2 M', '3 M lembar'])
+  ('menandai %s sebagai ambigu tanpa nilai tebakan', (raw) => {
+    expect(parseNumber(raw)).toMatchObject({ ambiguous: true, value: undefined, normalized: undefined, raw });
+    expect(extractNumbers(raw)[0]?.ambiguous).toBe(true);
+  });
+
+  it.each(['', 'abc', '1..2', '1,,2', '12.34,56', '1.234.56', '1,23,456',
+    'Rp3%', 'Rp3x', 'Rp3 saham', 'dua kali lipat persen', 'NaN', 'Infinity', '1e3', '--2', '3.'])
+  ('menolak ekspresi invalid %s', (raw) => expect(parseNumber(raw)).toBeNull());
+
+  it('mempertahankan span dengan spasi luar', () => {
+    const input = '  Rp2,4 T  ';
+    const parsed = parseNumber(input)!;
+    expect(parsed.span).toEqual([2, 9]);
+    expect(input.slice(...parsed.span)).toBe(parsed.raw);
+  });
+
+  it('memisahkan tanda baca dan tidak menyerap spasi akhir', () => {
+    const text = 'Yield 25,5%, PER 3 kali. Nilai −0,90; Rp2,4 T.';
+    const results = extractNumbers(text);
+    expect(results.map((n) => n.raw)).toEqual(['25,5%', '3 kali', '−0,90', 'Rp2,4 T']);
+    for (const n of results) expect(text.slice(...n.span)).toBe(n.raw);
+    expect(extractNumbers(text)).toEqual(results);
+  });
+
+  it('tidak mengambil angka dari kode, eksponen, atau token rusak', () => {
+    expect(extractNumbers('BBRI123 Q2 1e3 1..2 1,,2')).toEqual([]);
+  });
+
+  it('membaca angka sebelum kata biasa tanpa mengambil awalan satuan', () => {
+    expect(extractNumbers('3 tahun 4 transaksi 5 kapital')[0]?.raw).toBe('3');
+    expect(extractNumbers('3 tahun 4 transaksi 5 kapital').map((n) => n.unit)).toEqual([null, null, null]);
+  });
+
+  it('menolak overflow', () => {
+    expect(parseNumber('9'.repeat(400))).toBeNull();
   });
 });
 

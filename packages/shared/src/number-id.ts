@@ -1,127 +1,124 @@
-/**
- * Parser dan format angka Indonesia.
- *
- * Dipakai grounding validator (A, bab 3.6) dan verifier (B, bab 4). Ditaruh di
- * shared supaya kedua sisi memakai definisi "angka yang sama" yang persis sama.
- *
- * Format Indonesia: titik memisah ribuan, koma memisah desimal — 1.358,18.
- * Format Inggris juga diterima karena konten media sosial mencampur keduanya.
- */
+/** Parser deterministik; span memakai indeks UTF-16 [awal, akhir). */
+export type NumberUnit = '%' | 'x' | 'IDR' | 'shares' | null;
 
-export type ParsedNumber = {
-  /** Nilai dasar tanpa satuan, mis. "25,5%" -> 25.5 */
-  value: number;
-  /** Nilai ternormalisasi ke satuan dasar: persen -> pecahan, miliar -> angka penuh. */
-  normalized: number;
-  unit: '%' | 'x' | 'IDR' | 'shares' | null;
-  /** Teks asli yang cocok. */
-  raw: string;
-  /** Posisi [awal, akhir) di dalam teks masukan. */
-  span: [number, number];
-};
+type NumberLocation = { unit: NumberUnit; raw: string; span: [number, number] };
+export type ParsedNumber = NumberLocation & (
+  | { ambiguous: false; value: number; normalized: number }
+  | { ambiguous: true; value: undefined; normalized: undefined }
+);
+
+type Numeric = { ambiguous: false; value: number } | { ambiguous: true };
 
 const SCALES: Record<string, number> = {
-  rb: 1e3,
-  ribu: 1e3,
-  k: 1e3,
-  jt: 1e6,
-  juta: 1e6,
-  m: 1e6,
-  mn: 1e6,
-  miliar: 1e9,
-  milyar: 1e9,
-  miliyar: 1e9,
-  bn: 1e9,
-  b: 1e9,
-  t: 1e12,
-  triliun: 1e12,
-  trilyun: 1e12,
-  tn: 1e12,
+  rb: 1e3, ribu: 1e3, k: 1e3,
+  jt: 1e6, juta: 1e6, mn: 1e6,
+  miliar: 1e9, milyar: 1e9, miliyar: 1e9, bn: 1e9, b: 1e9,
+  t: 1e12, triliun: 1e12, trilyun: 1e12, tn: 1e12,
 };
 
-/**
- * Menafsirkan satu token angka. Ambigu bila ada titik maupun koma; aturannya:
- * pemisah yang muncul terakhir adalah pemisah desimal.
- */
-export function parseIndonesianNumber(raw: string): number | null {
-  const cleaned = raw.trim().replace(/\s+/g, '');
-  if (!/^[-+]?[\d.,]+$/.test(cleaned)) return null;
-
-  const sign = cleaned.startsWith('-') ? -1 : 1;
-  const body = cleaned.replace(/^[-+]/, '');
-  if (body === '') return null;
-
-  const lastDot = body.lastIndexOf('.');
-  const lastComma = body.lastIndexOf(',');
-
-  let intPart: string;
-  let fracPart = '';
-
-  if (lastDot === -1 && lastComma === -1) {
-    intPart = body;
-  } else if (lastComma > lastDot) {
-    // Koma paling kanan -> desimal gaya Indonesia (1.358,18)
-    intPart = body.slice(0, lastComma).replace(/[.,]/g, '');
-    fracPart = body.slice(lastComma + 1);
-  } else if (lastDot > lastComma) {
-    const tail = body.slice(lastDot + 1);
-    // Titik dengan tepat 3 digit di belakang dan tanpa koma bisa jadi ribuan
-    // gaya Indonesia (1.358) atau desimal gaya Inggris (1.358). Kalau ada lebih
-    // dari satu titik, itu pasti pemisah ribuan.
-    const dotCount = (body.match(/\./g) ?? []).length;
-    if (lastComma === -1 && tail.length === 3 && dotCount >= 1 && /^\d+$/.test(tail)) {
-      // 1.358 -> ribuan bila bagian depan pendek dan tidak ada koma di mana pun.
-      intPart = body.replace(/\./g, '');
-    } else {
-      intPart = body.slice(0, lastDot).replace(/[.,]/g, '');
-      fracPart = tail;
-    }
+/** Pemisah harus konsisten; satu kelompok tiga digit dapat memiliki dua makna. */
+function parseNumeric(raw: string): Numeric | null {
+  const token = raw.replace(/\u2212/g, '-');
+  if (!/^[+-]?\d+(?:[.,]\d+)*$/.test(token)) return null;
+  const body = token.replace(/^[+-]/, '');
+  let decimal: string;
+  if (body.includes('.') && body.includes(',')) {
+    if (/^\d{1,3}(?:\.\d{3})+,\d+$/.test(body)) {
+      decimal = token.replace(/\./g, '').replace(',', '.');
+    } else if (/^\d{1,3}(?:,\d{3})+\.\d+$/.test(body)) {
+      decimal = token.replace(/,/g, '');
+    } else return null;
   } else {
-    intPart = body.replace(/[.,]/g, '');
+    const groups = body.split(/[.,]/);
+    if (groups.length > 2) {
+      if (!/^\d{1,3}([.,])\d{3}(?:\1\d{3})+$/.test(body)) return null;
+      decimal = token.replace(/[.,]/g, '');
+    } else if (groups.length === 2) {
+      // Tidak memilih ribuan atau desimal hanya berdasarkan bahasa antarmuka.
+      if (groups[0]!.length <= 3 && groups[1]!.length === 3) return { ambiguous: true };
+      decimal = token.replace(',', '.');
+    } else decimal = token;
   }
-
-  if (fracPart !== '' && !/^\d+$/.test(fracPart)) return null;
-  if (intPart !== '' && !/^\d+$/.test(intPart)) return null;
-
-  const n = Number(`${intPart === '' ? '0' : intPart}.${fracPart === '' ? '0' : fracPart}`);
-  return Number.isFinite(n) ? sign * n : null;
+  const value = Number(decimal);
+  return Number.isFinite(value) ? { ambiguous: false, value } : null;
 }
 
-const NUMBER_RE =
-  /([-+]?\d[\d.,]*)\s*(%|persen|x|kali|rb|ribu|jt|juta|miliar|milyar|miliyar|triliun|trilyun|k|bn|tn)?/gi;
+const SCALE_PATTERN = 'miliar|milyar|miliyar|triliun|trilyun|ribu|juta|rb|jt|mn|bn|tn|[kmbt]';
+const SUFFIX_PATTERN = `(?:%|persen|x|kali(?:\\s+lipat)?|(?:${SCALE_PATTERN})(?:\\s+(?:lembar|saham|shares))?|lembar|saham|shares)`;
+const EXPRESSION = new RegExp(
+  `^(Rp\\s*)?([+\\-−]?\\d+(?:[.,]\\d+)*|setengah|dua\\s+kali\\s+lipat)(?:\\s*(${SUFFIX_PATTERN}))?$`, 'i',
+);
+const SCANNER = new RegExp(
+  `(?<![\\p{L}\\p{N}_.,+\\-−])(?:Rp\\s*)?(?:[+\\-−]?\\d+(?:[.,]\\d+)*|setengah|dua\\s+kali\\s+lipat)(?:\\s*${SUFFIX_PATTERN})?(?![\\p{L}\\p{N}_]|[.,]\\d)`, 'giu',
+);
 
-/** Menarik setiap angka dari teks bebas, beserta satuan dan posisinya. */
+/**
+ * Membaca satu ekspresi lengkap. Invalid -> null; ambigu -> tanpa nilai tebakan.
+ * value tetap berupa mantissa (25,5% -> 25.5; Rp2,4 T -> 2.4).
+ * normalized adalah nilai dasar (0.255 dan 2.4e12). Skala tanpa Rp tidak
+ * otomatis diasumsikan sebagai uang; "miliar lembar" memiliki unit shares.
+ */
+export function parseNumber(input: string): ParsedNumber | null {
+  const raw = input.trim();
+  const start = input.length - input.trimStart().length;
+  const match = EXPRESSION.exec(raw);
+  if (!match) return null;
+  const currency = match[1] !== undefined;
+  const numericText = match[2]!;
+  const suffix = (match[3] ?? '').toLowerCase().replace(/\s+/g, ' ');
+  const words = numericText.toLowerCase().replace(/\s+/g, ' ');
+  const numeric: Numeric | null = words === 'setengah'
+    ? { ambiguous: false, value: 0.5 }
+    : words === 'dua kali lipat'
+      ? { ambiguous: false, value: 2 }
+      : parseNumeric(numericText);
+  if (numeric === null) return null;
+  if (words === 'dua kali lipat' && (suffix !== '' || currency)) return null;
+
+  let unit: NumberUnit = currency ? 'IDR' : null;
+  let scale = 1;
+  let ambiguous = numeric.ambiguous;
+  if (suffix === '%' || suffix === 'persen') {
+    if (currency) return null;
+    unit = '%';
+    scale = 0.01;
+  } else if (/^(?:x|kali(?: lipat)?)$/.test(suffix) || words === 'dua kali lipat') {
+    if (currency) return null;
+    unit = 'x';
+  } else if (suffix !== '') {
+    const shares = /(?:^| )(?:lembar|saham|shares)$/.test(suffix);
+    if (shares && currency) return null;
+    if (shares) unit = 'shares';
+    const scaleName = suffix.replace(/(?:^| )(?:lembar|saham|shares)$/, '');
+    // M dipakai untuk million maupun miliar di media sosial, termasuk sesudah Rp.
+    if (scaleName === 'm') ambiguous = true;
+    else if (scaleName !== '') scale = SCALES[scaleName]!;
+  }
+  const location: NumberLocation = { unit, raw, span: [start, start + raw.length] };
+  if (ambiguous || numeric.ambiguous) {
+    return { ...location, ambiguous: true, value: undefined, normalized: undefined };
+  }
+  const normalized = numeric.value * scale;
+  if (!Number.isFinite(normalized)) return null;
+  return { ...location, ambiguous: false, value: numeric.value, normalized };
+}
+
+/** Pembantu skalar lama: format ambigu/invalid tidak menghasilkan angka. */
+export function parseIndonesianNumber(raw: string): number | null {
+  const parsed = parseNumeric(raw.trim());
+  return parsed && !parsed.ambiguous ? parsed.value : null;
+}
+
+/** Menarik angka dan hasil ambigu tanpa mengubah raw atau koordinat teks. */
 export function extractNumbers(text: string): ParsedNumber[] {
   const out: ParsedNumber[] = [];
-  NUMBER_RE.lastIndex = 0;
-  let m: RegExpExecArray | null;
-  while ((m = NUMBER_RE.exec(text)) !== null) {
-    const numeric = m[1];
-    if (numeric === undefined) continue;
-    const value = parseIndonesianNumber(numeric);
-    if (value === null) continue;
-
-    const suffix = (m[2] ?? '').toLowerCase();
-    let unit: ParsedNumber['unit'] = null;
-    let normalized = value;
-
-    if (suffix === '%' || suffix === 'persen') {
-      unit = '%';
-      normalized = value / 100;
-    } else if (suffix === 'x' || suffix === 'kali') {
-      unit = 'x';
-    } else if (suffix in SCALES) {
-      unit = 'IDR';
-      normalized = value * (SCALES[suffix] as number);
-    }
-
-    out.push({
-      value,
-      normalized,
-      unit,
-      raw: m[0].trim(),
-      span: [m.index, m.index + m[0].length],
-    });
+  // Regex lokal agar state lastIndex tidak bocor antarpanggilan.
+  for (const match of text.matchAll(new RegExp(SCANNER))) {
+    // Hindari mengambil awalan angka dari token pemisah yang rusak (1..2, 1,,2).
+    const end = match.index + match[0].length;
+    if (/^[.,]{2,}\d/.test(text.slice(end))) continue;
+    const parsed = parseNumber(match[0]);
+    if (parsed) out.push({ ...parsed, span: [match.index, end] });
   }
   return out;
 }

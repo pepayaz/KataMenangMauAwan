@@ -1,9 +1,8 @@
 import { z } from 'zod';
 
 /**
- * Kontrak data Cek Dulu — bab 5 rencana pengembangan.
- * Dibekukan Kamis 24 September 2026. Setiap perubahan wajib lewat PR yang
- * memperbarui packages/shared/CLAUDE.md di commit yang sama.
+ * Kontrak data Cek Dulu — AGENTS.md bagian 5 dan 7.
+ * Perubahan disertai fixture, AGENTS.md, dan packages/shared/CLAUDE.md.
  */
 
 export const ClaimTypeSchema = z.enum([
@@ -26,7 +25,7 @@ export const VerdictSchema = z.enum([
 ]);
 export type Verdict = z.infer<typeof VerdictSchema>;
 
-export const CheckSourceSchema = z.enum(['paste', 'share_target', 'extension']);
+export const CheckSourceSchema = z.enum(['paste', 'share_target', 'screenshot', 'extension']);
 export type CheckSource = z.infer<typeof CheckSourceSchema>;
 
 export const CheckInputSchema = z.object({
@@ -93,6 +92,24 @@ export const HypothesisResultSchema = z.object({
   note: z.string(),
 });
 export type HypothesisResult = z.infer<typeof HypothesisResultSchema>;
+
+/** Rencana alat; nama metode klien Sectors, bukan URL atau endpoint baru. */
+export const ToolCallSchema = z.object({
+  tool: z.string().min(1),
+  params: z.record(z.unknown()),
+});
+export type ToolCall = z.infer<typeof ToolCallSchema>;
+
+/** Definisi lokal: fungsi test deterministik tidak dikirim sebagai JSON ke LLM. */
+export const HypothesisSchema = z.object({
+  id: z.string().min(1),
+  claimType: ClaimTypeSchema,
+  description: z.string().min(1),
+  requiredTools: z.array(ToolCallSchema),
+  estCredits: z.number().int().nonnegative(),
+  test: z.function().args(ClaimSchema, z.array(EvidenceSchema)).returns(HypothesisResultSchema),
+});
+export type Hypothesis = z.infer<typeof HypothesisSchema>;
 
 export const MissingContextSchema = z.object({
   hypId: z.string(),
