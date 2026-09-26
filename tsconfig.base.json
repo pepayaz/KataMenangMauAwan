@@ -16,6 +16,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
     "paths": {
+      "@cek-dulu/agent": ["./packages/agent/src/index.ts"],
       "@cek-dulu/shared": ["./packages/shared/src/index.ts"],
       "@cek-dulu/sectors": ["./packages/sectors/src/index.ts"],
       "@cek-dulu/verifiers": ["./packages/verifiers/src/index.ts"]
