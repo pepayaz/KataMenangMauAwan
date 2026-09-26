@@ -1,3 +1,4 @@
+import { UserTickerSelectionSchema } from '@cek-dulu/agent';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { CheckSourceSchema, type CheckInput, type TraceEvent } from '@cek-dulu/shared';
@@ -37,6 +38,7 @@ const BodySchema = z.object({
   /** Ticker yang dipilih pengguna saat resolusi ambigu (bab 3.3 nomor 4). */
   ticker: z.string().optional(),
   demo: z.boolean().default(false),
+  userSelections: z.array(UserTickerSelectionSchema).max(10).default([]),
 });
 
 export async function POST(req: Request): Promise<Response> {
@@ -95,6 +97,7 @@ export async function POST(req: Request): Promise<Response> {
       try {
         const result = await pipeline.run(input, {
           client,
+          userSelections: body.userSelections,
           emit: emitter.emit,
           today: new Date().toISOString().slice(0, 10),
           flags,

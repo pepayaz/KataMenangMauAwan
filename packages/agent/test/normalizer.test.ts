@@ -135,3 +135,57 @@ describe('fuzzy sementara dan LLM terbatas', () => {
     expect(opts.provider.requests).toHaveLength(1);
   });
 });
+
+describe('pilihan pengguna dibatasi kandidat server', () => {
+  const directory = createFixtureTickerDirectory({ tickers: ['ADRO', 'PTBA', 'BREN'], aliases: [
+    { alias: 'bara', ticker: 'ADRO', weight: 1 }, { alias: 'bara', ticker: 'PTBA', weight: 1 },
+    { alias: 'prajogo', ticker: 'BREN', weight: 0.6 }] });
+  it('mengubah alias ambigu menjadi Entity user tanpa LLM', async () => {
+    const opts = mock([]);
+    const result = await normalizeText('bara', { directory, ...opts, userSelections: [{ surface: 'bara', ticker: 'PTBA' }] });
+    expect(result).toMatchObject({ status: 'ready', choices: [], entities: [
+      { surface: 'bara', ticker: 'PTBA', confidence: 1, method: 'user' }] });
+    expect(opts.provider.requests).toHaveLength(0);
+  });
+  it('menerima fuzzy dan menghindari pemilihan LLM ulang', async () => {
+    const opts = mock([]);
+    const result = await normalizeText('Adarro', { ...opts, userSelections: [{ surface: 'Adarro', ticker: 'ADRO' }] });
+    expect(result.status).toBe('ready'); expect(result.entities[0]?.method).toBe('user');
+    expect(opts.provider.requests).toHaveLength(0);
+  });
+  it('pilihan parsial mempertahankan pertanyaan lain', async () => {
+    const result = await normalizeText('bara prajogo', { directory, userSelections: [{ surface: 'bara', ticker: 'ADRO' }] });
+    expect(result.status).toBe('needs_user_choice'); expect(result.choices.map(choice => choice.surface)).toEqual(['prajogo']);
+  });
+  it('dua surface dapat dipilih dan ticker yang sama tidak diduplikasi', async () => {
+    const result = await normalizeText('bara Adarro', { directory, userSelections: [
+      { surface: 'bara', ticker: 'ADRO' }, { surface: 'Adarro', ticker: 'ADRO' }] });
+    expect(result.status).toBe('ready'); expect(result.entities).toHaveLength(1);
+  });
+  it.each([
+    ['ticker di luar kandidat', 'bara', [{ surface: 'bara', ticker: 'BREN' }]],
+    ['surface tidak tertulis', 'bara', [{ surface: 'palsu', ticker: 'ADRO' }]],
+    ['teks berubah', 'PTBA', [{ surface: 'bara', ticker: 'ADRO' }]],
+    ['menimpa eksplisit', '$ADRO', [{ surface: '$ADRO', ticker: 'PTBA' }]],
+    ['surface ganda', 'bara', [{ surface: 'bara', ticker: 'ADRO' }, { surface: 'BARA', ticker: 'PTBA' }]],
+    ['tanpa kandidat', '$ZZZZ', [{ surface: '$ZZZZ', ticker: 'ADRO' }]],
+    ['ticker tidak valid', 'bara', [{ surface: 'bara', ticker: 'ad' }]],
+  ])('menolak %s', async (_, text, userSelections) => {
+    await expect(normalizeText(text as string, { directory,
+      userSelections: userSelections as Array<{ surface: string; ticker: string }> })).rejects.toThrow('Pilihan saham');
+  });
+});
+
+describe('kata umum tidak menjadi kandidat fuzzy', () => {
+  it('bakal tidak dianggap typo alias bara', async () => {
+    const directory = createFixtureTickerDirectory({ tickers: ['ADRO'], aliases: [{ alias: 'bara', ticker: 'ADRO', weight: 1 }] });
+    const opts = mock([]);
+    const result = await normalizeText('ADRO bakal naik', { directory, ...opts });
+    expect(result.status).toBe('ready'); expect(opts.provider.requests).toHaveLength(0);
+  });
+  it('kata umum masih dapat menjadi alias yang dikonfigurasi eksplisit', async () => {
+    const directory = createFixtureTickerDirectory({ tickers: ['CUAN'], aliases: [{ alias: 'cuan', ticker: 'CUAN', weight: 1 }] });
+    const result = await normalizeText('cuan', { directory });
+    expect(result.entities[0]?.ticker).toBe('CUAN');
+  });
+});

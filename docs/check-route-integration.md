@@ -6,7 +6,7 @@ Sectors `cache_only`; tidak mengambil data live.
 
 ## Kontrak untuk UI C
 
-Body: `{ text, source?: "paste", url?, demo?: false }`. Header respons `X-Check-Id`.
+Body: `{ text, source?: "paste", url?, demo?: false, userSelections?: [{surface, ticker}] }`. Header respons `X-Check-Id`.
 Baca body streaming dengan fetch (POST), bukan EventSource (GET). Event `trace`
 berisi TraceEvent; `result` berisi CheckResult, bukan array verdict langsung;
 `error` berisi `{ checkId, message }`; `ping` boleh diabaikan. Trace stage `done`
@@ -23,7 +23,9 @@ Jumlahkan kredit tahap; event done memiliki kredit nol dan total pada data.
   sehingga event UI dan persistensi identik.
 - Field pilihan `ticker` milik B belum terhubung ke surface normalizer. Sekarang
   ditolak eksplisit HTTP 400; gunakan kode eksplisit pada teks. Trace normalize
-  menampilkan `needs_user_choice` dan kandidat; kontrol pemilihan masih perlu C.
+  menampilkan `needs_user_choice` dan kandidat; UI sementara sekarang menyediakan
+  pilihan surface-ticker, diteruskan melalui `userSelections`. Kandidat dihitung
+  ulang di normalizer server; kiriman UI tidak dapat menambah ticker sendiri.
 - Tidak ada implementasi UI C pada branch yang tersedia setelah git fetch.
   Placeholder diganti form/rapor minimal untuk menguji sambungan; komponen ini
   merupakan UI sementara, bukan verifikasi terhadap UI C yang belum tersedia.
@@ -60,3 +62,20 @@ adjudicate/grounding, done. Event result menampilkan satu klaim misleading,
 DIV_CASH_PAYOUT strong, penjelasan angka 25,5%, sekitar 23,6%, Rp1.358,18,
 45,2% lolos grounding. Total 0 kredit. Bukan pemeriksaan cache Sectors asli.
 `pnpm test`: 597 test / 22 file lulus. `pnpm -r typecheck`: lulus.
+
+## Penyelesaian pilihan pengguna
+
+`userSelections` merupakan opsi resolusi, bukan perubahan CheckInput/CheckResult.
+Normalizer memvalidasi bentuk input, keunikan surface, dan kecocokan kandidat
+berdasarkan teks/directory saat ini. Pilihan sah menghasilkan Entity method user
+confidence 1 dan tidak memanggil LLM untuk memilih surface yang sama lagi.
+Pilihan palsu/teks berubah menghasilkan trace error INVALID_USER_SELECTION.
+Pilihan parsial tetap meminta surface lainnya. UI menghapus pilihan ketika teks
+berubah, menampilkan dropdown kandidat, dan mengirim ulang cek setelah dipilih.
+Legacy `ticker` tunggal tetap ditolak karena tidak mengidentifikasi surface.
+
+Perubahan B/C tambahan hanya meneruskan userSelections pada context route/factory
+serta kontrol pilihan pada UI sementara. Skema shared tidak berubah. Filter kata
+umum pada fuzzy mencegah bakal menjadi kandidat alias bara; alias eksplisit tetap
+diprioritaskan. Test server memeriksa putaran pertanyaan -> pilihan -> result.
+Test total terbaru: 613 lulus; typecheck lulus.

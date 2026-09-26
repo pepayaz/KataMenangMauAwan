@@ -260,3 +260,29 @@ adjudicator/hunter tetap dijalankan; ADRO terpicu oleh fakta cash payout negatif
 bukan membuat total periode yang tidak tersedia. Mode biasa tidak menggunakan
 fixture sebagai pengganti cache kosong. Test juga menjalankan verifier B asli dan
 gateway hunter dari MemoryCacheStore dengan spy jaringan.
+
+## Status bagian A dan sisa pekerjaan
+
+Tugas shared, parser/fixture, LLM/extractor, normalizer/router, sembilan hipotesis
+P0 yang diminta, adjudicator, grounding, pipeline/CLI dan adapter SSE sudah
+terimplementasi serta diuji. `normalizeText` dan deps runCheck menerima
+`userSelections: [{surface, ticker}]`; kandidat server wajib cocok, Entity memakai
+method user, dan pilihan parsial tetap needs_user_choice. UI sementara mendukung
+pengiriman ulang pilihan. Tugas implementasi tidak sama dengan kesiapan produksi.
+
+Belum selesai untuk kesiapan hackathon:
+- LLM nyata dan cache API B perlu dipakai untuk pengujian end-to-end; demo UI
+  saat ini memakai fixture, bukan bukti verifikasi cache nyata.
+- Directory/fuzzy masih memakai seed demo dan alias yang disuntikkan B; belum
+  ada jaminan cakupan semua emiten atau alias multi-kata yang tidak dikenal.
+- Hipotesis lain di AGENTS bagian 8 belum masuk registry: VAL_ONE_OFF_EARNINGS,
+  DIV_SHARE_CHANGE, PRC_LOW_FLOAT, PRC_SPLIT, serta keluarga GRW/FGN/INS/SAF.
+  Penambahan memerlukan field/data cache yang jelas dan test deterministik.
+- AbortSignal context web belum membatalkan kerja runCheck yang sedang berjalan;
+  disconnect tetap menyelesaikan cek sesuai kebijakan persistensi B.
+- Screenshot/OCR, evaluasi 40 kasus, PWA dan UI utama belum tercakup tugas A
+  yang sudah diminta. Pembagian tugas fitur ini perlu mengikuti pemilik tim.
+
+Urutan berikutnya: pengujian LLM/cache nyata -> melengkapi hipotesis P0 dengan
+cache yang tersedia -> evaluasi kasus sulit -> perluasan P1 di feature flag.
+Tidak ada data live yang diambil otomatis.

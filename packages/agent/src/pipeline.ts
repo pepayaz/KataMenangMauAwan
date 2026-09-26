@@ -4,7 +4,7 @@ import { CheckInputSchema, CheckResultSchema, ClaimVerdictSchema, EvidenceSchema
   type CheckInput, type CheckResult, type Claim, type ClaimVerdict, type Evidence, type TraceEvent } from '@cek-dulu/shared';
 import { SectorsError, estimateCredits, type EndpointName, type SectorsClient } from '@cek-dulu/sectors';
 import { VERIFIERS, enabledClaimTypes, type VerifierRegistry, type VerifierOutput } from '@cek-dulu/verifiers';
-import { normalizeText, type TickerDirectory } from './normalizer.js';
+import { normalizeText, UserTickerSelectionError, type UserTickerSelection, type TickerDirectory } from './normalizer.js';
 import { extractClaimsWithDiagnostics } from './extractor.js';
 import { routeClaim, type RoutePlan } from './router.js';
 import { adjudicate, type AdjudicatedVerdict } from './adjudicator.js';
@@ -17,6 +17,7 @@ import type { LlmAdapter } from './llm.js';
 
 export type PipelineDeps = {
   client: SectorsClient; llm: Pick<LlmAdapter, 'generate'>; verifiers?: Partial<VerifierRegistry>;
+  userSelections?: readonly UserTickerSelection[];
   prompts?: { extractor: string; explainer: string };
   directory?: TickerDirectory; concurrency?: number; now?: () => Date;
   flags?: Record<string, boolean>;
@@ -105,7 +106,7 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
     verdicts: [], creditsUsed: 0, finishedAt: now().toISOString() };
   let normalized: Awaited<ReturnType<typeof normalizeText>>;
   try {
-    normalized = await normalizeText(input.rawText, { directory: deps.directory, llm: deps.llm });
+    normalized = await normalizeText(input.rawText, { directory: deps.directory, llm: deps.llm, userSelections: deps.userSelections });
     output.entities = normalized.entities;
     await trace('normalize', 'Resolusi saham selesai.', { status: normalized.status, entities: normalized.entities, choices: normalized.choices });
     if (normalized.status !== 'ready') {
@@ -115,8 +116,8 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
     const extracted = await extractClaimsWithDiagnostics(normalized.text, output.entities, { checkId: input.checkId, llm: deps.llm, prompt: deps.prompts?.extractor });
     output.claims = extracted.claims;
     await trace('extract', 'Ekstraksi klaim selesai.', { claimIds: output.claims.map((c) => c.claimId), rejected: extracted.rejected });
-  } catch {
-    await trace('error', 'Input atau ekstraksi tidak dapat diselesaikan.', { code: 'EXTRACTION_FAILED' });
+  } catch (error) {
+    await trace('error', error instanceof UserTickerSelectionError ? error.message : 'Input atau ekstraksi tidak dapat diselesaikan.', { code: error instanceof UserTickerSelectionError ? 'INVALID_USER_SELECTION' : 'EXTRACTION_FAILED' });
     await trace('done', 'Pemeriksaan berhenti sebelum verifikasi.', { status: 'error' });
     output.finishedAt = now().toISOString(); return CheckResultSchema.parse(output);
   }

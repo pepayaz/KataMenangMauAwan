@@ -1,3 +1,7 @@
+import { readTickerChoices } from '../lib/ticker-choices.js';
+import * as pipelineFactory from '../lib/pipeline/index.js';
+import { createFixtureTickerDirectory, LlmAdapter } from '@cek-dulu/agent';
+import { fixtureCheckDeps } from '../../../scripts/check-fixture.js';
 import { resolve } from 'node:path';
 import { loadWebPrompts } from '../lib/pipeline/index.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -95,5 +99,43 @@ describe('prompt di server Next', () => {
   });
   it('gagal terkontrol jika file prompt tidak tersedia', async () => {
     await expect(loadWebPrompts(resolve(process.cwd(), 'missing/deep/directory'))).rejects.toThrow('Prompt agen tidak tersedia.');
+  });
+});
+
+describe('pilihan saham melalui API', () => {
+  it('pertanyaan UI dapat dikirim ulang untuk melanjutkan pipeline', async () => {
+    enableDemo(); const text = 'bara bakal naik 80%';
+    const original = pipelineFactory.createPipeline;
+    const directory = createFixtureTickerDirectory({ tickers: ['ADRO', 'PTBA'], aliases: [
+      { alias: 'bara', ticker: 'ADRO', weight: 1 }, { alias: 'bara', ticker: 'PTBA', weight: 1 }] });
+    const factory = vi.spyOn(pipelineFactory, 'createPipeline').mockImplementation(opts => original({ ...opts, deps: {
+      ...fixtureCheckDeps(checkFixtures[2]!.input.rawText).deps, directory,
+      llm: new LlmAdapter({ env: { LLM_PROVIDER: 'mock', LLM_MODEL: 'uji' }, mockOutputs: [
+        { claims: [{ quote: text, span: { start: 0, end: text.length }, tickers: ['PTBA'], type: 'price_move', inScope: false,
+          asserted: { metric: 'kenaikan harga', value: 80, unit: '%', window: null, period: null } }] },
+        { explanation: 'Klaim merupakan prediksi. Data historis tidak membuktikan hasil di masa depan.' },
+      ] }),
+    } }));
+    try {
+      const first: CheckStreamEvent[] = [];
+      await readCheckStream(await POST(request({ text })), event => first.push(event));
+      const trace = first.find(event => event.kind === 'trace' && event.value.stage === 'normalize');
+      expect(trace?.kind).toBe('trace');
+      if (trace?.kind !== 'trace') throw new Error('Normalize tidak ditemukan');
+      const choices = readTickerChoices(trace.value);
+      expect(choices[0]?.candidates.map(candidate => candidate.ticker)).toEqual(['ADRO', 'PTBA']);
+      const next: CheckStreamEvent[] = [];
+      await readCheckStream(await POST(request({ text, userSelections: [{ surface: 'bara', ticker: 'PTBA' }] })), event => next.push(event));
+      const result = next.at(-1);
+      expect(result?.kind).toBe('result');
+      if (result?.kind !== 'result') throw new Error('Hasil tidak ditemukan');
+      expect(result.value.entities[0]).toMatchObject({ ticker: 'PTBA', method: 'user' });
+      expect(result.value.verdicts[0]?.verdict).toBe('out_of_scope');
+    } finally { factory.mockRestore(); }
+  });
+  it('menolak body pilihan tidak valid dan mengabaikan data trace yang bukan pertanyaan', async () => {
+    expect((await POST(request({ text: 'bara', userSelections: [{ surface: 'bara', ticker: 'ptba' }] }))).status).toBe(400);
+    expect(readTickerChoices({ checkId: 'c', ts: 't', stage: 'normalize', message: '', data: { status: 'needs_user_choice', choices: [{ surface: 'bara', candidates: [{ ticker: 'INVALID' }] }] } })).toEqual([]);
+    expect(readTickerChoices({ checkId: 'c', ts: 't', stage: 'verify', message: '' })).toEqual([]);
   });
 });

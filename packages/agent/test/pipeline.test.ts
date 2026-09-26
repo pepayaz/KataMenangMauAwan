@@ -226,3 +226,16 @@ describe('CLI fixture eksplisit', () => {
     } finally { stdout.mockRestore(); stderr.mockRestore(); }
   });
 });
+
+describe('pipeline pilihan saham pengguna', () => {
+  it('pilihan valid melanjutkan ekstraksi, invalid berhenti dengan kode eksplisit', async () => {
+    const test = setup('Adarro PER 3x');
+    test.deps.userSelections = [{ surface: 'Adarro', ticker: 'ADRO' }];
+    const result = await test.run(); expect(result.entities[0]?.method).toBe('user');
+    expect(result.verdicts[0]?.verdict).toBe('supported');
+    const invalid = setup('Adarro PER 3x');
+    invalid.deps.userSelections = [{ surface: 'Adarro', ticker: 'BBRI' }];
+    expect((await invalid.run()).claims).toEqual([]); expect(invalid.requests).toEqual([]);
+    expect(invalid.traces.find(event => event.stage === 'error')?.data).toMatchObject({ code: 'INVALID_USER_SELECTION' });
+  });
+});

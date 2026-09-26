@@ -28,11 +28,14 @@ menyesatkan karena konteksnya dihilangkan.
 
 > "Yield dividen ADRO 25% setahun, gila sih ini."
 
-Angkanya benar. Rata-rata yield dividen ADRO lima tahun memang 25,5%.
+Field bawaan Sectors `dividend_yield_avg.avg_yield` bernilai 25,5%. Angka ini
+tidak dapat direproduksi sebagai rata-rata yield tahunan: hitungan mandiri dari
+2021–2025 sekitar 23,6%, sehingga keduanya perlu dibedakan.
 
 Tetapi satu pembayaran luar biasa Rp1.358,18 pada 28 November 2024 menyumbang
-yield 45,2% sendirian. Yield dua belas bulan terakhir — yang benar-benar
-diterima pembeli hari ini — hanya 5,6%, dan cash payout ratio-nya −0,90.
+yield 45,2% sendirian. Yield TTM pada data yang diverifikasi adalah 5,56%, dan
+cash payout ratio −0,897. Belum ada data dividen ADRO 2026; angka historis ini
+bukan kepastian pembayaran di masa depan.
 
 Status: **benar tapi menyesatkan**.
 
@@ -48,22 +51,31 @@ Sudah berjalan:
 - `POST /api/check` dengan jejak agen yang mengalir lewat Server-Sent Events
 - Riwayat cek dengan deteksi perubahan status berbasis `claim_hash`
 - Skema Supabase lengkap dengan Row Level Security
-- 129 uji unit yang berjalan tanpa satu pun panggilan API
+- Pipeline agen lengkap, structured output, context hunter P0, grounding angka
+  dan filter nasihat investasi
+- Pilihan ticker pengguna yang divalidasi terhadap kandidat server
+- 613 test otomatis; mock dan fixture tidak memanggil API live
 
-Sedang dikerjakan: ekstraktor LLM dan pustaka hipotesis Context Hunter (A),
-antarmuka dan PWA (C), ekstensi X dan set evaluasi (D).
+Belum tuntas: verifikasi integrasi memakai cache asli dan LLM nyata, sebagian
+hipotesis lanjutan (A), antarmuka utama dan PWA (C), ekstensi X dan set evaluasi (D).
+UI di checkout ini masih UI sambungan sementara; demo fixture diberi label jelas.
 
 ## Menjalankan secara lokal
 
 ```bash
-npm install
-cp .env.example .env.local
-npm run dev
+pnpm install
+# Next berjalan dari apps/web; letakkan env lokal web di folder tersebut
+cp .env.example apps/web/.env.local
+# Isi LLM_PROVIDER, LLM_MODEL dan LLM_API_KEY untuk cek normal
+pnpm dev
 ```
 
-Aplikasi menyala tanpa kunci Sectors maupun Supabase — cache jatuh ke berkas dan
-buku kredit ke memori. Untuk memakai data sungguhan, isi `SECTORS_API_KEY`,
-jalankan migrasi di `supabase/migrations`, lalu panaskan cache:
+Cache jatuh ke berkas dan buku kredit ke memori bila Supabase belum dikonfigurasi.
+Cek normal memerlukan konfigurasi LLM dan cache data yang sesuai. Untuk cache
+berkas, set `SECTORS_CACHE_DIR` ke direktori cache B yang benar (sebaiknya absolut).
+Mode web selalu `cache_only`; cache miss tidak mengambil data live.
+Pemanasan cache adalah pekerjaan B dan membutuhkan izin eksplisit serta kredit;
+perintah berikut hanya referensi, jangan dijalankan sebagai bagian test:
 
 ```bash
 npx tsx scripts/pull-demo-data.ts --yes
