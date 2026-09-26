@@ -124,3 +124,76 @@ Safety memakai overview, suspensions, corporate-actions, dan free-float. Tanpa
 subSector, estimasi daftar free-float penuh konservatif 10 kredit dari B; dengan
 subSector yang sudah diketahui menjadi 2 kredit. Tidak mengarang filter simbol.
 Modul ini belum menggantikan pipeline dasar backend atau mengeksekusi ToolCall.
+
+## Context Hunter
+
+`createHypothesisRegistry(claim, { today, priceWindow? })` mengikat tiga hipotesis
+per tipe dividend, valuation, atau price_move. Sembilan hipotesis yang diminta
+tersedia; tipe lain menghasilkan registry kosong. Tanggal dan rentang disuntikkan
+agar semua test deterministik. Registry mengikuti skema Hypothesis shared.
+`constants.ts` menyimpan seluruh ambang heuristik dan alasan kebijakannya;
+ambang ini bukan definisi resmi Sectors atau nasihat investasi.
+
+`huntContext(claim, evidence, { registry, llm, gateway })` memilih dan mengurutkan
+hipotesis lewat structured output lalu mengeksekusinya. Fungsi selection dan
+executor juga tersedia terpisah. Enum ID berasal dari registry tipe klaim;
+JSON/schema invalid memakai satu retry adapter LLM, lalu error terkontrol.
+Duplikasi ID dan pilihan semantik invalid menghasilkan HunterSelectionError.
+Alasan singkat disimpan pada selection sebagai diagnostik; bukan penjelasan akhir
+rapor dan jangan dirender tanpa pemeriksaan output produk.
+
+Executor menerima maksimal tiga pilihan. Seluruh biaya tool untuk satu hipotesis
+diperiksa sebelum I/O. Maksimal delapan kredit per pemanggilan untuk satu klaim;
+caller menjalankan hunter sekali per klaim, bukan memecah beberapa eksekusi untuk
+menghindari batas. Tool identik yang sukses dipakai ulang dalam pemanggilan yang
+sama. Gateway memberi quote yang merupakan batas atas atomik dan wajib menegakkan
+maxCredits sebelum I/O, termasuk saat cache menjadi miss. Pelanggaran biaya menjadi
+HunterBudgetError. Error tool dengan biaya pasti memakai HunterToolError; error
+lain dihitung konservatif sesuai reservasi. Eksekusi berhenti saat triggered strong,
+tetap berlanjut untuk weak atau strong yang tidak triggered. Hasil menyertakan
+evidence, kredit, skipped, dan pendingTools beserta estimasi kredit data yang kurang.
+Hipotesis dengan tool gagal tidak diberi hasil seolah-olah sudah diuji lengkap.
+
+`createSectorsHunterGateway(client, today)` hanya menerima client cache_only/replay.
+Semua panggilan lewat metode B; tidak ada fetch Sectors di agent. Cache miss tidak
+memicu live dan dilaporkan lewat pendingTools. Mode offline tidak menagih kredit,
+termasuk replay. Gateway live belum disediakan karena client B tidak memiliki
+reservasi atomik tersendiri per klaim hunter; jangan mengaktifkannya dengan sekadar
+melewati pemeriksaan mode. Wiring pipeline backend tetap pekerjaan terpisah.
+
+`flattenHunterToolResult` membaca subset field yang sudah ada pada tipe B,
+memvalidasi bentuk respons dan tanggal, menghapus duplikasi identik, dan mengubah
+setiap nilai menjadi Evidence skalar. Null tidak diganti nol. `params.hunter`
+adalah metadata lokal (metric, symbol, date/year, peer), bukan field/parameter API.
+Metadata ini memungkinkan test memakai data deterministik tanpa membaca label
+Bahasa Indonesia atau menebak field. Persen dividend memakai pecahan, PE/PEG rasio,
+harga IDR, dan volume saham. Tahun laporan tetap dicatat saat metrik null, supaya
+metrik lama tidak dianggap pengganti metrik terbaru yang kosong.
+
+DIV_ONE_OFF menilai pembayaran terbesar terhadap total tahunan pada maksimal lima
+tahun laporan terakhir, atau tahun eksplisit. Lewat 60% terpicu; strong memerlukan
+minimal dua pembayaran dan jumlah breakdown konsisten dengan total. Pembayaran
+tunggal rutin hanya weak. Total null tidak dihitung dari breakdown yang mungkin
+belum lengkap. DIV_TTM_GAP menilai klaim rata-rata historis yang cocok dalam
+toleransi, dengan selisih relatif TTM di atas 50%. Data tahun berjalan kosong
+selalu weak dan mencatat `data tahun ini belum tersedia`. Corporate-actions wajib
+diperiksa; pembayaran baru yang belum masuk report juga tetap weak. Cash payout
+negatif atau di atas satu terpicu kuat, nol dan tepat satu tidak terpicu.
+
+VAL_PEER_GAP hanya untuk PE, memakai median minimal tiga peer unik, membuang diri
+sendiri, PE nonpositif, PE di atas 200, dan PE di atas tiga kali median awal.
+Premium di atas 25% terpicu. VAL_OWN_HISTORY mendeteksi angka tahun lama yang dipakai
+tanpa periode, atau premium di atas 25% terhadap median minimal tiga tahun sebelumnya
+untuk PE/PB. VAL_NEG_PEG hanya memakai PEG tahun laporan terbaru yang bernilai negatif.
+PRC_LOW_BASE menilai rebound minimal 20% dari basis maksimal separuh median 180 hari
+sebelumnya. PRC_THIN_LIQ memakai rata-rata volume × harga per tanggal, minimal lima
+pasangan, di bawah Rp1 miliar; data seluruh volume nol tidak dianggap cukup.
+PRC_WINDOW membandingkan jendela klaim dengan 90 hari berakhir pada tanggal yang sama;
+selisih minimal 30 poin persentase terpicu. Note hasil bersifat kualitatif; LLM
+penulis tidak boleh menghitung median/rasio sendiri untuk menambahkan angka ke rapor.
+
+Fixture hunter berada di `test/fixtures/hunter.ts`. Fakta ADRO memakai angka shared
+yang bersumber dari AGENTS.md. Total Rp1.600 dan pembayaran kedua untuk test dominasi
+ditandai sintetis; tidak diklaim sebagai total/pembayaran ADRO aktual. Valuasi, peer,
+harga, volume, dan contoh corporate-actions tambahan juga sintetis. Test gateway
+memakai MemoryCacheStore B dan spy jaringan, bukan API live.
