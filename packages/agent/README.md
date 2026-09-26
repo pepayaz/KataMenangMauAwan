@@ -81,3 +81,46 @@ Angka ambigu tidak diterima sebagai nilai. Klaim dua ticker menjadi dua Claim
 dengan span sama. ID dibuat kode; duplikasi dibuang. Aturan prediksi/opini eksplisit
 juga mengoreksi inScope menjadi false. Pemeriksaan semantik atom/metrik tetap
 bagian ekstraksi LLM; validator kode tidak mengklaim memahami semua ragam opini.
+
+## Normalizer dan router
+
+`normalizeText(raw, { directory?, llm?, unresolvedSurfaces? })` menghasilkan teks
+bersih, entities yang sudah mencapai confidence 0,7, serta status `ready` atau
+`needs_user_choice` dan `choices[]`. Span extractor mengacu teks bersih ini.
+Resolver eksplisit/alias memakai fungsi B di shared. Kode bertanda yang tidak
+ada di directory tidak diteruskan, meski resolver B sendiri menerimanya. Alias
+bentrok dan confidence rendah mengembalikan kandidat untuk konfirmasi pengguna.
+Entitas lain yang pasti tetap tersedia, tetapi caller harus menangani status
+pilihan sebelum meneruskan pipeline. Teks tanpa sebutan saham menghasilkan
+entities kosong; ini berbeda dari ticker yang ditemukan tetapi belum pasti.
+
+`TickerDirectory` menerima daftar emiten, alias hasil `loadAliases(db)` milik B,
+dan fungsi search. TODO(B) pada `createFixtureTickerDirectory` menandai seed emiten
+demo dan fuzzy sementara berbasis edit distance terhadap ticker/alias manual.
+Daftar ini belum mencakup seluruh bursa. Deteksi otomatis fuzzy sementara memakai
+token tunggal; `unresolvedSurfaces` menerima nama multi-kata dari caller.
+LLM memilih hanya dari maksimal sepuluh kandidat yang valid, unik, dan sudah
+diurutkan. Pilihan di luar daftar, null, confidence rendah, atau error menjadi
+pilihan pengguna. Tidak ada panggilan live Sectors untuk memuat directory.
+
+`routeClaim(claim, { today, window?, isCached?, subSector? })` adalah fungsi murni.
+`CLAIM_ROUTE_TABLE` mengatur tujuh tipe; tools memakai nama dan params klien B,
+estimasi kredit memakai `estimateCredits` B, dan `isCached` diberikan oleh caller
+sesudah memeriksa cache/TTL. Estimasi tidak memberikan izin menjalankan mode live.
+Rencana dasar hanya menarik section valuation, dividend, atau overview yang
+dibutuhkan verifier. Panggilan hipotesis, seperti peers dan corporate-actions
+dividen, ditambahkan Context Hunter dari requiredTools, bukan ditarik semuanya.
+
+Jendela adalah hari kalender inklusif mengikuti verifier B: harga 30 hari,
+foreign flow 20 hari, broker 14 hari jika tidak disebutkan. Bawaan dicatat di
+notes; hari perdagangan tidak diasumsikan. Rentang eksplisit dapat diberikan lewat
+window atau teks ISO `awal sampai akhir`. Jendela tidak dikenal/invalid/future
+memerlukan pilihan pengguna. YTD dimulai 1 Januari, bukan hasil parseWindowPhrase
+B yang menyamakan YTD dengan 365 hari. Harga/foreign dipecah setiap 90 hari;
+broker setiap 14 hari, tanpa gap/overlap. Komposisi meliputi semua tahun rentang.
+Laba memakai lima kuartal seperti verifier B, dengan report_date jika periode
+Q1–Q4 atau tanggal ISO disebutkan; periode lain memerlukan konfirmasi.
+Safety memakai overview, suspensions, corporate-actions, dan free-float. Tanpa
+subSector, estimasi daftar free-float penuh konservatif 10 kredit dari B; dengan
+subSector yang sudah diketahui menjadi 2 kredit. Tidak mengarang filter simbol.
+Modul ini belum menggantikan pipeline dasar backend atau mengeksekusi ToolCall.

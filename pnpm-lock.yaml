@@ -60,6 +60,9 @@ importers:
 
   packages/agent:
     dependencies:
+      '@cek-dulu/sectors':
+        specifier: workspace:*
+        version: link:../sectors
       '@cek-dulu/shared':
         specifier: workspace:*
         version: link:../shared
