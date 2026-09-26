@@ -54,11 +54,13 @@ Sudah berjalan:
 - Pipeline agen lengkap, structured output, context hunter P0, grounding angka
   dan filter nasihat investasi
 - Pilihan ticker pengguna yang divalidasi terhadap kandidat server
-- 613 test otomatis; mock dan fixture tidak memanggil API live
+- Antarmuka C terintegrasi di Next.js: streaming progres, rapor seluruh klaim,
+  pilihan ticker, bookmark dan riwayat lokal; riwayat server memakai sesi Supabase
+- Test otomatis memakai mock dan fixture tanpa API live
 
-Belum tuntas: verifikasi integrasi memakai cache asli dan LLM nyata, sebagian
-hipotesis lanjutan (A), antarmuka utama dan PWA (C), ekstensi X dan set evaluasi (D).
-UI di checkout ini masih UI sambungan sementara; demo fixture diberi label jelas.
+Belum tuntas: verifikasi integrasi memakai cache asli, LLM nyata dan Supabase nyata,
+sebagian hipotesis lanjutan (A), PWA/input screenshot (C), ekstensi X dan set
+evaluasi (D). Demo fixture diberi label jelas; angka demo bukan data pasar terkini.
 
 ## Menjalankan secara lokal
 
@@ -70,9 +72,21 @@ cp .env.example apps/web/.env.local
 pnpm dev
 ```
 
+Untuk menguji alur tanpa key atau cache:
+
+```bash
+pnpm dev:demo
+```
+
+Buka http://localhost:3000, centang **Demo fixture offline**, lalu pilih contoh
+ADRO, BBCA atau BBRI. Server menjalankan pipeline sungguhan dengan mock offline;
+demo mati di produksi. Desain berasal dari `frontend/`, aplikasi terintegrasi
+berjalan dari `apps/web/`. Panduan dan batas verifikasi: [docs/integration.md](docs/integration.md).
+
 Cache jatuh ke berkas dan buku kredit ke memori bila Supabase belum dikonfigurasi.
-Cek normal memerlukan konfigurasi LLM dan cache data yang sesuai. Untuk cache
-berkas, set `SECTORS_CACHE_DIR` ke direktori cache B yang benar (sebaiknya absolut).
+Cek normal memerlukan konfigurasi LLM dan cache data yang sesuai. Cache berkas default berada
+di `.cache/sectors` pada root repo, sama untuk CLI dan web. Set `SECTORS_CACHE_DIR`
+untuk memakai direktori cache B lain (sebaiknya absolut).
 Mode web selalu `cache_only`; cache miss tidak mengambil data live.
 Pemanasan cache adalah pekerjaan B dan membutuhkan izin eksplisit serta kredit;
 perintah berikut hanya referensi, jangan dijalankan sebagai bagian test:

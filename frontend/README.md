@@ -36,3 +36,13 @@ npm run preview
 Angka ADRO mengikuti ilustrasi dokumen proyek. Angka BBCA dan TLKM sintetis untuk demonstrasi UI, bukan data pasar. Semua hasil diberi label demo. Tidak memerlukan `.env` atau API key.
 
 Font Manrope dan DM Sans dimuat dari Google Fonts; jika offline, browser memakai sans-serif bawaan. Ikon berasal dari `lucide-react` dan ilustrasi hero dibuat dengan CSS/SVG lokal.
+
+
+## Aplikasi terintegrasi
+
+Desain ini sudah dipindahkan ke Next.js di `apps/web` pada branch
+`feat/integration-core`, terhubung ke pipeline backend melalui POST/SSE.
+Jalankan `pnpm dev:demo` dari root repo untuk demo offline yang diberi label,
+atau `pnpm dev` dengan konfigurasi LLM dan cache Sectors untuk pemeriksaan normal.
+Panduan: [docs/integration.md](../docs/integration.md). Aplikasi Vite dalam
+folder ini adalah referensi desain awal dan masih memakai simulasi demo.

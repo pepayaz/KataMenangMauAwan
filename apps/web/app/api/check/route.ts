@@ -1,3 +1,4 @@
+import { webCacheDirectory } from '@/lib/web-cache';
 import { UserTickerSelectionSchema } from '@cek-dulu/agent';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
@@ -61,7 +62,7 @@ export async function POST(req: Request): Promise<Response> {
     catch { return Response.json({ error: 'Demo hanya menerima teks fixture yang tersedia.' }, { status: 400 }); }
   }
   const user = body.demo ? null : await getUser(req);
-  const bundle = createSectorsClient({ config: { mode: 'cache_only' } });
+  const bundle = createSectorsClient({ config: { mode: 'cache_only' }, fileCacheDir: webCacheDirectory() });
   const client = demoDeps?.client ?? bundle.client;
   const db = body.demo ? null : bundle.db;
   const [flags, aliases] = await Promise.all([loadFlags(db), loadAliases(db)]);
@@ -130,12 +131,13 @@ export async function POST(req: Request): Promise<Response> {
 
 /** Pemeriksaan kesehatan ringan untuk smoke test integrasi harian pukul 21:00. */
 export async function GET(): Promise<Response> {
-  const { client, db } = createSectorsClient({ config: { mode: 'cache_only' } });
+  const { client, db } = createSectorsClient({ config: { mode: 'cache_only' }, fileCacheDir: webCacheDirectory() });
   return Response.json({
     ok: true,
     mode: client.mode,
     database: db ? 'supabase' : 'tidak tersambung',
     pipeline: createPipeline().name,
     fixtureDemo: isFixtureDemoEnabled(),
+    llmConfigured: process.env.LLM_PROVIDER === 'openai' && Boolean(process.env.LLM_MODEL && process.env.LLM_API_KEY),
   });
 }

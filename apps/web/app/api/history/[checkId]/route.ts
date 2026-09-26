@@ -1,3 +1,4 @@
+import { restoreStoredCheck, storedTimestamp } from '@/lib/stored-check';
 import { getServiceClient } from '@cek-dulu/sectors';
 import { getUser } from '@/lib/auth';
 
@@ -38,11 +39,12 @@ export async function GET(
     return Response.json({ error: 'Cek tidak ditemukan.' }, { status: 404 });
   }
 
-  const { data: claims } = await db
+  const { data: claims, error: claimsError } = await db
     .from('claims')
-    .select('id, type, ticker, asserted, in_scope, claim_hash')
+    .select('id, type, ticker, asserted, in_scope, claim_hash, span')
     .eq('check_id', checkId);
 
+  if (claimsError) return Response.json({ error: 'Klaim tersimpan belum dapat dimuat.' }, { status: 503 });
   const claimIds = (claims ?? []).map((c) => c.id as string);
 
   const [evidenceRes, verdictsRes, hypothesesRes, traceRes] = await Promise.all([
@@ -71,21 +73,19 @@ export async function GET(
       .order('ts', { ascending: true }),
   ]);
 
-  return Response.json({
-    check: {
-      checkId: check.id,
-      source: check.source,
-      rawText: check.raw_text,
-      url: check.url,
-      status: check.status,
-      creditsUsed: check.credits_used,
-      createdAt: check.created_at,
-      finishedAt: check.finished_at,
-    },
-    claims: claims ?? [],
-    evidence: evidenceRes.data ?? [],
-    verdicts: verdictsRes.data ?? [],
-    hypothesisRuns: hypothesesRes.data ?? [],
-    trace: traceRes.data ?? [],
-  });
+  if (evidenceRes && 'error' in evidenceRes && evidenceRes.error
+    || verdictsRes && 'error' in verdictsRes && verdictsRes.error
+    || hypothesesRes && 'error' in hypothesesRes && hypothesesRes.error || traceRes.error) {
+    return Response.json({ error: 'Rapor tersimpan belum dapat dimuat lengkap.' }, { status: 503 });
+  }
+  try {
+    const restored = restoreStoredCheck({ check, claims: claims ?? [], evidence: evidenceRes.data ?? [],
+      verdicts: verdictsRes.data ?? [], hypotheses: hypothesesRes.data ?? [], trace: traceRes.data ?? [] });
+    return Response.json({ check: { checkId: check.id, rawText: check.raw_text, createdAt: storedTimestamp(check.created_at),
+      source: check.source, status: check.status, creditsUsed: check.credits_used, finishedAt: restored.result.finishedAt },
+      claims: claims ?? [], evidence: evidenceRes.data ?? [], verdicts: verdictsRes.data ?? [],
+      hypothesisRuns: hypothesesRes.data ?? [], result: restored.result, trace: restored.trace });
+  } catch {
+    return Response.json({ error: 'Kontrak rapor tersimpan tidak valid atau pemeriksaan belum selesai.' }, { status: 503 });
+  }
 }

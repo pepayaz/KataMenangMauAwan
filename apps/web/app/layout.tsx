@@ -1,3 +1,6 @@
+import '../styles/styles.css';
+import '../styles/theme.css';
+import '../styles/integration.css';
 import type { ReactNode } from 'react';
 
 export const metadata = {

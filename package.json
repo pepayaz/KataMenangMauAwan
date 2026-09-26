@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "pull:demo": "tsx scripts/pull-demo-data.ts",
     "seed:aliases": "tsx scripts/seed-aliases.ts",
-    "report:credits": "tsx scripts/credit-report.ts"
+    "report:credits": "tsx scripts/credit-report.ts",
+    "dev:demo": "tsx scripts/dev-demo.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

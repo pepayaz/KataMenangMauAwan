@@ -1,0 +1,15 @@
+.integration-error { padding: 16px; border: 1px solid #fb7185; border-radius: 12px; color: #fda4af; margin: 18px 0; }
+.integration-controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin: 18px 0; }
+.integration-controls input[type=checkbox] { width: auto; }
+.ticker-choice { padding: 18px; border: 1px solid var(--line); border-radius: 12px; }
+.ticker-choice label { display: block; margin: 12px 0; }
+.ticker-choice select { background: var(--surface); color: var(--ink); padding: 8px; }
+.trace-panel { margin: 20px 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; }
+.trace-panel li { margin: 10px 0; }
+.trace-panel pre, .source-record pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.report-card { margin: 16px 0; }
+.report-evidence .metric { display: flex; justify-content: space-between; gap: 16px; }
+.source-record { margin: 18px 0; }
+.source-record strong { overflow-wrap: anywhere; }
+footer p { max-width: 750px; line-height: 1.6; }
+.remote-history { margin: 20px 0; }

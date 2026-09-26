@@ -26,9 +26,11 @@ Jumlahkan kredit tahap; event done memiliki kredit nol dan total pada data.
   menampilkan `needs_user_choice` dan kandidat; UI sementara sekarang menyediakan
   pilihan surface-ticker, diteruskan melalui `userSelections`. Kandidat dihitung
   ulang di normalizer server; kiriman UI tidak dapat menambah ticker sendiri.
-- Tidak ada implementasi UI C pada branch yang tersedia setelah git fetch.
-  Placeholder diganti form/rapor minimal untuk menguji sambungan; komponen ini
-  merupakan UI sementara, bukan verifikasi terhadap UI C yang belum tersedia.
+- Branch frontend kini tersedia dan digabung ke feat/integration-core. Desain C
+  dipindahkan dari aplikasi Vite mandiri ke apps/web/components. Simulasi timer dan
+  rapor buatan UI diganti POST/SSE serta CheckResult tervalidasi dari backend;
+  seluruh klaim ditampilkan, bukan hanya klaim pertama. Folder frontend tetap
+  tersedia sebagai sumber desain; panduan akhir ada di integration.md.
 - Ekspor utama shared membawa node:crypto (claim-hash) ke bundle browser:
   ekspor `shared/schemas` ditambahkan agar validator UI hanya mengimpor kontrak.
 - URL asset markdown Next tidak cocok untuk fs.readFile: adapter memuat prompt
@@ -39,7 +41,7 @@ Jumlahkan kredit tahap; event done memiliki kredit nol dan total pada data.
 
 ## Demo UI tanpa jaringan
 
-PowerShell: `$env:CHECK_FIXTURE_DEMO="1"; $env:SECTORS_MODE="cache_only"; pnpm dev`.
+Jalankan `pnpm dev:demo` (mengaktifkan CHECK_FIXTURE_DEMO=1 dan cache_only).
 Buka localhost:3000, teks `ADRO yield 25,5% setahun`, centang demo fixture, kirim.
 Mode ini ditandai di UI, hanya menerima tiga teks fixture shared, memakai mock LLM,
 verifier dan gateway hunter dari demo CLI, menjalankan runCheck sungguhan, memakai
@@ -79,3 +81,18 @@ serta kontrol pilihan pada UI sementara. Skema shared tidak berubah. Filter kata
 umum pada fuzzy mencegah bakal menjadi kandidat alias bara; alias eksplisit tetap
 diprioritaskan. Test server memeriksa putaran pertanyaan -> pilihan -> result.
 Test total terbaru: 613 lulus; typecheck lulus.
+
+## Integrasi desain C dan riwayat B
+
+Route GET /api/history/[checkId] sebelumnya mengirim baris SQL snake_case yang
+tidak cocok dengan CheckResult. Adapter stored-check memulihkan span int4range,
+entities dari trace, evidence, hipotesis dan verdict menjadi skema shared; route
+menambah field result, mempertahankan payload lama, dan memberi checkId pada trace.
+Error query/kontrak tidak ditampilkan sebagai rapor kosong. Autentikasi dan
+pembatasan kepemilikan B tetap dipakai. Header sesi Supabase diteruskan pada cek
+normal dan permintaan riwayat. Login baru belum menjadi bagian integrasi P0.
+
+Riwayat anonim menyimpan hasil lengkap di perangkat, maksimal 50, divalidasi saat
+dibaca kembali. Mode normal tetap memerlukan LLM dan cache; tidak otomatis
+beralih ke fixture. GET /api/check memberi indikator konfigurasi LLM tanpa key.
+Cache web sekarang memakai direktori root yang sama dengan CLI.

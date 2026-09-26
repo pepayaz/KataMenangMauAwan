@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 export default defineConfig({
+  esbuild: { jsx: 'automatic' },
   resolve: {
     alias: [
       // Bentuk larik dipakai, bukan objek, supaya prefiks `@/` di apps/web
