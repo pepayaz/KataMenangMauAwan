@@ -26,3 +26,24 @@ Penulisan pertama menerima `undefined`; penulisan kedua menerima
 `{ previousText, unmatched }`. Sesudah dua kegagalan, template dipanggil dengan
 evidence. Template juga divalidasi; hasil template yang gagal menimbulkan
 `GroundingError`, sehingga angka karangan tidak dikembalikan ke UI.
+
+## Adjudicator
+
+`adjudicate(claim, verifier, hypotheses)` adalah fungsi murni yang menghasilkan
+`Omit<ClaimVerdict, 'explanation'>`. `VERDICT_DECISION_TABLE` memuat aturan dan
+prioritas sebagai data. `verifier.matches` adalah hasil perbandingan deterministik
+terhadap toleransi; teks `tolerance` tidak ditafsirkan ulang.
+
+Input kompatibel dengan `VerifierOutput`, ditambah dukungan null di batas input
+mentah tanpa melonggarkan skema publik Evidence. Null, string kosong, NaN, dan
+Infinity tidak dihitung sebagai data. Minimal satu evidence numerik milik klaim
+harus tersedia. Jika computed diberikan, anchor-nya wajib merujuk evidence numerik
+yang valid; computed null atau tidak valid menghasilkan unverifiable. Null pada
+evidence lain tidak membatalkan anchor numerik yang valid. Nol adalah data valid.
+
+Konteks harus terpicu, strong, milik klaim yang sama, dan semua ID evidence-nya
+harus tersedia serta tidak kosong. Hanya konteks tersebut yang masuk missingContext.
+Refuted lebih dahulu daripada misleading. Safety dengan angka cocok tanpa konteks
+strong menjadi unverifiable; dengan konteks strong menjadi misleading. Prediksi
+lebih dahulu daripada aturan data kosong dan tidak membawa computed/evidence.
+Penjelasan ditambahkan terpisah sesudah status ditentukan dan harus lolos grounding.
