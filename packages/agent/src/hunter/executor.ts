@@ -26,7 +26,9 @@ export type HunterOutput = { selection: HypothesisSelection[]; results: Hypothes
   evidence: Evidence[]; creditsUsed: number;
   skipped: Array<{ hypId: string; reason: 'budget' | 'missing_data' | 'tool_error' }>;
   pendingTools: Array<{ call: ToolCall; estimatedCredits: number }>;
-  stoppedBecause: 'strong' | 'complete' | 'out_of_scope' };
+  stoppedBecause: 'strong' | 'complete' | 'out_of_scope';
+  /** 'fallback' bila LLM gagal memilih dan urutan bawaan registry dipakai. */
+  selectionSource?: 'llm' | 'fallback' };
 
 function validateSelection(selection: readonly HypothesisSelection[], claim: Claim, registry: HypothesisRegistry): void {
   const ids = new Set<string>();
@@ -127,6 +129,23 @@ export async function executeHypotheses(input: Claim, initialEvidence: readonly 
 export async function huntContext(claim: Claim, evidence: readonly Evidence[], options: {
   registry: HypothesisRegistry; llm: Pick<LlmAdapter, 'generate'>; gateway: HunterToolGateway;
 }): Promise<HunterOutput> {
-  const selection = await selectHypotheses(claim, evidence, options.registry, options.llm);
-  return executeHypotheses(claim, evidence, selection, options.registry, options.gateway);
+  let selection: HypothesisSelection[];
+  let selectionSource: 'llm' | 'fallback' = 'llm';
+  try {
+    selection = await selectHypotheses(claim, evidence, options.registry, options.llm);
+  } catch {
+    // LLM hanya mengurutkan; uji hipotesis tetap deterministik. Bila provider gagal
+    // atau pilihannya tidak valid, pakai urutan bawaan registry dalam batas yang sama
+    // alih-alih menggugurkan seluruh pemeriksaan konteks.
+    selection = defaultSelection(claim, options.registry);
+    selectionSource = 'fallback';
+  }
+  return { ...await executeHypotheses(claim, evidence, selection, options.registry, options.gateway), selectionSource };
+}
+
+/** Urutan bawaan registry, maksimal MAX_HYPOTHESES_PER_CLAIM, tanpa LLM. */
+export function defaultSelection(claim: Claim, registry: HypothesisRegistry): HypothesisSelection[] {
+  if (!claim.inScope) return [];
+  return [...registry.values()].filter((h) => h.claimType === claim.type).slice(0, MAX_HYPOTHESES_PER_CLAIM)
+    .map((h) => ({ id: h.id, reason: 'Urutan bawaan karena pemilihan otomatis tidak tersedia.' }));
 }

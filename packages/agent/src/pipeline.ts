@@ -165,7 +165,7 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
           hypotheses = hunted.results;
           if (verified.matches === true && hunted.skipped.length && !hypotheses.some((h) => h.triggered && h.strength === 'strong')) verified.matches = null;
           await trace('hunt', 'Pemeriksaan konteks selesai.', { claimId: claim.claimId, results: hypotheses,
-            skipped: hunted.skipped, pendingTools: hunted.pendingTools }, hunterCredits);
+            skipped: hunted.skipped, pendingTools: hunted.pendingTools, selectionSource: hunted.selectionSource }, hunterCredits);
           reportedCredits = credits;
         } catch {
           if (verified.matches === true) verified.matches = null;
