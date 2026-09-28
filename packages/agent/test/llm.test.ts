@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { LlmAdapter, LlmError, MockLlmProvider } from '../src/llm.js';
+import { LlmAdapter, LlmError, MockLlmProvider, isLlmConfigured } from '../src/llm.js';
 
 const env = { LLM_PROVIDER: 'mock', LLM_MODEL: 'model-pengujian' };
 const schema = z.object({ value: z.number() }).strict();
@@ -135,5 +135,91 @@ describe('structured output dengan input gambar', () => {
     const call = network.mock.calls[0] as unknown as [RequestInfo, RequestInit];
     expect(JSON.parse(String(call[1].body)).input[1].content).toEqual([
       { type:'input_text', text:request.input }, { type:'input_image', image_url:'data:image/png;base64,aA==', detail:'high' }]);
+  });
+});
+
+describe('provider gemini', () => {
+  const geminiEnv = { LLM_PROVIDER: 'gemini', LLM_MODEL: 'gemini-uji', LLM_API_KEY: 'dummy-unit-test' };
+  const reply = (body: unknown, status = 200) => vi.fn(async () => new Response(JSON.stringify(body), { status }));
+  const ok = (text: string, finishReason = 'STOP') => ({ candidates: [{ finishReason, content: { parts: [{ text }] } }] });
+
+  it('mengirim schema JSON, prompt sistem, dan key lewat header', async () => {
+    const fetchImpl = reply(ok('{"value":3}'));
+    expect(await new LlmAdapter({ env: geminiEnv, fetchImpl }).generate(request)).toEqual({ value: 3 });
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-uji:generateContent');
+    expect(url).not.toContain('dummy-unit-test');
+    expect((init.headers as Record<string, string>)['x-goog-api-key']).toBe('dummy-unit-test');
+    const body = JSON.parse(String(init.body));
+    expect(body.systemInstruction.parts[0].text).toBe(request.prompt);
+    expect(body.contents[0].parts).toEqual([{ text: request.input }]);
+    expect(body.generationConfig).toMatchObject({ responseMimeType: 'application/json',
+      responseJsonSchema: { type: 'object', required: ['value'], additionalProperties: false } });
+  });
+
+  it('gambar dikirim sebagai inlineData dan feedback retry ikut terkirim', async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(ok('bukan json'))))
+      .mockResolvedValueOnce(new Response(JSON.stringify(ok('{"value":3}'))));
+    const imageDataUrl = 'data:image/png;base64,iVBORw0KGgo=';
+    expect(await new LlmAdapter({ env: geminiEnv, fetchImpl }).generate({ ...request, imageDataUrl })).toEqual({ value: 3 });
+    const second = JSON.parse(String((fetchImpl.mock.calls[1] as [string, RequestInit])[1].body));
+    expect(second.contents[0].parts[1]).toEqual({ inlineData: { mimeType: 'image/png', data: 'iVBORw0KGgo=' } });
+    expect(second.contents[0].parts[2].text).toContain('invalid_json');
+  });
+
+  it('bagian thought diabaikan', async () => {
+    const fetchImpl = reply({ candidates: [{ finishReason: 'STOP', content: { parts: [
+      { text: 'menimbang...', thought: true }, { text: '{"value":3}' }] } }] });
+    expect(await new LlmAdapter({ env: geminiEnv, fetchImpl }).generate(request)).toEqual({ value: 3 });
+  });
+
+  it.each([
+    [{ promptFeedback: { blockReason: 'SAFETY' } }, 'REFUSED'],
+    [ok('', 'SAFETY'), 'REFUSED'],
+    [ok('{"val', 'MAX_TOKENS'), 'INCOMPLETE'],
+    [{ candidates: [] }, 'INCOMPLETE'],
+  ])('respons %# dipetakan ke error terkontrol', async (body, code) => {
+    await expect(new LlmAdapter({ env: geminiEnv, fetchImpl: reply(body) }).generate(request)).rejects.toMatchObject({ code });
+  });
+
+  it('HTTP 503 sementara dicoba ulang lalu berhasil', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl = vi.fn()
+        .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(ok('{"value":3}'))));
+      const pending = new LlmAdapter({ env: geminiEnv, fetchImpl }).generate(request);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(await pending).toEqual({ value: 3 });
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('HTTP gagal menjadi PROVIDER tanpa membocorkan isi respons', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl = reply({ error: { message: 'pesan privat provider' } }, 429);
+      const pending = new LlmAdapter({ env: geminiEnv, fetchImpl }).generate(request).catch((e: unknown) => e);
+      await vi.advanceTimersByTimeAsync(20000);
+      const error = await pending;
+      expect(error).toMatchObject({ code: 'PROVIDER' });
+      expect(String((error as Error).message)).not.toContain('privat');
+      expect(fetchImpl).toHaveBeenCalledTimes(5);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('HTTP 400 tidak dicoba ulang', async () => {
+    const fetchImpl = reply({ error: { message: 'schema salah' } }, 400);
+    await expect(new LlmAdapter({ env: geminiEnv, fetchImpl }).generate(request)).rejects.toMatchObject({ code: 'PROVIDER' });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('gemini tanpa key ditolak sebagai CONFIG dan isLlmConfigured mengenali provider live', () => {
+    expect(() => new LlmAdapter({ env: { LLM_PROVIDER: 'gemini', LLM_MODEL: 'x' } })).toThrow(LlmError);
+    expect(isLlmConfigured(geminiEnv)).toBe(true);
+    expect(isLlmConfigured({ ...geminiEnv, LLM_PROVIDER: 'openai' })).toBe(true);
+    expect(isLlmConfigured({ ...geminiEnv, LLM_PROVIDER: 'mock' })).toBe(false);
+    expect(isLlmConfigured({ LLM_PROVIDER: 'gemini', LLM_MODEL: 'x' })).toBe(false);
   });
 });

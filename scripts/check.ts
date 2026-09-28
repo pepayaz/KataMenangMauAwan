@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
-import { SectorsClient, FileCacheStore, MemoryLedgerStore } from '@cek-dulu/sectors';
+import { createSectorsClient } from '@cek-dulu/sectors';
 import { LlmAdapter, runCheck } from '@cek-dulu/agent';
 import type { TraceEvent } from '@cek-dulu/shared';
 import { fixtureCheckDeps } from './check-fixture.js';
@@ -13,8 +13,8 @@ export async function checkMain(args: readonly string[]): Promise<number> {
   if (!text) { process.stderr.write('Pemakaian: pnpm check "<teks>"; demo: pnpm check --fixture "<teks fixture>"\n'); return 1; }
   try {
     const demo = isFixture ? fixtureCheckDeps(text) : undefined;
-    const deps = demo?.deps ?? { client: new SectorsClient({ config: { mode: 'cache_only', apiKey: '' },
-      cache: new FileCacheStore(process.env.SECTORS_CACHE_DIR ?? './.cache/sectors'), ledger: new MemoryLedgerStore() }), llm: new LlmAdapter() };
+    // Cache yang sama dengan web: Supabase bila dikonfigurasi, selain itu berkas. Selalu cache_only.
+    const deps = demo?.deps ?? { client: createSectorsClient({ config: { mode: 'cache_only', apiKey: '' } }).client, llm: new LlmAdapter() };
     const traces: TraceEvent[] = [];
     const result = await runCheck({ checkId: randomUUID(), source: 'paste', rawText: text, createdAt: new Date().toISOString() }, deps,
       (event) => { traces.push(event); });
@@ -35,8 +35,9 @@ export async function checkMain(args: readonly string[]): Promise<number> {
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   // Node 20.11 mendukung --env-file; argumen array menghindari interpretasi shell.
-  if (existsSync('.env.local') && process.env.CEK_DULU_ENV_LOADED !== '1') {
-    const child = spawnSync(process.execPath, ['--env-file=.env.local', '--import', 'tsx', process.argv[1], ...process.argv.slice(2)],
+  const envFile = ['.env.local', '.env'].find((file) => existsSync(file));
+  if (envFile && process.env.CEK_DULU_ENV_LOADED !== '1') {
+    const child = spawnSync(process.execPath, [`--env-file=${envFile}`, '--import', 'tsx', process.argv[1], ...process.argv.slice(2)],
       { stdio: 'inherit', env: { ...process.env, CEK_DULU_ENV_LOADED: '1' }, windowsHide: true });
     process.exitCode = child.status ?? 1;
   } else checkMain(process.argv.slice(2)).then((code) => { process.exitCode = code; });

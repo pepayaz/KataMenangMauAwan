@@ -7,7 +7,7 @@ export class SupabaseLedgerStore implements LedgerStore {
   constructor(private readonly db: SupabaseClient) {}
 
   async record(entry: LedgerEntry): Promise<void> {
-    const { error } = await this.db.from('credit_ledger').insert({
+    const row = {
       endpoint: entry.endpoint,
       params: entry.params,
       credits: entry.credits,
@@ -15,7 +15,17 @@ export class SupabaseLedgerStore implements LedgerStore {
       check_id: entry.checkId,
       member: entry.member,
       ts: entry.ts,
-    });
+    };
+    let { error } = await this.db.from('credit_ledger').insert(row);
+    // 23503: cek belum punya baris `checks` (CLI, skrip eval). Kredit tetap wajib
+    // tercatat, jadi tulis tanpa FK dan simpan id cek di params.
+    if (error?.code === '23503' && entry.checkId) {
+      ({ error } = await this.db.from('credit_ledger').insert({
+        ...row,
+        check_id: null,
+        params: { ...entry.params, unlinked_check_id: entry.checkId },
+      }));
+    }
     if (error) console.warn('[sectors] gagal menulis credit_ledger:', error.message);
   }
 

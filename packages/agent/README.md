@@ -51,8 +51,10 @@ Penjelasan ditambahkan terpisah sesudah status ditentukan dan harus lolos ground
 ## LLM dan extractor
 
 `LlmAdapter` memakai `LLM_PROVIDER`, `LLM_MODEL`, dan `LLM_API_KEY` dari env.
-Tidak ada model/key live bawaan. Provider tersedia: `openai` melalui Responses API
-dan `mock` tanpa jaringan; provider lain dapat mengimplementasikan `LlmProvider`
+Tidak ada model/key live bawaan. Provider tersedia: `openai` melalui Responses API,
+`gemini` melalui `generateContent` dengan `responseJsonSchema` (fetch langsung, key
+di header `x-goog-api-key`, retry singkat untuk 429/500/503), dan `mock` tanpa
+jaringan; provider lain dapat mengimplementasikan `LlmProvider`
 dan disuntikkan dengan nama yang sesuai env. SDK OpenAI menghasilkan JSON schema
 dari Zod melalui `zodTextFormat`. Keluaran tetap divalidasi Zod di adapter.
 Lihat [Structured Outputs resmi](https://developers.openai.com/api/docs/guides/structured-outputs).

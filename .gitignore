@@ -20,3 +20,4 @@ recordings/*.jsonl
 
 # Rencana internal tim; repositori ini publik minimal 90 hari (bab 13)
 Rencana-Pengembangan-Cek-Dulu.pdf
+*.tsbuildinfo

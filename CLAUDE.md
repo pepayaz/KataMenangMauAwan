@@ -46,11 +46,11 @@ sebelum menyentuh paketnya.
 ## Perintah
 
 ```bash
-npm install
-npm run dev          # Next.js di http://localhost:3000
-npm test             # seluruh uji, nol panggilan API
-npm run typecheck
-npm run build
+pnpm install        # npm tidak bisa: paket memakai workspace:*
+pnpm dev             # Next.js di http://localhost:3000
+pnpm test            # seluruh uji, nol panggilan API
+pnpm typecheck
+pnpm build
 
 npx tsx scripts/pull-demo-data.ts       # estimasi kredit; --yes untuk menarik
 npx tsx scripts/seed-aliases.ts --fetch # isi kamus ticker

@@ -20,6 +20,7 @@ function makeClient(opts: {
   budgetPerCheck?: number;
   cache?: MemoryCacheStore;
   ledger?: MemoryLedgerStore;
+  today?: string;
 }) {
   const cache = opts.cache ?? new MemoryCacheStore();
   const ledger = opts.ledger ?? new MemoryLedgerStore();
@@ -30,6 +31,7 @@ function makeClient(opts: {
     // Perekam dimatikan: tanpa ini klien mode live akan menulis berkas rekaman
     // ke direktori kerja setiap kali uji dijalankan.
     recorder: new Recorder('', 'off'),
+    ...(opts.today ? { today: () => opts.today! } : {}),
     config: {
       mode: opts.mode ?? 'live',
       apiKey: 'kunci-uji',
@@ -277,5 +279,82 @@ describe('SectorsClient — galat', () => {
     const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch });
     await client.fetchListingPerformance('ADRO');
     expect(fetchImpl).toHaveBeenCalled();
+  });
+});
+
+describe('SectorsClient — cache company-report per section', () => {
+  it('kombinasi section lain memakai ulang section yang sudah ditarik', async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      const sections = new URL(String(url)).searchParams.get('sections')!.split(',');
+      return jsonResponse({ symbol: 'ADRO.JK', company_name: 'Alamtri',
+        ...Object.fromEntries(sections.map((s) => [s, { asal: s }])) });
+    });
+    const { client, cache } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch });
+
+    await client.fetchCompanyReport('ADRO', ['overview', 'valuation', 'dividend']);
+    const only = await client.fetchCompanyReport('ADRO', ['dividend']);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(only).toMatchObject({ credits: 0, cached: true, params: { symbol: 'ADRO', sections: ['dividend'] } });
+    expect(only.data).toEqual({ symbol: 'ADRO.JK', company_name: 'Alamtri', dividend: { asal: 'dividend' } });
+    expect(await cache.get(cacheKey('fetchCompanyReport', { symbol: 'ADRO', sections: ['valuation'] }))).toBeTruthy();
+
+    // Hanya section yang belum ada yang ditarik dan ditagih.
+    const mixed = await client.fetchCompanyReport('ADRO', ['valuation', 'peers']);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(new URL(String(fetchImpl.mock.calls[1]![0])).searchParams.get('sections')).toBe('peers');
+    expect(mixed.credits).toBe(1);
+    expect(mixed.cached).toBe(false);
+    expect(Object.keys(mixed.data).sort()).toEqual(['company_name', 'peers', 'symbol', 'valuation']);
+  });
+
+  it('cache_only membaca section terpisah dan melempar CACHE_MISS bila satu kurang', async () => {
+    const cache = new MemoryCacheStore();
+    cache.seed({ key: cacheKey('fetchCompanyReport', { symbol: 'ADRO', sections: ['dividend'] }), endpoint: 'fetchCompanyReport',
+      params: { symbol: 'ADRO', sections: ['dividend'] }, response: { symbol: 'ADRO.JK', company_name: 'A', dividend: { yield_ttm: 0.05 } },
+      fetchedAt: new Date().toISOString(), ttlSeconds: TTL.profile });
+    const { client } = makeClient({ mode: 'cache_only', cache });
+    expect((await client.fetchCompanyReport('ADRO', ['dividend'])).data.dividend).toEqual({ yield_ttm: 0.05 });
+    await expect(client.fetchCompanyReport('ADRO', ['dividend', 'valuation'])).rejects.toMatchObject({ code: 'CACHE_MISS' });
+  });
+});
+
+describe('SectorsClient — jendela kanonik 90 hari', () => {
+  const rows = (start: string, n: number) => Array.from({ length: n }, (_, i) => {
+    const d = new Date(`${start}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + i);
+    return { symbol: 'ADRO.JK', date: d.toISOString().slice(0, 10), close: 100 + i, volume: 1 };
+  });
+
+  it('jendela pendek di dalam 90 hari terakhir memakai satu entri cache yang sama', async () => {
+    const fetchImpl = vi.fn(async (url: string | URL | Request) => {
+      const u = new URL(String(url));
+      expect([u.searchParams.get('start'), u.searchParams.get('end')]).toEqual(['2026-07-01', '2026-09-28']);
+      return jsonResponse(rows('2026-07-01', 90));
+    });
+    const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch, today: '2026-09-28' });
+
+    const month = await client.fetchDailyPrice('ADRO', { start: '2026-08-30', end: '2026-09-28' });
+    const week = await client.fetchDailyPrice('ADRO', { start: '2026-09-22', end: '2026-09-28' });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(month.data).toHaveLength(30);
+    expect(month.params).toEqual({ symbol: 'ADRO', start: '2026-08-30', end: '2026-09-28' });
+    expect(week.data.map((r) => r.date)).toEqual(rows('2026-09-22', 7).map((r) => r.date));
+    expect(week).toMatchObject({ credits: 0, cached: true });
+  });
+
+  it('jendela historis di luar 90 hari tetap memakai jendela persis', async () => {
+    const fetchImpl = vi.fn(async (_url: string | URL | Request) => jsonResponse([]));
+    const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch, today: '2026-09-28' });
+    await client.fetchDailyPrice('ADRO', { start: '2026-01-01', end: '2026-01-31' });
+    const u = new URL(String(fetchImpl.mock.calls[0]![0]));
+    expect([u.searchParams.get('start'), u.searchParams.get('end')]).toEqual(['2026-01-01', '2026-01-31']);
+  });
+
+  it('arus asing disaring ke jendela yang diminta', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ symbol: 'BBRI.JK', start: '2026-07-01', end: '2026-09-28',
+      data: rows('2026-07-01', 90).map((r) => ({ date: r.date, net_foreign_inflow: 1, foreign_buy_idr: 1, foreign_sell_idr: 0, foreign_share: 0 })) }));
+    const { client } = makeClient({ fetchImpl: fetchImpl as unknown as typeof fetch, today: '2026-09-28' });
+    const flow = await client.fetchForeignFlow('BBRI', { start: '2026-09-09', end: '2026-09-28' });
+    expect(flow.data).toMatchObject({ start: '2026-09-09', end: '2026-09-28' });
+    expect(flow.data.data).toHaveLength(20);
   });
 });

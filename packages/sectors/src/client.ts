@@ -15,7 +15,7 @@ import { MemoryLedgerStore } from './ledger/memory.js';
 import type { LedgerStore } from './ledger/types.js';
 import { Recorder } from './recorder.js';
 import type * as T from './types.js';
-import { splitWindow, type DateWindow } from './windows.js';
+import { splitWindow, toISODate, windowEndingToday, type DateWindow } from './windows.js';
 
 export type CallOptions = {
   /** Diikutkan ke buku kredit dan dipakai menegakkan anggaran per cek. */
@@ -41,6 +41,8 @@ export type SectorsClientDeps = {
   /** Disuntik di uji unit; bawaannya `globalThis.fetch`. */
   fetchImpl?: typeof fetch;
   recorder?: Recorder;
+  /** Tanggal hari ini (YYYY-MM-DD) untuk jendela kanonik; disuntik di uji. */
+  today?: () => string;
 };
 
 /**
@@ -55,6 +57,7 @@ export class SectorsClient {
   private readonly cache: CacheStore;
   private readonly ledger: LedgerStore;
   private readonly fetchImpl: typeof fetch;
+  private readonly today: () => string;
   private readonly recorder: Recorder;
 
   constructor(deps: SectorsClientDeps = {}) {
@@ -63,6 +66,7 @@ export class SectorsClient {
     this.ledger = deps.ledger ?? new MemoryLedgerStore();
     this.budget = new CreditBudget(this.ledger, this.config.budgetPerCheck);
     this.fetchImpl = deps.fetchImpl ?? globalThis.fetch.bind(globalThis);
+    this.today = deps.today ?? (() => toISODate(new Date()));
     this.recorder =
       deps.recorder ??
       new Recorder(
@@ -266,6 +270,25 @@ export class SectorsClient {
       : new SectorsError('NETWORK', `Gagal memanggil ${endpoint}.`, { endpoint });
   }
 
+  /**
+   * Jendela yang seluruhnya berada di dalam N hari terakhir (N = batas endpoint)
+   * dipetakan ke satu jendela kanonik "N hari sampai hari ini". Biayanya tetap
+   * satu panggilan, tetapi kunci cache jadi sama untuk klaim "5 hari", "sebulan",
+   * hipotesis hunter, dan pemanasan cache. Hasil disaring kembali ke jendela diminta.
+   */
+  private async canonicalWindow(
+    endpoint: 'fetchDailyPrice' | 'fetchForeignFlow', symbol: string, window: DateWindow, opts: CallOptions,
+  ): Promise<DateWindow | null> {
+    const canon = windowEndingToday(ENDPOINTS[endpoint].maxWindowDays ?? 90, this.today());
+    if (window.start > window.end || window.start < canon.start || window.end > canon.end) return null;
+    // Entri jendela persis yang masih segar (cache lama/fixture) tetap diutamakan.
+    if (opts.forceRefresh !== true) {
+      const exact = await this.cache.get(cacheKey(endpoint, { symbol, start: window.start, end: window.end }));
+      if (exact && isFresh(exact)) return null;
+    }
+    return canon;
+  }
+
   // ------------------------------------------------------------- endpoint
 
   /** Bab 6.3: minta hanya section yang dibutuhkan; setiap section 1 kredit. */
@@ -274,12 +297,61 @@ export class SectorsClient {
     sections: ReportSection[] = [...REPORT_SECTIONS],
     opts: CallOptions = {},
   ): Promise<ToolResult<T.CompanyReport>> {
-    return this.call<T.CompanyReport>(
-      'fetchCompanyReport',
-      { symbol: normalizeTicker(symbol) },
-      { sections: [...sections].sort() },
-      opts,
-    );
+    const sym = normalizeTicker(symbol);
+    const wanted = [...new Set(sections)].sort();
+    const sectionKey = (s: ReportSection) => cacheKey('fetchCompanyReport', { symbol: sym, sections: [s] });
+
+    // Cache disimpan per section supaya kombinasi apa pun (router, hunter,
+    // pemanasan) memakai ulang data yang sama; tagihan Sectors memang per section.
+    const hits = new Map<ReportSection, { response: T.CompanyReport; fetchedAt: string }>();
+    if (opts.forceRefresh !== true) {
+      for (const s of wanted) {
+        const hit = await this.cache.get(sectionKey(s));
+        if (hit && isFresh(hit)) hits.set(s, { response: hit.response as T.CompanyReport, fetchedAt: hit.fetchedAt });
+      }
+    }
+    const missing = wanted.filter((s) => !hits.has(s));
+    const params = { symbol: sym, sections: wanted };
+
+    let fetched: ToolResult<T.CompanyReport> | null = null;
+    if (missing.length > 0) {
+      // Satu panggilan untuk semua section yang kurang: anggaran tetap ditolak
+      // utuh sebelum jaringan dipakai, dan cache_only tetap melempar CACHE_MISS.
+      fetched = await this.call<T.CompanyReport>('fetchCompanyReport', { symbol: sym }, { sections: missing }, opts);
+      for (const s of missing) {
+        const part = fetched.data?.[s as keyof T.CompanyReport];
+        if (part === undefined) continue;
+        await this.cache.set({
+          key: sectionKey(s),
+          endpoint: 'fetchCompanyReport',
+          params: { symbol: sym, sections: [s] },
+          response: { symbol: fetched.data.symbol, company_name: fetched.data.company_name, [s]: part },
+          fetchedAt: fetched.fetchedAt,
+          ttlSeconds: ENDPOINTS.fetchCompanyReport.ttlSeconds,
+        });
+      }
+    } else {
+      await this.ledger.record({ endpoint: 'fetchCompanyReport', params, credits: 0, cached: true,
+        checkId: opts.checkId ?? null, member: this.config.member, ts: new Date().toISOString() });
+    }
+
+    const base = fetched?.data ?? [...hits.values()][0]!.response;
+    const data: T.CompanyReport = { symbol: base.symbol, company_name: base.company_name };
+    for (const s of wanted) {
+      const source = hits.get(s)?.response ?? fetched?.data;
+      const part = source?.[s as keyof T.CompanyReport];
+      if (part !== undefined) (data as Record<string, unknown>)[s] = part;
+    }
+    const stamps = [...hits.values()].map((h) => h.fetchedAt).concat(fetched ? [fetched.fetchedAt] : []).sort();
+    return {
+      data,
+      endpoint: 'fetchCompanyReport',
+      params,
+      credits: fetched?.credits ?? 0,
+      cached: fetched ? fetched.cached : true,
+      // Data tertua menentukan kesegaran gabungan.
+      fetchedAt: stamps[0] ?? new Date().toISOString(),
+    };
   }
 
   async fetchQuarterlyFinancials(
@@ -314,6 +386,11 @@ export class SectorsClient {
     opts: CallOptions = {},
   ): Promise<ToolResult<T.DailyDataItem[]>> {
     const sym = normalizeTicker(symbol);
+    const canon = await this.canonicalWindow('fetchDailyPrice', sym, window, opts);
+    if (canon) {
+      const res = await this.call<T.DailyDataItem[]>('fetchDailyPrice', { symbol: sym }, { ...canon }, opts);
+      return { ...res, params: { symbol: sym, ...window }, data: dedupeByDate(inWindow(res.data ?? [], window)) };
+    }
     const chunks = splitWindow(window, ENDPOINTS.fetchDailyPrice.maxWindowDays ?? 90);
     const results: Array<ToolResult<T.DailyDataItem[]>> = [];
     for (const chunk of chunks) {
@@ -337,6 +414,12 @@ export class SectorsClient {
     opts: CallOptions = {},
   ): Promise<ToolResult<T.ForeignFlowResponse>> {
     const sym = normalizeTicker(symbol);
+    const canon = await this.canonicalWindow('fetchForeignFlow', sym, window, opts);
+    if (canon) {
+      const res = await this.call<T.ForeignFlowResponse>('fetchForeignFlow', { symbol: sym }, { ...canon }, opts);
+      return { ...res, params: { symbol: sym, ...window }, data: { symbol: res.data?.symbol ?? sym,
+        start: window.start, end: window.end, data: dedupeByDate(inWindow(res.data?.data ?? [], window)) } };
+    }
     const chunks = splitWindow(window, ENDPOINTS.fetchForeignFlow.maxWindowDays ?? 90);
     const results: Array<ToolResult<T.ForeignFlowResponse>> = [];
     for (const chunk of chunks) {
@@ -541,6 +624,10 @@ function mergeResults<A, B>(
         .sort()
         .at(-1) ?? new Date().toISOString(),
   };
+}
+
+function inWindow<R extends { date: string }>(rows: R[], w: DateWindow): R[] {
+  return rows.filter((row) => row.date >= w.start && row.date <= w.end);
 }
 
 function dedupeByDate<R extends { date: string }>(rows: R[]): R[] {

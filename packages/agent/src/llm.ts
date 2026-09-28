@@ -67,6 +67,73 @@ class OpenAiProvider implements LlmProvider {
   }
 }
 
+const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+const GEMINI_TRANSIENT_STATUS = new Set([429, 500, 503]);
+const sleep = (ms: number, signal?: AbortSignal): Promise<void> => new Promise((resolve, reject) => {
+  if (signal?.aborted) { reject(signal.reason); return; }
+  const timer = setTimeout(() => { signal?.removeEventListener('abort', onAbort); resolve(); }, ms);
+  const onAbort = (): void => { clearTimeout(timer); reject(signal?.reason); };
+  signal?.addEventListener('abort', onAbort, { once: true });
+});
+const GEMINI_REFUSAL_REASONS =new Set(['SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'IMAGE_SAFETY']);
+
+type GeminiResponse = {
+  promptFeedback?: { blockReason?: string };
+  candidates?: { finishReason?: string; content?: { parts?: { text?: string; thought?: boolean }[] } }[];
+};
+
+/** Gemini generateContent dengan responseJsonSchema; tanpa SDK, hanya fetch. */
+class GeminiProvider implements LlmProvider {
+  readonly name = 'gemini';
+  constructor(private readonly apiKey: string, private readonly fetchImpl: typeof fetch = fetch,
+    private readonly retryDelaysMs: readonly number[] = [1000, 3000, 6000, 10000]) {}
+  async complete(request: LlmRequest): Promise<unknown> {
+    const parts: Record<string, unknown>[] = [{ text: request.input }];
+    if (request.imageDataUrl) {
+      const match = /^data:(image\/(?:png|jpeg|webp));base64,(.+)$/.exec(request.imageDataUrl);
+      if (!match) throw new LlmError('INPUT', request.attempt);
+      parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
+    }
+    if (request.feedback.length > 0) parts.push({ text:
+      `Keluaran sebelumnya tidak valid. Perbaiki JSON sesuai skema; jangan menambah fakta. Kesalahan: ${JSON.stringify(request.feedback)}` });
+    const model = request.model.replace(/^models\//, '');
+    const body = JSON.stringify({
+      systemInstruction: { parts: [{ text: request.prompt }] },
+      contents: [{ role: 'user', parts }],
+      generationConfig: { responseMimeType: 'application/json', responseJsonSchema: request.format.schema },
+    });
+    let response: Response | undefined;
+    // 429/500/503 dari Gemini umumnya sementara ("high demand"); coba ulang sebentar.
+    for (let retry = 0; ; retry += 1) {
+      const timeout = AbortSignal.timeout(30000);
+      response = await this.fetchImpl(`${GEMINI_BASE_URL}/models/${encodeURIComponent(model)}:generateContent`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': this.apiKey },
+        body,
+        signal: request.signal ? AbortSignal.any([request.signal, timeout]) : timeout,
+      });
+      if (response.ok || !GEMINI_TRANSIENT_STATUS.has(response.status) || retry >= this.retryDelaysMs.length) break;
+      await sleep(this.retryDelaysMs[retry]!, request.signal);
+    }
+    // Pesan provider tidak dibawa: adapter mengubah error apa pun menjadi PROVIDER.
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json() as GeminiResponse;
+    if (result.promptFeedback?.blockReason) throw new LlmError('REFUSED', request.attempt);
+    const candidate = result.candidates?.[0];
+    if (!candidate) throw new LlmError('INCOMPLETE', request.attempt);
+    if (candidate.finishReason && GEMINI_REFUSAL_REASONS.has(candidate.finishReason)) throw new LlmError('REFUSED', request.attempt);
+    if (candidate.finishReason && candidate.finishReason !== 'STOP') throw new LlmError('INCOMPLETE', request.attempt);
+    return (candidate.content?.parts ?? []).filter((part) => !part.thought).map((part) => part.text ?? '').join('');
+  }
+}
+
+const LIVE_PROVIDERS = new Set(['openai', 'gemini']);
+
+/** Benar bila env cukup untuk provider live; dipakai route untuk pesan konfigurasi. */
+export function isLlmConfigured(env: Readonly<Record<string, string | undefined>> = process.env): boolean {
+  return LIVE_PROVIDERS.has(env.LLM_PROVIDER?.trim() ?? '') && Boolean(env.LLM_MODEL?.trim() && env.LLM_API_KEY?.trim());
+}
+
 export type LlmAdapterOptions = {
   env?: Readonly<Record<string, string | undefined>>;
   provider?: LlmProvider;
@@ -104,6 +171,8 @@ export class LlmAdapter {
       this.provider = new MockLlmProvider(options.mockOutputs);
     } else if (providerName === 'openai' && env.LLM_API_KEY?.trim()) {
       this.provider = new OpenAiProvider(env.LLM_API_KEY, options.fetchImpl);
+    } else if (providerName === 'gemini' && env.LLM_API_KEY?.trim()) {
+      this.provider = new GeminiProvider(env.LLM_API_KEY.trim(), options.fetchImpl);
     } else throw new LlmError('CONFIG');
   }
 

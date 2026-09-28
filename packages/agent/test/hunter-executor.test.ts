@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { HypothesisSchema, type Evidence, type Hypothesis, type ToolCall } from '@cek-dulu/shared';
 import { MemoryCacheStore, SectorsClient, cacheKey, ENDPOINTS } from '@cek-dulu/sectors';
 import { LlmAdapter, MockLlmProvider } from '../src/llm.js';
-import { createHypothesisRegistry, createSectorsHunterGateway, executeHypotheses, huntContext, selectHypotheses,
+import { createHypothesisRegistry, createSectorsHunterGateway, defaultSelection, executeHypotheses, huntContext, selectHypotheses,
   HunterBudgetError, HunterSelectionError, HunterToolError, type HunterToolGateway } from '../src/hunter/index.js';
 import { dividendData, makeClaim, priceData, today } from './fixtures/hunter.js';
 
@@ -184,6 +184,20 @@ describe('gateway B cache_only dan end-to-end hunter', () => {
     expect(result.results).toHaveLength(1);
     expect(result.results[0]).toMatchObject({ hypId: 'DIV_CASH_PAYOUT', triggered: true, strength: 'strong' });
     expect(result.creditsUsed).toBe(0); expect(fetchImpl).not.toHaveBeenCalled();
+  });
+  it('LLM gagal memilih: hunter tetap jalan dengan urutan bawaan registry', async () => {
+    const cache = new MemoryCacheStore();
+    await cache.set({ key: cacheKey('fetchCompanyReport', { symbol: 'ADRO', sections: ['dividend'] }),
+      endpoint: 'fetchCompanyReport', params: {}, response: dividendData(), fetchedAt: new Date().toISOString(), ttlSeconds: 86400 });
+    const client = new SectorsClient({ cache, config: { mode: 'cache_only' }, fetchImpl: vi.fn() });
+    const registry = createHypothesisRegistry(claim, { today });
+    const failing = { generate: vi.fn(async () => { throw new Error('503'); }) };
+    const result = await huntContext(claim, [], { registry, llm: failing, gateway: createSectorsHunterGateway(client, today) });
+    expect(result.selectionSource).toBe('fallback');
+    expect(result.selection.map((s) => s.id)).toEqual(defaultSelection(claim, registry).map((s) => s.id));
+    expect(result.selection.length).toBeLessThanOrEqual(3);
+    expect(result.results.some((r) => r.triggered)).toBe(true);
+    expect(result.creditsUsed).toBe(0);
   });
   it('cache miss tidak live, melaporkan biaya pull yang diperlukan', async () => {
     const fetchImpl = vi.fn(), client = new SectorsClient({ config: { mode: 'cache_only' }, fetchImpl });

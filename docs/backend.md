@@ -20,12 +20,12 @@ rencana beserta alasannya.
 ## Cara menjalankan
 
 ```bash
-npm install
+pnpm install
 cp .env.example .env.local        # isi kunci; jangan pernah di-commit
 
-npm test                          # 129 uji, nol panggilan API
-npm run typecheck
-npm run dev                       # http://localhost:3000
+pnpm test                         # 129 uji, nol panggilan API
+pnpm typecheck
+pnpm dev                       # http://localhost:3000
 ```
 
 Tanpa Supabase dan tanpa kunci Sectors, aplikasi tetap menyala: cache jatuh ke

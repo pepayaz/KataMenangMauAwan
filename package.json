@@ -1,6 +1,7 @@
 {
   "name": "cek-dulu",
   "private": true,
+  "packageManager": "pnpm@10.34.5",
   "version": "0.1.0",
   "description": "Agen pemeriksa klaim saham di media sosial terhadap data resmi Sectors.",
   "workspaces": [
@@ -8,8 +9,8 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace @cek-dulu/web",
-    "build": "npm run build --workspace @cek-dulu/web",
+    "dev": "pnpm --filter @cek-dulu/web dev",
+    "build": "pnpm --filter @cek-dulu/web build",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
     "test": "vitest run",
     "check": "tsx scripts/check.ts",

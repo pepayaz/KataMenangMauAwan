@@ -1,5 +1,5 @@
 import { webCacheDirectory } from '@/lib/web-cache';
-import { UserTickerSelectionSchema } from '@cek-dulu/agent';
+import { UserTickerSelectionSchema, isLlmConfigured } from '@cek-dulu/agent';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { CheckSourceSchema, type CheckInput, type TraceEvent } from '@cek-dulu/shared';
@@ -138,6 +138,6 @@ export async function GET(): Promise<Response> {
     database: db ? 'supabase' : 'tidak tersambung',
     pipeline: createPipeline().name,
     fixtureDemo: isFixtureDemoEnabled(),
-    llmConfigured: process.env.LLM_PROVIDER === 'openai' && Boolean(process.env.LLM_MODEL && process.env.LLM_API_KEY),
+    llmConfigured: isLlmConfigured(),
   });
 }
