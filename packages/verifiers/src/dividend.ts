@@ -93,10 +93,94 @@ export function matchDividendYield(
   return { claimed: claimedFraction, matched: best, ttm, bases, matches: best !== null };
 }
 
+/**
+ * Dividen nominal per saham ("Rp87 per saham"). Di atas batas ini angkanya
+ * hampir pasti total nilai dividen perusahaan (mis. Rp3,3 triliun), yang tidak
+ * disediakan Sectors; klaim seperti itu tidak bisa diverifikasi.
+ */
+export const MAX_DIVIDEND_PER_SHARE_IDR = 1_000_000;
+/** Nominal dividen yang diumumkan bersifat pasti; selisih kecil hanya pembulatan. */
+export const DIVIDEND_AMOUNT_TOLERANCE = 0.02;
+
+export type DividendAmountBasis =
+  | { kind: 'payment'; label: string; value: number; date: string }
+  | { kind: 'year_total'; label: string; value: number; year: number }
+  | { kind: 'ttm'; label: string; value: number };
+
+/** Klaim nominal rupiah, bukan yield: unit IDR, atau metrik per saham tanpa unit. */
+export function isDividendAmountClaim(claim: Pick<Claim, 'asserted'>): boolean {
+  return claim.asserted.unit === 'IDR'
+    || (claim.asserted.unit === undefined && /per[\s_-]?(saham|share)|dps|nominal/i.test(claim.asserted.metric));
+}
+
+/**
+ * Dasar nominal per saham yang bisa dirujuk klaim. Murni.
+ *
+ * Bila tahun buku disebut, dividen tahun buku Y dibayar pada Y (interim) atau
+ * Y+1 (final), jadi pembayaran kedua tahun itu dipertimbangkan.
+ */
+export function dividendAmountBases(dividend: DividendSection, ticker: string, period?: string): DividendAmountBasis[] {
+  const year = period !== undefined ? Number(/\b(20\d{2})\b/.exec(period)?.[1] ?? NaN) : NaN;
+  const out: DividendAmountBasis[] = [];
+  for (const [yearKey, row] of Object.entries(dividend.historical_dividends ?? {})) {
+    const rowYear = Number(yearKey);
+    if (!Number.isFinite(rowYear) || !row) continue;
+    const inPeriod = !Number.isFinite(year) || rowYear === year || rowYear === year + 1;
+    if (!inPeriod) continue;
+    for (const payment of row.breakdown ?? []) {
+      if (typeof payment.total !== 'number' || !Number.isFinite(payment.total)) continue;
+      out.push({ kind: 'payment', label: `Dividen per saham ${ticker} ${payment.date}`, value: payment.total, date: payment.date });
+    }
+    if ((!Number.isFinite(year) || rowYear === year) && typeof row.total_dividend === 'number' && Number.isFinite(row.total_dividend)) {
+      out.push({ kind: 'year_total', label: `Total dividen per saham ${ticker} ${rowYear}`, value: row.total_dividend, year: rowYear });
+    }
+  }
+  if (!Number.isFinite(year) && typeof dividend.dividend_ttm === 'number' && Number.isFinite(dividend.dividend_ttm)) {
+    out.push({ kind: 'ttm', label: `Dividen TTM ${ticker}`, value: dividend.dividend_ttm });
+  }
+  return out;
+}
+
+/** Dasar nominal terdekat dalam toleransi, atau null. Murni. */
+export function matchDividendAmount(bases: readonly DividendAmountBasis[], claimedIdr: number,
+  tolerance: number = DIVIDEND_AMOUNT_TOLERANCE): DividendAmountBasis | null {
+  let best: DividendAmountBasis | null = null;
+  for (const basis of bases) {
+    if (!withinRelative(claimedIdr, basis.value, tolerance)) continue;
+    if (!best || Math.abs(claimedIdr - basis.value) < Math.abs(claimedIdr - best.value)) best = basis;
+  }
+  return best;
+}
+
+function verifyDividendAmount(claim: Claim, report: Parameters<typeof makeEvidence>[1], dividend: DividendSection): VerifierOutput {
+  const tol = describeRelative(DIVIDEND_AMOUNT_TOLERANCE);
+  const claimed = claim.asserted.value!;
+  if (claimed > MAX_DIVIDEND_PER_SHARE_IDR) {
+    return unverifiable('Sectors hanya menyediakan dividen per saham; total nilai dividen perusahaan tidak dapat diverifikasi.', tol);
+  }
+  const bases = dividendAmountBases(dividend, claim.ticker, claim.asserted.period);
+  if (!bases.length) {
+    return unverifiable(`Tidak ada data pembayaran dividen ${claim.ticker} untuk periode yang disebut.`, tol);
+  }
+  const matched = matchDividendAmount(bases, claimed);
+  const evidence = bases.map((b) => makeEvidence(claim.claimId, report, b.label, b.value, 'IDR'));
+  const anchor = evidence.find((e) => e.label === matched?.label) ?? evidence[0]!;
+  return {
+    evidence,
+    computed: { value: matched?.value ?? Number(anchor.value), unit: 'IDR', evidenceId: anchor.evidenceId },
+    matches: matched !== null,
+    tolerance: tol,
+    note: matched
+      ? `Dividen ${claim.ticker} Rp${claimed} per saham cocok dengan ${matched.label.toLowerCase()}.`
+      : `Tidak ada pembayaran dividen ${claim.ticker} yang mendekati Rp${claimed} per saham pada periode itu.`,
+    details: { matchedBasis: matched?.kind ?? null, matchedLabel: matched?.label ?? null, claimKind: 'per_share_amount' },
+  };
+}
+
 export const verifyDividend: Verifier = async (claim: Claim, ctx): Promise<VerifierOutput> => {
   const tol = describeRelative(REL_TOLERANCE.dividend);
   if (typeof claim.asserted.value !== 'number') {
-    return unverifiable('Klaim dividen tidak menyebut angka yield.', tol);
+    return unverifiable('Klaim dividen tidak menyebut angka yield atau nominal per saham.', tol);
   }
 
   let report;
@@ -115,6 +199,8 @@ export const verifyDividend: Verifier = async (claim: Claim, ctx): Promise<Verif
   if (!dividend) {
     return unverifiable(`${claim.ticker} tidak punya data dividen di Sectors.`, tol);
   }
+
+  if (isDividendAmountClaim(claim)) return verifyDividendAmount(claim, report, dividend);
 
   const claimed = toFraction(claim.asserted.value, claim.asserted.unit);
   const result = matchDividendYield(dividend, claimed, claim.asserted.period);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HypothesisResultSchema, EvidenceSchema } from '@cek-dulu/shared';
 import { adjudicate } from '../src/adjudicator.js';
 import { flattenHunterToolResult, median, testDivOneOff, testDivTtmGap, testDivCashPayout,
-  testValPeerGap, testValOwnHistory, testValNegPeg, testPrcLowBase, testPrcThinLiq, testPrcWindow } from '../src/hunter/index.js';
+  testValPeerGap, testValOwnHistory, testValNegPeg, testPrcLowBase, testPrcThinLiq, testPrcWindow, createHypothesisRegistry } from '../src/hunter/index.js';
 import { actionsEvidence, adroKnownEvidence, context, dividendEvidence, makeClaim, priceData, priceEvidence,
   today, toolResult, valuationEvidence } from './fixtures/hunter.js';
 
@@ -165,5 +165,13 @@ describe('integritas evidence', () => {
       { symbol: 'ADRO', date: '2026-02-30', close: 100, volume: 1 }], 'fetchDailyPrice'), today)).toThrow();
     const data = priceData().slice(-1);
     expect(flattenHunterToolResult(makeClaim('price_move'), toolResult([...data, ...data], 'fetchDailyPrice'), today)).toHaveLength(2);
+  });
+});
+
+describe('registry dividen hanya untuk klaim yield', () => {
+  it('klaim nominal per saham tidak mendapat hipotesis dividen', () => {
+    const amount = makeClaim('dividend', { metric: 'dividen interim per saham', value: 87, unit: 'IDR' });
+    expect([...createHypothesisRegistry(amount, { today }).keys()]).toEqual([]);
+    expect([...createHypothesisRegistry(makeClaim('dividend'), { today }).keys()]).toContain('DIV_ONE_OFF');
   });
 });

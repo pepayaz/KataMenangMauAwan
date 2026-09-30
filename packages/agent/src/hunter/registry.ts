@@ -1,6 +1,7 @@
 import { ClaimSchema, HypothesisSchema, type Claim, type ClaimType, type Hypothesis, type ToolCall } from '@cek-dulu/shared';
 import { addDays, ENDPOINTS, estimateCredits, splitWindow, windowEndingToday,
   type DateWindow, type EndpointName } from '@cek-dulu/sectors';
+import { isDividendAmountClaim } from '@cek-dulu/verifiers';
 import { routeClaim } from '../router.js';
 import * as tests from './hypotheses.js';
 import * as C from './constants.js';
@@ -36,8 +37,11 @@ export function createHypothesisRegistry(input: Claim, options: { today: string;
   const daily = (window: DateWindow): ToolCall[] => splitWindow(window, ENDPOINTS.fetchDailyPrice.maxWindowDays!).map(
     (chunk) => ({ tool: 'fetchDailyPrice', params: { symbol: claim.ticker, ...chunk } }));
   const registry = new Map<string, Hypothesis>();
+  // Hipotesis dividen menguji apakah yield tinggi representatif; pengumuman nominal
+  // per saham ("Rp87 per saham") tidak diubah maknanya oleh konteks itu.
+  const dividendAmount = claim.type === 'dividend' && isDividendAmountClaim(claim);
   for (const [id, claimType, description, test] of definitions) {
-    if (claimType !== claim.type) continue;
+    if (claimType !== claim.type || (claimType === 'dividend' && dividendAmount)) continue;
     let requiredTools: ToolCall[];
     if (claimType === 'dividend') requiredTools = [report(['dividend']), ...(id === 'DIV_TTM_GAP'
       ? [{ tool: 'fetchCorporateActions', params: { symbol: claim.ticker } }] : [])];
