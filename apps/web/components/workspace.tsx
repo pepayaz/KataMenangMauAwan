@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
-  ArrowDownLeft,
   ArrowRight,
   ArrowUpRight,
   Bookmark,
@@ -32,13 +31,16 @@ import {
   type DemoId,
   type HistoryItem,
 } from "../lib/check-view";
-import { verdictLabels, verdictTone, historyMatches, HistoryItemSchema } from "../lib/check-view";
+import { verdictLabels, historyMatches, HistoryItemSchema } from "../lib/check-view";
 import { readCheckStream } from "../lib/check-stream";
 import { readTickerChoices, type UiTickerChoice } from "../lib/ticker-choices";
 
 import type { TraceEvent } from "@cek-dulu/shared/schemas";
 import CheckReport from "./check-report";
 import InputAdapter from "./input-adapter";
+import InvestigationPreview from "./investigation-preview";
+import TraceTimeline from "./trace-timeline";
+import VerdictBadge from "./verdict-badge";
 import { InputAdaptationSchema, type CheckSource, type InputAdaptation } from "@cek-dulu/shared/schemas";
 import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders, type RemoteCheck } from "../lib/history-client";
 
@@ -46,8 +48,6 @@ import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders, type RemoteCheck
 const NOT_A_STOCK = "__bukan_saham__";
 
 type Page = "check" | "history" | "saved" | "guide";
-const steps = ["Mengenali emiten dan klaim", "Memverifikasi angka", "Mencari konteks", "Menentukan status dan memeriksa penjelasan"];
-const stageStep: Record<string, number> = { normalize: 0, extract: 0, route: 1, verify: 1, hunt: 2, adjudicate: 3, done: 3 };
 
 
 function Modal({
@@ -67,6 +67,7 @@ function Modal({
     <dialog
       ref={ref}
       className="modal"
+      aria-labelledby="workspace-dialog-title"
       onCancel={onClose}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
@@ -82,72 +83,12 @@ function Modal({
           <X size={20} />
         </button>
       </div>
-      <h2>{title}</h2>
+      <h2 id="workspace-dialog-title">{title}</h2>
       {children}
       <button className="primary-button" onClick={onClose}>
         Mengerti <Check size={17} />
       </button>
     </dialog>
-  );
-}
-
-function SignalArt() {
-  return (
-    <div className="signal-art" aria-hidden="true">
-      <div className="orbit orbit-one" />
-      <div className="orbit orbit-two" />
-      <span className="art-coordinate">SIGNAL / NOISE</span>
-      <div className="floating-claim">
-        <span className="mini-avatar">a</span>
-        <div>
-          <b>Katanya cuan terus?</b>
-          <span>Terlalu bagus untuk langsung percaya.</span>
-        </div>
-        <MessageSquareQuote size={18} />
-      </div>
-      <div className="signal-card">
-        <div className="signal-card-top">
-          <span>
-            <span className="status-dot" /> CONTEXT FOUND
-          </span>
-          <ArrowUpRight size={18} />
-        </div>
-        <div className="signal-number">
-          25<span>%</span>
-          <span className="number-asterisk">*</span>
-        </div>
-        <svg viewBox="0 0 260 58" className="art-chart">
-          <path d="M0 48H260M0 24H260" stroke="currentColor" opacity=".08" />
-          <path
-            d="M0 49 23 43 44 47 62 28 83 35 103 20 124 29 148 3 169 31 191 37 215 41 236 37 260 40"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-          />
-          <circle
-            cx="148"
-            cy="3"
-            r="4"
-            fill="var(--accent)"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-        <div className="signal-foot">
-          <span>* Ada konteks yang hilang.</span>
-          <Search size={16} />
-        </div>
-      </div>
-      <div className="verified-stamp">
-        <ShieldCheck size={23} />
-        <span>
-          Fakta dulu.
-          <br />
-          <b>Baru percaya.</b>
-        </span>
-      </div>
-      <span className="art-caption">LOOK BEYOND THE NUMBERS ↗</span>
-    </div>
   );
 }
 
@@ -161,7 +102,6 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
   const [active, setActive] = useState<HistoryItem | null>(null);
   const [running, setRunning] = useState(false);
   const [inputBusy, setInputBusy] = useState(false);
-  const [step, setStep] = useState(0);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [modal, setModal] = useState<"about" | "evidence" | null>(null);
   const [toast, setToast] = useState("");
@@ -236,7 +176,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
     if (!input.trim() || running || inputBusy) return;
     const text = input.trim(), isDemo = demo;
     const controller = new AbortController(); abortRef.current = controller;
-    setRunning(true); setActive(null); setStep(0); setTraces([]); setChoices([]); setError('');
+    setRunning(true); setActive(null); setTraces([]); setChoices([]); setError('');
     const received: TraceEvent[] = [];
     try {
       const response = await fetch('/api/check', { method: 'POST', signal: controller.signal,
@@ -251,7 +191,6 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
       await readCheckStream(response, event => {
         if (event.kind === 'trace') {
           received.push(event.value); setTraces([...received]);
-          if (stageStep[event.value.stage] !== undefined) setStep(stageStep[event.value.stage]!);
           if (event.value.stage === 'normalize') setChoices(readTickerChoices(event.value));
           if (event.value.stage === 'error') setError(event.value.message);
         } else if (event.kind === 'error') setError(event.value.message);
@@ -304,7 +243,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
   const filteredHistory = history.filter(item => historyMatches(item, query, filter, page === 'saved'));
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" onKeyDown={event => { if (event.key === 'Escape') setMobileMenu(false); }}>
       {mobileMenu && (
         <button
           className="sidebar-backdrop"
@@ -312,7 +251,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
           onClick={() => setMobileMenu(false)}
         />
       )}
-      <aside className={`sidebar ${mobileMenu ? "is-open" : ""}`}>
+      <aside id="workspace-navigation" className={`sidebar ${mobileMenu ? "is-open" : ""}`}>
         <a
           href="#"
           className="brand"
@@ -330,9 +269,9 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
           </span>
         </a>
         <div className="workspace-label">
-          <span className="status-dot" /> RUANG INVESTOR RASIONAL
+          <span className="status-dot" /> PEMERIKSA KLAIM SAHAM
         </div>
-        <div className="nav-label">WORKSPACE</div>
+        <div className="nav-label">RUANG PEMERIKSAAN</div>
         <nav aria-label="Navigasi utama">
           {nav.map(({ id, label, icon: Icon }) => (
             <button
@@ -369,12 +308,8 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
             <div className="note-icon">
               <Lightbulb size={21} />
             </div>
-            <h3>
-              Jangan buru-buru
-              <br />
-              percaya.
-            </h3>
-            <p>Klaim yang viral belum tentu cerita yang utuh.</p>
+            <h3>Angka benar.<br />Makna bisa berbeda.</h3>
+            <p>Periode dan konteks ikut menentukan hasil pemeriksaan.</p>
             <button onClick={() => navigate("guide")}>
               Kenali cara kami bekerja <ArrowUpRight size={15} />
             </button>
@@ -397,11 +332,12 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
               className="mobile-menu icon-button"
               aria-label="Buka menu"
               aria-expanded={mobileMenu}
+              aria-controls="workspace-navigation"
               onClick={() => setMobileMenu(!mobileMenu)}
             >
               <Menu size={22} />
             </button>
-            <span>Workspace</span>
+            <span>Cek Dulu</span>
             <ChevronRight size={13} />
             <b>
               {page === "check"
@@ -415,7 +351,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
           </div>
           <div className="topbar-right">
             <span className="demo-pill">
-              <span className="status-dot" /> {demo ? "Demo fixture" : "Cache only"}
+              <span className="status-dot" /> {demo ? "Demo offline" : "Data tersimpan"}
             </span>
             <span className="topbar-divider" />
             <button className="about-button" onClick={() => setModal("about")}>
@@ -429,50 +365,39 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
               <section className="hero">
                 <div className="hero-copy">
                   <div className="eyebrow hero-eyebrow">
-                    <span className="tiny-line" /> LESS NOISE. MORE CONTEXT.
+                    <span className="tiny-line" /> KLAIM → BUKTI → KONTEKS
                   </div>
                   <h1>
-                    Katanya cuan.
+                    Jangan cuma percaya.
                     <br />
-                    <span>Cek dulu faktanya.</span>
-                    <span className="heading-spark">✳</span>
+                    <span>Cek dulu.</span>
                   </h1>
                   <p>
-                    Di balik klaim saham yang ramai, ada fakta yang perlu
-                    dipahami.
-                    <br className="desktop-break" /> Periksa angkanya. Temukan
-                    konteksnya. Putuskan sendiri.
+                    Bawa klaim saham yang kamu temukan. Kami telusuri angkanya,
+                    data pembanding, dan konteks yang terlewat.
                   </p>
-                  <div className="hero-benefits">
-                    <span>
-                      <Check size={13} /> Berbasis bukti
-                    </span>
-                    <span>
-                      <Check size={13} /> Transparan
-                    </span>
-                    <span>
-                      <Check size={13} /> Bebas hype
-                    </span>
-                  </div>
                 </div>
-                <SignalArt />
+                <div className="workflow-rail" aria-label="Tiga langkah pemeriksaan">
+                  <span className="eyebrow">DARI POSTINGAN KE PEMAHAMAN</span>
+                  <ol><li><span>01</span>Berikan klaim</li><li><span>02</span>Telusuri bukti & konteks</li><li><span>03</span>Baca rapor dan sumber</li></ol>
+                </div>
               </section>
               <div className="section-heading">
                 <div>
                   <span className="section-index">01 /</span>
-                  <h2>Mulai dari sebuah klaim</h2>
+                  <h2>Apa yang ingin kamu periksa?</h2>
                 </div>
                 <span className="quiet-label">
-                  <Fingerprint size={14} /> Pikiran kritis, keputusan mandiri.
+                  <ShieldCheck size={14} /> Klaim diperiksa, bukan kreatornya.
                 </span>
               </div>
               <div className="check-layout">
                 <section className="input-card">
                   <div className="input-card-heading">
                     <span>
-                      <MessageSquareQuote size={19} /> Apa yang kamu dengar?
+                      <MessageSquareQuote size={19} /> Masukkan klaim
                     </span>
-                    <span className="text-label">TEKS KLAIM</span>
+                    <span className="text-label">01 / INPUT</span>
                   </div>
                   <form
                     onSubmit={(event) => {
@@ -494,7 +419,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       disabled={running || inputBusy}
                       onChange={(event) => { setInput(event.target.value); setSelections({}); setChoices([]); }}
                       placeholder={
-                        "“Katanya yield dividen ADRO 25% setahun.\nBeneran segampang itu?”"
+                        "Contoh: ADRO yield 25,5% setahun"
                       }
                     />
                     <div className="input-meta">
@@ -538,8 +463,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                     </fieldset>}
                     <div className="input-card-footer">
                       <span>
-                        <ShieldCheck size={15} /> Tanpa login. Mulai dari rasa
-                        penasaran.
+                        <ShieldCheck size={15} /> Hasil disertai bukti dan sumber.
                       </span>
                       <button
                         className="primary-button"
@@ -560,40 +484,14 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                     </div>
                   </form>
                 </section>
-                <aside className="context-card">
-                  <div className="context-card-top">
-                    <span className="context-icon">
-                      <Layers3 size={22} />
-                    </span>
-                    <span className="small-tag">THE CONTEXT HUNTER</span>
-                  </div>
-                  <h3>
-                    Benar angkanya.
-                    <br />
-                    Belum tentu
-                    <br />
-                    <em>utuh ceritanya.</em>
-                  </h3>
-                  <p>
-                    Kami mencari konteks yang terlewat, bukan sekadar
-                    mencocokkan angka.
-                  </p>
-                  <button onClick={() => navigate("guide")}>
-                    Kenapa konteks penting? <ArrowUpRight size={17} />
-                  </button>
-                  <div className="context-decoration" aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                </aside>
+                <InvestigationPreview disabled={running || inputBusy} onExplore={() => chooseExample('dividend')} />
               </div>
               <div className="demo-notice">
                 <span className="status-dot" />
                 <span>
                   {demo ? "Demo memakai fixture offline; angka contoh bukan data pasar terkini." : "Klaim diperiksa melalui pipeline backend. Data yang belum tersedia akan dinyatakan terbuka."}
                 </span>
-                <span className="notice-label">{demo ? "FIXTURE" : "CACHE_ONLY"}</span>
+                <span className="notice-label">{demo ? "DEMO" : "SUMBER / SECTORS"}</span>
               </div>
 
               {running && (
@@ -610,27 +508,8 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       <span className="eyebrow">JEJAK PEMERIKSAAN</span>
                       <h3>Mencari cerita di balik angka...</h3>
                     </div>
-                    <span className="progress-fraction">
-                      0{step + 1}
-                      <span> / 04</span>
-                    </span>
                   </div>
-                  <div className="steps">
-                    {steps.map((label, index) => (
-                      <div
-                        className={`step ${index <= step ? "done" : ""}`}
-                        key={label}
-                      >
-                        <span>
-                          {index < step ? <Check size={13} /> : index + 1}
-                        </span>
-                        <p>{label}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="progress-track">
-                    <span style={{ width: `${(step + 1) * 25}%` }} />
-                  </div>
+                  <TraceTimeline events={traces} running />
                 </section>
               )}
 
@@ -663,71 +542,10 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
 
               {llmReady === false && !demo && <p className="integration-error" role="status">Konfigurasi LLM belum tersedia. Pemeriksaan normal memerlukan konfigurasi server dan cache Sectors. Demo fixture dapat dipakai untuk menguji alur.</p>}
               {error && <p className="integration-error" role="alert">{error}</p>}
-              {traces.length > 0 && <details className="trace-panel" open>
+              {traces.length > 0 && !running && <details className="trace-panel">
                 <summary>Jejak pemeriksaan · {traces.length} event</summary>
-                <ol>{traces.map((trace, index) => <li key={index}><strong>{trace.stage}</strong>: {trace.message} · {trace.credits ?? 0} kredit
-                  {trace.data !== undefined && <details><summary>Detail tahap</summary><pre>{JSON.stringify(trace.data, null, 2)}</pre></details>}
-                </li>)}</ol>
+                <TraceTimeline events={traces} />
               </details>}
-              <section className="explore-section">
-                <div className="section-heading">
-                  <div>
-                    <span className="section-index">
-                      {active ? "03" : "02"} /
-                    </span>
-                    <h2>Klaim populer, kita bedah.</h2>
-                  </div>
-                  <span className="quiet-label">
-                    Kenali polanya sebelum percaya <ArrowDownLeft size={15} />
-                  </span>
-                </div>
-                <div className="example-grid">
-                  {examples.map((example) => (
-                    <button
-                      disabled={running || inputBusy}
-                      className="explore-card"
-                      key={example.id}
-                      onClick={() => {
-                        chooseExample(example.id);
-                        inputRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "center",
-                        });
-                      }}
-                    >
-                      <div className="explore-top">
-                        <span className={`ticker-icon ticker-${example.id}`}>
-                          {example.ticker.slice(0, 1)}
-                        </span>
-                        <span>
-                          <b>{example.ticker}</b>
-                          <small>{example.category}</small>
-                        </span>
-                        <ArrowUpRight size={20} />
-                      </div>
-                      <h3>
-                        {example.id === "dividend"
-                          ? "“Yield 25,5% setahun. Angka mana yang dirujuk?”"
-                          : example.id === "valuation"
-                            ? "“PER cuma 3x. Sudah pasti murah?”"
-                            : "“Bakal naik 80%. Bisa dibuktikan?”"}
-                      </h3>
-                      <div className="explore-bottom">
-                        <span>
-                          {example.id === "dividend"
-                            ? "Ada rata-rata yang menyembunyikan cerita."
-                            : example.id === "valuation"
-                              ? "Cek rasionya, bukan hanya narasinya."
-                              : "Prediksi bukan fakta historis."}
-                        </span>
-                        <span className="round-arrow">
-                          <ArrowRight size={14} />
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </section>
               <div className="how-strip">
                 <div>
                   <span className="strip-icon">
@@ -810,7 +628,6 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                 <div className="history-list">
                   {filteredHistory.map((item) => {
                     const firstVerdict = item.result.verdicts[0];
-                    const example = firstVerdict ? { ticker: item.result.claims[0]?.ticker ?? 'KLAIM', tone: verdictTone[firstVerdict.verdict], status: verdictLabels[firstVerdict.verdict] } : undefined;
                     return (
                       <article className="history-item" key={item.id}>
                         <span className="history-item-icon">
@@ -821,7 +638,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                           onClick={() => openReport(item)}
                         >
                           <span className="history-item-meta">
-                            {example?.ticker || "KLAIM BEBAS"}
+                            {item.result.claims[0]?.ticker || "KLAIM BEBAS"}
                             <span>·</span>
                             {new Date(item.createdAt).toLocaleString("id-ID", {
                               day: "numeric",
@@ -832,12 +649,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                             <span>· {item.demo ? "DEMO FIXTURE" : "HASIL BACKEND"}</span>
                           </span>
                           <h3>{item.text}</h3>
-                          <span
-                            className={`verdict ${example?.tone || "neutral"}`}
-                          >
-                            <span className="status-dot" />
-                            {example?.status || "Tidak bisa diverifikasi"}
-                          </span>
+                          <VerdictBadge verdict={firstVerdict?.verdict ?? 'unverifiable'} />
                         </button>
                         <button
                           className="icon-button"
@@ -958,36 +770,33 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                 <div>
                   {[
                     {
-                      tone: "green",
+                      verdict: "supported" as const,
                       title: "Didukung",
                       text: "Klaim sesuai dengan data pembanding.",
                     },
                     {
-                      tone: "red",
+                      verdict: "refuted" as const,
                       title: "Dibantah",
                       text: "Klaim tidak sesuai dengan data pembanding.",
                     },
                     {
-                      tone: "amber",
+                      verdict: "misleading" as const,
                       title: "Benar tapi menyesatkan",
                       text: "Angka sesuai, tetapi konteks penting hilang.",
                     },
                     {
-                      tone: "neutral",
+                      verdict: "unverifiable" as const,
                       title: "Tidak bisa diverifikasi",
                       text: "Data belum cukup atau klaim terlalu kabur.",
                     },
                     {
-                      tone: "neutral",
+                      verdict: "out_of_scope" as const,
                       title: "Di luar cakupan",
                       text: "Prediksi atau opini, bukan klaim faktual.",
                     },
                   ].map((item) => (
                     <div key={item.title}>
-                      <span className={`verdict ${item.tone}`}>
-                        <span className="status-dot" />
-                        {item.title}
-                      </span>
+                      <VerdictBadge verdict={item.verdict} />
                       <p>{item.text}</p>
                     </div>
                   ))}

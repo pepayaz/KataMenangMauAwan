@@ -9,6 +9,7 @@ import { restoreStoredCheck, storedTimestamp } from '../lib/stored-check';
 import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders } from '../lib/history-client';
 import CheckReport from '../components/check-report';
 import Workspace from '../components/workspace';
+import TraceTimeline from '../components/trace-timeline';
 
 const fixture = checkFixtures[0]!;
 const item: HistoryItem = { id: fixture.result.checkId, text: fixture.input.rawText, createdAt: fixture.input.createdAt,
@@ -35,6 +36,32 @@ describe('rapor dan riwayat UI memakai hasil shared', () => {
     const result = { ...item.result, claims: [...item.result.claims, ...checkFixtures[1]!.result.claims], verdicts: [...item.result.verdicts, ...checkFixtures[1]!.result.verdicts] };
     const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, result } }));
     expect(html).toContain('Benar tapi menyesatkan'); expect(html).toContain('Didukung');
+  });
+  it('memisahkan kutipan berdasarkan span teks bersih dan menormalisasi persen hanya sekali', () => {
+    const second = checkFixtures[1]!;
+    const text = `${item.text}\n${second.input.rawText}`;
+    const offset = item.text.length + 1;
+    const result = { ...item.result, claims: [...item.result.claims, { ...second.result.claims[0]!, span: [offset, text.length] as [number, number] }],
+      verdicts: [...item.result.verdicts, ...second.result.verdicts], evidence: [...item.result.evidence, ...second.result.evidence] };
+    const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, text: `  ${text.replace(' ', '\t\u200b')}  `, result } }));
+    expect(html).toContain('<blockquote>“ADRO yield 25,5% setahun”</blockquote>');
+    expect(html).toContain('<blockquote>“BBCA PER cuma 3x”</blockquote>');
+    expect(html).toContain('<strong>25,5%</strong>'); expect(html).not.toContain('2.550%');
+  });
+  it('prediksi tanpa evidence tidak menawarkan pembanding atau tombol sumber aktif', () => {
+    const prediction = checkFixtures[2]!;
+    const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, text: prediction.input.rawText, result: prediction.result } }));
+    expect(html).toContain('Di luar cakupan'); expect(html).toContain('<strong>—</strong>');
+    expect(html).toContain('class="evidence-button" disabled=""');
+  });
+  it('jejak hanya memuat event aktual, error dan kredit yang diterima', () => {
+    const html = renderToStaticMarkup(createElement(TraceTimeline, { events: [
+      { checkId: 'c', ts: fixture.input.createdAt, stage: 'verify', message: 'Data ditemukan', credits: 2 },
+      { checkId: 'c', ts: fixture.input.createdAt, stage: 'error', message: 'Data kedua kosong', credits: 0 },
+    ] }));
+    expect(html).toContain('Memeriksa angka'); expect(html).toContain('Ada kendala');
+    expect(html).toContain('2 kredit Sectors'); expect(html).not.toContain('Memisahkan klaim');
+    expect(html).not.toContain('trace-active');
   });
   it('contoh UI sama dengan input fixture pipeline dan SSR tanpa localStorage', () => {
     expect(examples.map(example => example.text)).toEqual(checkFixtures.map(fixture => fixture.input.rawText));

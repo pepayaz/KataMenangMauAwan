@@ -48,10 +48,10 @@ export default function InputAdapter({ disabled, onPrepared, onBusyChange }: { d
       <button type="button" className="text-button" disabled={disabled || busy || !image} onClick={() => void prepare()}>{busy ? 'Membaca gambar…' : 'Baca teks screenshot'}</button>
     </div>}
     {mode === 'link' && <div>
-      <label htmlFor="video-link">Link video TikTok</label>
+      <label htmlFor="video-link">Tautan video publik</label>
       <input id="video-link" type="url" value={url} placeholder="https://www.tiktok.com/@akun/video/..." disabled={disabled || busy}
         onChange={event => setUrl(event.target.value)} />
-      <p>AI membaca ucapan dan tulisan dalam video publik. Bila platform membatasi akses, unggah videonya atau tempel klaim secara manual.</p>
+      <p>Ucapan dan tulisan dalam video akan ditranskripsikan untuk kamu tinjau. Jika akses dibatasi, gunakan unggahan atau screenshot.</p>
       <button type="button" className="text-button" disabled={disabled || busy || !url.trim()} onClick={() => void prepare()}>{busy ? 'Membaca video…' : 'Baca isi video'}</button>
     </div>}
     {mode === 'video' && <div>
