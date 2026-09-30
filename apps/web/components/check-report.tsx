@@ -2,9 +2,14 @@ import { verdictLabels, verdictTone, formatEvidence, type HistoryItem } from '..
 
 export default function CheckReport({ item }: { item: HistoryItem }) {
   const result = item.result;
+  // Ekstraksi yang gagal bukan "tidak ada klaim": jangan klaim konten sudah dibaca.
+  const failure = item.traces.find(trace => trace.stage === 'error'
+    && (trace.data as { code?: unknown } | undefined)?.code === 'EXTRACTION_FAILED');
   return <>
     <p>{item.demo ? 'Demo fixture offline · bukan data pasar terkini' : 'Hasil pemeriksaan backend · mode cache_only'} · {result.creditsUsed} kredit · {result.verdicts.length} klaim</p>
-    {!result.verdicts.length && <p role="status">{result.claims.length === 0
+    {!result.verdicts.length && <p role="status">{failure
+      ? `${failure.message} Klaim belum diperiksa; tidak ada kesimpulan tentang isi konten.`
+      : result.claims.length === 0
       ? 'Konten sudah dibaca, tetapi belum ditemukan pernyataan saham yang dapat diperiksa. Daftar ticker, judul, atau pertanyaan saja belum cukup; sertakan pernyataan beserta angka/periode yang disebut.'
       : 'Belum ada rapor klaim. Lihat jejak pemeriksaan untuk pilihan saham atau data yang belum tersedia.'}</p>}
     {result.verdicts.map(verdict => {

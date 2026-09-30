@@ -3,7 +3,7 @@ import { ClaimVerdictSchema, CheckResultSchema, TraceEventSchema, type Claim, ty
 import { MemoryCacheStore, SectorsClient, cacheKey } from '@cek-dulu/sectors';
 import { runCheck, displayEvidenceValues, normalizeVerifierEvidence, type PipelineDeps } from '../src/pipeline.js';
 import { isOutputAllowed } from '../src/output-policy.js';
-import { LlmAdapter, type LlmProvider, type LlmRequest } from '../src/llm.js';
+import { LlmAdapter, type LlmProvider, type LlmRequest, LlmError } from '../src/llm.js';
 import { validateGrounding, withGrounding } from '../src/grounding.js';
 import type { ExtractedClaim } from '../src/extractor.js';
 import { checkFixtures } from '../../shared/fixtures/index.js';
@@ -109,6 +109,15 @@ describe('konkurensi dan isolasi error', () => {
     test.deps.llm = new LlmAdapter({ env: { LLM_PROVIDER: 'mock', LLM_MODEL: 'uji' }, mockOutputs: [null, null] });
     expect((await test.run()).verdicts).toEqual([]);
     expect(test.traces.map((t) => t.stage)).toEqual(['normalize', 'error', 'done']);
+  });
+  it('kuota LLM habis dijelaskan di trace error tanpa pesan mentah provider', async () => {
+    const test = setup('ADRO PER 3x');
+    test.deps.llm = new LlmAdapter({ env: { LLM_PROVIDER: 'mock', LLM_MODEL: 'uji' }, provider: {
+      name: 'mock', complete: async () => { throw new LlmError('QUOTA', 1); } } });
+    await test.run();
+    const error = test.traces.find((t) => t.stage === 'error')!;
+    expect(error.message).toContain('Kuota layanan LLM sedang habis');
+    expect(error.data).toMatchObject({ code: 'EXTRACTION_FAILED', llmCode: 'QUOTA' });
   });
 });
 
