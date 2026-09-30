@@ -107,7 +107,8 @@ class GeminiProvider implements LlmProvider {
     const body = JSON.stringify({
       systemInstruction: { parts: [{ text: request.prompt }] },
       contents: [{ role: 'user', parts }],
-      generationConfig: { responseMimeType: 'application/json', responseJsonSchema: request.format.schema },
+      generationConfig: { responseMimeType: 'application/json', responseJsonSchema: request.format.schema,
+        ...(request.videoDataUrl ? { temperature: 0 } : {}) },
     });
     let response: Response | undefined;
     // 429/500/503 dari Gemini umumnya sementara ("high demand"); coba ulang sebentar.

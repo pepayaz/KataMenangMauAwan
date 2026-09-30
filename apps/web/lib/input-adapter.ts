@@ -72,7 +72,7 @@ export async function readVideo(
   const rawText = result.rawText.trim();
   return InputAdaptationSchema.parse({ status: rawText ? 'ready' : 'needs_text', rawText,
     source: 'paste', ...(options.url ? { url: options.url } : {}),
-    warnings: [rawText ? 'Audio dan frame video sudah dibaca. Periksa teks dan semua angka sebelum memulai cek.'
+    warnings: [rawText ? 'Audio dan frame video sudah dibaca. Periksa ticker, teks, dan semua angka sebelum memulai cek; transkripsi video dapat keliru.'
       : 'Tidak ada klaim saham yang terbaca dari video. Tempel klaim secara manual bila ada.',
       ...(result.uncertain ? ['Ada bagian video yang tidak jelas; koreksi teks sebelum memeriksa.'] : [])] });
 }

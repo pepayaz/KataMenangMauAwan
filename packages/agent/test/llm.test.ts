@@ -174,6 +174,7 @@ describe('provider gemini', () => {
     const body = JSON.parse(String((fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].body));
     expect(body.contents[0].parts[1]).toEqual({ inlineData: { mimeType: 'video/mp4', data: 'AAAAFGZ0eXBpc29t' } });
     expect(body.generationConfig.responseJsonSchema.type).toBe('object');
+    expect(body.generationConfig.temperature).toBe(0);
   });
   it('provider lain dan format video tidak valid ditolak terkontrol', async () => {
     await expect(new LlmAdapter({ env: geminiEnv, fetchImpl: reply(ok('{"value":3}')) }).generate({ ...request,
