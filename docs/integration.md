@@ -31,7 +31,9 @@ Copy-Item .env.example apps/web/.env.local
 pnpm dev
 ```
 
-Isi LLM_PROVIDER=openai, LLM_MODEL dan LLM_API_KEY di file lokal tersebut.
+Isi LLM_PROVIDER=gemini, LLM_MODEL dan LLM_API_KEY di file lokal tersebut
+untuk membaca isi link/unggahan video. Provider lain tetap mendukung jalur teks
+dan screenshot sesuai kemampuan modelnya.
 Sediakan cache respons B di `.cache/sectors` pada root repo atau atur
 SECTORS_CACHE_DIR ke lokasi cache (disarankan absolut). Kunci cache harus cocok
 dengan endpoint dan params, termasuk section yang diminta router. Default web

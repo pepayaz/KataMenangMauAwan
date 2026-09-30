@@ -7,3 +7,4 @@ preferWorkspacePackages: true
 includeWorkspaceRoot: true
 allowBuilds:
   esbuild: true
+  youtube-dl-exec: true

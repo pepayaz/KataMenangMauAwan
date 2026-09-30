@@ -4,7 +4,9 @@ export default function CheckReport({ item }: { item: HistoryItem }) {
   const result = item.result;
   return <>
     <p>{item.demo ? 'Demo fixture offline · bukan data pasar terkini' : 'Hasil pemeriksaan backend · mode cache_only'} · {result.creditsUsed} kredit · {result.verdicts.length} klaim</p>
-    {!result.verdicts.length && <p role="status">Belum ada rapor klaim. Lihat jejak pemeriksaan untuk pilihan saham, ekstraksi, atau data yang belum tersedia.</p>}
+    {!result.verdicts.length && <p role="status">{result.claims.length === 0
+      ? 'Konten sudah dibaca, tetapi belum ditemukan pernyataan saham yang dapat diperiksa. Daftar ticker, judul, atau pertanyaan saja belum cukup; sertakan pernyataan beserta angka/periode yang disebut.'
+      : 'Belum ada rapor klaim. Lihat jejak pemeriksaan untuk pilihan saham atau data yang belum tersedia.'}</p>}
     {result.verdicts.map(verdict => {
       const claim = result.claims.find(claim => claim.claimId === verdict.claimId);
       const evidence = result.evidence.filter(evidence => verdict.evidenceIds.includes(evidence.evidenceId));

@@ -4,7 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { LlmAdapter, MockLlmProvider } from '@cek-dulu/agent';
 import { InputAdaptationSchema } from '@cek-dulu/shared';
 import { inputAdaptationFixtures } from '../../../packages/shared/fixtures/input-adaptation';
-import { imageDataUrl, readScreenshot, readVideoLink, inputUrl, limitedBody, MAX_IMAGE_BYTES } from '../lib/input-adapter';
+import { imageDataUrl, readScreenshot, readVideoLink, readVideoContentLink, readVideoUpload, inputUrl, limitedBody, MAX_IMAGE_BYTES } from '../lib/input-adapter';
+import { publicVideoUrl, videoMime, VideoDownloadError } from '../lib/video-downloader';
 import { readSharedInput, shareHandoff } from '../lib/share-input';
 import { POST } from '../app/api/input/route';
 import { POST as sharePost } from '../app/share/route';
@@ -20,6 +21,7 @@ function upload(image: Blob, key = 'image') {
 }
 const link = (url: string) => new Request('http://localhost/api/input', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url}) });
 const video = 'https://www.tiktok.com/@contoh/video/123';
+const mp4 = () => Buffer.from([0,0,0,24,102,116,121,112,105,115,111,109,0,0,0,0]);
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
 describe('screenshot menjadi teks untuk peninjauan', () => {
@@ -88,6 +90,55 @@ describe('caption hanya melalui oEmbed resmi', () => {
     expect((await readVideoLink(url,network)).status).toBe('ready'); expect(network).toHaveBeenCalledTimes(1);
   });
 });
+describe('isi video publik dan unggahan', () => {
+  it('membaca audio/frame melalui Gemini dan mempertahankan URL sumber', async () => {
+    const provider = new MockLlmProvider([{ rawText:'ADRO yield 25,5% setahun', uncertain:false }]);
+    const llm = new LlmAdapter({ env:{LLM_PROVIDER:'mock',LLM_MODEL:'test'}, provider });
+    const download = vi.fn(async () => ({bytes:mp4(),mimeType:'video/mp4' as const}));
+    const result = await readVideoContentLink(video,{download,llm});
+    expect(result).toMatchObject({status:'ready',rawText:'ADRO yield 25,5% setahun',url:video});
+    expect(result.warnings[0]).toContain('Audio dan frame');
+    expect(download).toHaveBeenCalledOnce();
+    expect(provider.requests[0]?.videoDataUrl).toContain('data:video/mp4;base64,');
+    expect(provider.requests[0]?.prompt).toContain('Jangan menghitung');
+  });
+  it('teks dari video masuk ke pipeline dan menghasilkan rapor klaim', async () => {
+    const prepared = await readVideoContentLink(video,{
+      download: vi.fn(async () => ({bytes:mp4(),mimeType:'video/mp4' as const})),
+      llm: adapter([{rawText:'ADRO yield 25,5% setahun',uncertain:false}]),
+    });
+    vi.stubEnv('NODE_ENV','test');vi.stubEnv('CHECK_FIXTURE_DEMO','1');
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL','');vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY','');
+    const events: CheckStreamEvent[] = [];
+    await readCheckStream(await checkPost(new Request('http://local/api/check',{method:'POST',
+      body:JSON.stringify({text:prepared.rawText,source:prepared.source,url:prepared.url,demo:true})})),event=>events.push(event));
+    const result = events.at(-1);
+    expect(result?.kind).toBe('result');
+    if (result?.kind === 'result') expect(result.value.verdicts[0]?.verdict).toBe('misleading');
+  });
+  it('kegagalan unduh hanya menyajikan caption sebagai hasil belum lengkap', async () => {
+    const download = vi.fn(async (): Promise<never> => { throw new VideoDownloadError('UNAVAILABLE'); });
+    const network = vi.fn(async () => Response.json({title:'BBCA PER 3x'}));
+    const result = await readVideoContentLink(video,{download,network,llm:adapter([])});
+    expect(result).toMatchObject({status:'needs_text',rawText:'BBCA PER 3x',url:video});
+    expect(result.warnings.join(' ')).toContain('suara dan frame belum diperiksa');
+  });
+  it('video unggahan dibaca, file palsu dan terlalu besar ditolak', async () => {
+    const file = new Blob([mp4()],{type:'video/mp4'});
+    expect((await readVideoUpload(file,adapter([{rawText:'BBCA PER 3x',uncertain:false}]))).rawText).toBe('BBCA PER 3x');
+    await expect(readVideoUpload(new Blob(['palsu'],{type:'video/mp4'}),adapter([]))).rejects.toMatchObject({status:415});
+    await expect(readVideoUpload(new Blob([new Uint8Array(4*1024*1024+1)],{type:'video/mp4'}),adapter([]))).rejects.toMatchObject({status:413});
+  });
+  it('hanya host sosial publik dan tanda tangan media yang diizinkan', () => {
+    expect(publicVideoUrl('https://www.youtube.com/watch?v=123').hostname).toBe('www.youtube.com');
+    expect(publicVideoUrl('https://www.instagram.com/reel/abc').hostname).toBe('www.instagram.com');
+    for (const url of ['http://tiktok.com/video/1','https://127.0.0.1/video','https://tiktok.com.evil.invalid/video','https://user:pass@tiktok.com/video'])
+      expect(() => publicVideoUrl(url)).toThrow(VideoDownloadError);
+    expect(videoMime(mp4())).toBe('video/mp4');
+    expect(videoMime(Buffer.from([0x1a,0x45,0xdf,0xa3]))).toBe('video/webm');
+    expect(videoMime(Buffer.from('not-video'))).toBeNull();
+  });
+});
 describe('route input, share dan alur ke pipeline', () => {
   it('route OCR mock -> peninjauan -> route cek -> SSE misleading', async () => {
     vi.stubEnv('LLM_PROVIDER','openai'); vi.stubEnv('LLM_MODEL','test'); vi.stubEnv('LLM_API_KEY','dummy-unit-test');
@@ -108,9 +159,9 @@ describe('route input, share dan alur ke pipeline', () => {
     expect((await POST(upload(png(),'wrong'))).status).toBe(400);
     expect((await POST(link('not-url'))).status).toBe(400);
   });
-  it('route caption -> input siap dengan link tetap ada', async () => {
-    vi.spyOn(globalThis,'fetch').mockResolvedValue(Response.json({title:'BBCA PER cuma 3x'}));
-    expect(await (await POST(link(video))).json()).toMatchObject({status:'ready',rawText:'BBCA PER cuma 3x',url:video});
+  it('route tidak mengklaim video terbaca ketika Gemini belum aktif', async () => {
+    vi.stubEnv('LLM_PROVIDER','openai');
+    expect((await POST(link(video))).status).toBe(503);
   });
   it('manifest dan share route mati default, aktif hanya lewat flag', async () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL','');vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY','');vi.stubEnv('FLAG_SHARE_TARGET','0');
@@ -122,9 +173,10 @@ describe('route input, share dan alur ke pipeline', () => {
     expect(response.status).toBe(200);expect(await response.text()).not.toContain('Kreator');
   });
   it('share hanya link dan screenshot memakai source share_target', async () => {
-    vi.spyOn(globalThis,'fetch').mockResolvedValue(Response.json({title:'BBCA PER cuma 3x'}));
     const body = new FormData();body.set('text',video);
-    expect(await readSharedInput(new Request('http://local/share',{method:'POST',body}))).toMatchObject({source:'share_target',url:video});
+    const readVideo = vi.fn(async () => ({status:'ready' as const,source:'paste' as const,rawText:'BBCA PER 3x',url:video,warnings:[]}));
+    expect(await readSharedInput(new Request('http://local/share',{method:'POST',body}),{readVideo})).toMatchObject({source:'share_target',url:video,rawText:'BBCA PER 3x'});
+    expect(readVideo).toHaveBeenCalledOnce();
     vi.stubEnv('LLM_PROVIDER','openai');vi.stubEnv('LLM_MODEL','test');vi.stubEnv('LLM_API_KEY','dummy-unit-test');
     const mock = adapter([{rawText:'ADRO yield 25,5% setahun',uncertain:false}]);const generate = mock.generate.bind(mock); const ocrStub = vi.spyOn(LlmAdapter.prototype,'generate').mockImplementation(generate);
     expect((await readSharedInput(upload(png()))).source).toBe('share_target');
@@ -145,9 +197,9 @@ describe('route input, share dan alur ke pipeline', () => {
     const html = await response.text();expect(html).not.toContain('</script><script>evil');expect(html).toContain('\\u003c');
     expect(response.headers.get('Content-Security-Policy')).toContain('nonce-');expect(response.headers.get('Cache-Control')).toBe('no-store');
   });
-  it('UI menawarkan input screenshot/link serta batas baca', () => {
+  it('UI menawarkan input screenshot, link dan unggah video', () => {
     const html = renderToStaticMarkup(createElement(InputAdapter,{disabled:false,onPrepared:()=>{},onBusyChange:()=>{}}));
-    expect(html).toContain('Screenshot');expect(html).toContain('Link video');
+    expect(html).toContain('Screenshot');expect(html).toContain('Link video');expect(html).toContain('Unggah video');
   });
   it('semua fixture adaptasi valid; ready kosong ditolak', () => {
     inputAdaptationFixtures.forEach(input => expect(InputAdaptationSchema.parse(input)).toEqual(input));
