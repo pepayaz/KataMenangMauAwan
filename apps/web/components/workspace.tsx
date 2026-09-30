@@ -11,17 +11,14 @@ import {
   ChevronRight,
   CircleHelp,
   FileText,
-  Fingerprint,
   History,
   Layers3,
-  Lightbulb,
   LoaderCircle,
   Menu,
   MessageSquareQuote,
   Plus,
   Search,
   ShieldCheck,
-  Sparkles,
   X,
 } from "lucide-react";
 import {
@@ -37,7 +34,7 @@ import { readTickerChoices, type UiTickerChoice } from "../lib/ticker-choices";
 
 import type { TraceEvent } from "@cek-dulu/shared/schemas";
 import CheckReport from "./check-report";
-import InputAdapter from "./input-adapter";
+import InputAdapter, { type InputMode } from "./input-adapter";
 import InvestigationPreview from "./investigation-preview";
 import TraceTimeline from "./trace-timeline";
 import VerdictBadge from "./verdict-badge";
@@ -61,7 +58,10 @@ function Modal({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    ref.current?.showModal();
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = ref.current;
+    dialog?.showModal();
+    return () => { if (dialog?.open) dialog.close(); trigger?.focus({ preventScroll: true }); };
   }, []);
   return (
     <dialog
@@ -74,7 +74,7 @@ function Modal({
       }}
     >
       <div className="modal-head">
-        <span className="eyebrow">CEK DULU / CATATAN</span>
+        <span>Cek Dulu</span>
         <button
           className="icon-button"
           onClick={onClose}
@@ -98,6 +98,10 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
   const [inputSource, setInputSource] = useState<CheckSource>('paste');
   const [inputUrl, setInputUrl] = useState<string | undefined>();
   const [inputWarnings, setInputWarnings] = useState<string[]>([]);
+  const [inputMode, setInputMode] = useState<InputMode>('text');
+  const [mediaReady, setMediaReady] = useState(false);
+  const [mediaNeedsText, setMediaNeedsText] = useState(false);
+  const showText = inputMode === 'text' || mediaReady;
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [active, setActive] = useState<HistoryItem | null>(null);
   const [running, setRunning] = useState(false);
@@ -118,6 +122,12 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [remoteChecks, setRemoteChecks] = useState<RemoteCheck[]>([]), [remoteNote, setRemoteNote] = useState('');
   const [llmReady, setLlmReady] = useState<boolean | null>(null);
+  const activeCheckId = active?.id;
+  useEffect(() => {
+    if (!activeCheckId || running) return;
+    resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    resultRef.current?.focus({ preventScroll: true });
+  }, [activeCheckId, running]);
   useEffect(() => { void fetch('/api/check').then(response => response.json()).then(body => setLlmReady(body.llmConfigured === true)).catch(() => setLlmReady(false)); }, []);
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => { setHistory(readHistory()); setStorageReady(true); }, []);
@@ -153,9 +163,11 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
     setFilter("Semua");
   }
   function acceptInput(prepared: InputAdaptation) {
+    setMediaReady(true);
+    setMediaNeedsText(prepared.status === 'needs_text');
     setInput(prepared.rawText); setInputSource(prepared.source); setInputUrl(previous => prepared.url ?? previous);
     setInputWarnings(prepared.warnings); setDemo(false); setChoices([]); setSelections({}); setActive(null); setTraces([]); setError('');
-    inputRef.current?.focus();
+    timers.current.push(setTimeout(() => inputRef.current?.focus(), 0));
   }
   useEffect(() => {
     try {
@@ -167,13 +179,15 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
     } catch { setError('Input berbagi belum dapat dibuka. Tempel teks atau unggah screenshot.'); }
   }, []);
   function chooseExample(id: DemoId) {
+    setInputMode('text'); setMediaReady(false);
     const example = examples.find((item) => item.id === id)!;
     setInputSource('paste'); setInputUrl(undefined); setInputWarnings([]);
     setInput(example.text); setSelections({}); setChoices([]); setError('');
-    inputRef.current?.focus();
+    setActive(null); setTraces([]);
+    timers.current.push(setTimeout(() => inputRef.current?.focus(), 0));
   }
   async function startCheck() {
-    if (!input.trim() || running || inputBusy) return;
+    if (!input.trim() || running || inputBusy || !showText) return;
     const text = input.trim(), isDemo = demo;
     const controller = new AbortController(); abortRef.current = controller;
     setRunning(true); setActive(null); setTraces([]); setChoices([]); setError('');
@@ -224,6 +238,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
     );
   }
   function openReport(item: HistoryItem) {
+    setInputMode('text'); setMediaReady(false);
     setActive(item); setDemo(fixtureDemo && item.demo); setInputSource(item.source ?? 'paste'); setInputUrl(item.url); setInputWarnings([]);
     setInput(item.text); setTraces(item.traces); setError(''); setChoices([]); setSelections({});
     navigate("check");
@@ -268,10 +283,6 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
             <span className="brand-period">.</span>
           </span>
         </a>
-        <div className="workspace-label">
-          <span className="status-dot" /> PEMERIKSA KLAIM SAHAM
-        </div>
-        <div className="nav-label">RUANG PEMERIKSAAN</div>
         <nav aria-label="Navigasi utama">
           {nav.map(({ id, label, icon: Icon }) => (
             <button
@@ -282,9 +293,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
             >
               <Icon size={19} />
               <span>{label}</span>
-              {id === "check" ? (
-                <span className="nav-shortcut">↗</span>
-              ) : (
+              {id !== "check" && (
                 <span className="nav-count">
                   {id === "history"
                     ? history.length
@@ -301,27 +310,9 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
         >
           <CircleHelp size={19} />
           <span>Cara kerja</span>
-          <ArrowUpRight size={15} />
         </button>
         <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <div className="note-icon">
-              <Lightbulb size={21} />
-            </div>
-            <h3>Angka benar.<br />Makna bisa berbeda.</h3>
-            <p>Periode dan konteks ikut menentukan hasil pemeriksaan.</p>
-            <button onClick={() => navigate("guide")}>
-              Kenali cara kami bekerja <ArrowUpRight size={15} />
-            </button>
-          </div>
-          <button className="profile" onClick={() => setModal("about")}>
-            <span className="profile-avatar">R</span>
-            <span>
-              <b>Ruang eksplorasi</b>
-              <small>Tanpa akun</small>
-            </span>
-            <ChevronRight size={16} />
-          </button>
+          <button className="nav-item" onClick={() => setModal("about")}><CircleHelp size={19} /><span>Tentang Cek Dulu</span></button>
         </div>
       </aside>
 
@@ -355,49 +346,23 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
             </span>
             <span className="topbar-divider" />
             <button className="about-button" onClick={() => setModal("about")}>
-              Tentang Cek Dulu <ArrowUpRight size={14} />
+              Tentang Cek Dulu
             </button>
           </div>
         </header>
         <main>
           {page === "check" && (
             <>
-              <section className="hero">
-                <div className="hero-copy">
-                  <div className="eyebrow hero-eyebrow">
-                    <span className="tiny-line" /> KLAIM → BUKTI → KONTEKS
-                  </div>
-                  <h1>
-                    Jangan cuma percaya.
-                    <br />
-                    <span>Cek dulu.</span>
-                  </h1>
-                  <p>
-                    Bawa klaim saham yang kamu temukan. Kami telusuri angkanya,
-                    data pembanding, dan konteks yang terlewat.
-                  </p>
-                </div>
-                <div className="workflow-rail" aria-label="Tiga langkah pemeriksaan">
-                  <span className="eyebrow">DARI POSTINGAN KE PEMAHAMAN</span>
-                  <ol><li><span>01</span>Berikan klaim</li><li><span>02</span>Telusuri bukti & konteks</li><li><span>03</span>Baca rapor dan sumber</li></ol>
-                </div>
+              <section className="page-heading">
+                <h1>Periksa klaim saham</h1>
+                <p>Tempel teks atau baca konten dari screenshot dan video.</p>
               </section>
-              <div className="section-heading">
-                <div>
-                  <span className="section-index">01 /</span>
-                  <h2>Apa yang ingin kamu periksa?</h2>
-                </div>
-                <span className="quiet-label">
-                  <ShieldCheck size={14} /> Klaim diperiksa, bukan kreatornya.
-                </span>
-              </div>
               <div className="check-layout">
                 <section className="input-card">
                   <div className="input-card-heading">
                     <span>
                       <MessageSquareQuote size={19} /> Masukkan klaim
                     </span>
-                    <span className="text-label">01 / INPUT</span>
                   </div>
                   <form
                     onSubmit={(event) => {
@@ -405,11 +370,15 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       startCheck();
                     }}
                   >
-                    <InputAdapter disabled={running || inputBusy} onPrepared={acceptInput} onBusyChange={setInputBusy} />
+                    <InputAdapter disabled={running || inputBusy} mode={inputMode} prepared={mediaReady} needsText={mediaNeedsText}
+                      onModeChange={mode => { setInputMode(mode); if (mode !== 'text') setDemo(false); setMediaReady(false); setMediaNeedsText(false); setInputWarnings([]); setInputUrl(undefined); setInputSource('paste'); setChoices([]); setSelections({}); setActive(null); setTraces([]); setError(''); }}
+                      onReset={() => { setMediaReady(false); setMediaNeedsText(false); setInputWarnings([]); setInputUrl(undefined); setChoices([]); setSelections({}); setActive(null); setTraces([]); setError(''); }}
+                      onPrepared={acceptInput} onBusyChange={setInputBusy} />
+                    {showText && <>
                     {inputUrl && <p className="input-origin">Link sumber: <a href={inputUrl} target="_blank" rel="noreferrer">{inputUrl}</a><button type="button" className="text-button" disabled={running || inputBusy} onClick={() => setInputUrl(undefined)}>Lepas link</button></p>}
                     {inputWarnings.length > 0 && <div role="status" className="input-review">{inputWarnings.map((warning,index) => <p key={index}>{warning}</p>)}<p>Koreksi teks di bawah, lalu tekan Cek klaim ini.</p></div>}
-                    <label className="sr-only" htmlFor="claim">
-                      Teks klaim saham
+                    <label className="editor-label" htmlFor="claim">
+                      {inputMode === 'text' ? 'Teks klaim saham' : 'Tinjau hasil pembacaan'}
                     </label>
                     <textarea
                       id="claim"
@@ -417,14 +386,14 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       value={input}
                       maxLength={5000}
                       disabled={running || inputBusy}
-                      onChange={(event) => { setInput(event.target.value); setSelections({}); setChoices([]); }}
+                      onChange={(event) => { setInput(event.target.value); setSelections({}); setChoices([]); setActive(null); setTraces([]); setError(''); }}
                       placeholder={
                         "Contoh: ADRO yield 25,5% setahun"
                       }
                     />
                     <div className="input-meta">
                       <span>
-                        Tempel klaim dari X, TikTok, atau grup obrolan.
+                        {inputMode === 'text' ? 'Sertakan nama saham, angka, dan periode jika ada.' : 'Koreksi teks yang salah terbaca sebelum memeriksa.'}
                       </span>
                       <span>
                         {input.length.toLocaleString("id-ID")} / 5.000
@@ -442,7 +411,6 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                         >
                           {example.ticker}
                           <span>{example.category}</span>
-                          <ArrowUpRight size={12} />
                         </button>
                       ))}
                     </div>
@@ -463,7 +431,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                     </fieldset>}
                     <div className="input-card-footer">
                       <span>
-                        <ShieldCheck size={15} /> Hasil disertai bukti dan sumber.
+                        {inputMode === 'text' ? 'Maksimal 5.000 karakter' : 'Teks ini akan diperiksa'}
                       </span>
                       <button
                         className="primary-button"
@@ -477,22 +445,17 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                           </>
                         ) : (
                           <>
-                            Cek klaim ini <ArrowRight size={17} />
+                            Cek klaim ini
                           </>
                         )}
                       </button>
                     </div>
+                    </>}
                   </form>
                 </section>
                 <InvestigationPreview disabled={running || inputBusy} onExplore={() => chooseExample('dividend')} />
               </div>
-              <div className="demo-notice">
-                <span className="status-dot" />
-                <span>
-                  {demo ? "Demo memakai fixture offline; angka contoh bukan data pasar terkini." : "Klaim diperiksa melalui pipeline backend. Data yang belum tersedia akan dinyatakan terbuka."}
-                </span>
-                <span className="notice-label">{demo ? "DEMO" : "SUMBER / SECTORS"}</span>
-              </div>
+              {demo && <p className="demo-notice">Demo memakai data contoh historis, bukan data pasar terkini.</p>}
 
               {running && (
                 <section
@@ -505,8 +468,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       <Search size={22} />
                     </span>
                     <div>
-                      <span className="eyebrow">JEJAK PEMERIKSAAN</span>
-                      <h3>Mencari cerita di balik angka...</h3>
+                      <h3>Memeriksa klaim</h3>
                     </div>
                   </div>
                   <TraceTimeline events={traces} running />
@@ -521,9 +483,8 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                 >
                   <div className="section-heading">
                     <div>
-                      <span className="section-index">02 /</span>
-                      <h2>Di balik klaim</h2>
-                      <span className="small-tag">{active.demo ? "RAPOR DEMO" : "RAPOR KLAIM"}</span>
+                      <h2>Hasil pemeriksaan</h2>
+                      {active.demo && <span className="small-tag">Contoh historis</span>}
                     </div>
                     {active.result.verdicts.length > 0 && <button
                       className={`text-button ${active.saved ? "is-saved" : ""}`}
@@ -546,39 +507,17 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                 <summary>Jejak pemeriksaan · {traces.length} event</summary>
                 <TraceTimeline events={traces} />
               </details>}
-              <div className="how-strip">
-                <div>
-                  <span className="strip-icon">
-                    <Fingerprint size={25} />
-                  </span>
-                  <span>
-                    <b>Dari “katanya” jadi “ini faktanya”.</b>
-                    <small>
-                      Setiap klaim punya proses. Setiap hasil punya alasan.
-                    </small>
-                  </span>
-                </div>
-                <button
-                  className="text-button"
-                  onClick={() => navigate("guide")}
-                >
-                  Intip cara kerjanya <ArrowRight size={16} />
-                </button>
-              </div>
             </>
           )}
 
           {(page === "history" || page === "saved") && (
             <section className="collection-page">
-              <div className="eyebrow hero-eyebrow">
-                <span className="tiny-line" /> JEJAK RASA PENASARAN
-              </div>
               <div className="collection-heading">
                 <div>
                   <h1>
                     {page === "saved"
-                      ? "Layak disimpan."
-                      : "Sudah pernah dicek."}
+                      ? "Rapor tersimpan"
+                      : "Riwayat pemeriksaan"}
                   </h1>
                   <p>
                     {page === "saved"
@@ -687,8 +626,8 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                     {query || filter !== "Semua"
                       ? "Belum ada yang cocok."
                       : page === "saved"
-                        ? "Tempat untuk temuan berhargamu."
-                        : "Rasa penasaran dimulai di sini."}
+                        ? "Belum ada rapor tersimpan"
+                        : "Belum ada riwayat pemeriksaan"}
                   </h2>
                   <p>
                     {query || filter !== "Semua"
@@ -720,38 +659,28 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
 
           {page === "guide" && (
             <section className="guide-page">
-              <div className="eyebrow hero-eyebrow">
-                <span className="tiny-line" /> DI BALIK LAYAR
-              </div>
-              <h1>
-                Bukan sekadar benar.
-                <br />
-                <span>Harus utuh ceritanya.</span>
-              </h1>
-              <p className="guide-intro">
-                Informasi yang baik memberi kamu alasan untuk memahami, bukan
-                tekanan untuk mengikuti.
-              </p>
+              <h1>Cara pemeriksaan bekerja</h1>
+              <p className="guide-intro">Kenali tahapan pemeriksaan dan arti setiap status pada rapor.</p>
               <div className="guide-grid">
                 {[
                   {
                     icon: MessageSquareQuote,
-                    title: "Pisahkan klaim dari opini.",
+                    title: "Ekstraksi klaim",
                     text: "Teks diurai menjadi pernyataan yang bisa diperiksa. “PER 3x” adalah klaim angka. “Pasti cuan” adalah prediksi.",
                   },
                   {
                     icon: ChartNoAxesCombined,
-                    title: "Periksa angka dengan bukti.",
+                    title: "Perbandingan data",
                     text: "Pada produk terintegrasi, data Sectors menjadi pembanding. Perhitungan dilakukan oleh kode, dengan periode yang sesuai.",
                   },
                   {
                     icon: Layers3,
-                    title: "Buru konteks yang hilang.",
+                    title: "Pemeriksaan konteks",
                     text: "Context Hunter menelusuri kemungkinan pembayaran satu kali, basis pembanding rendah, atau periode yang dipilih-pilih.",
                   },
                   {
                     icon: ShieldCheck,
-                    title: "Baca hasil, pahami alasannya.",
+                    title: "Hasil dan sumber",
                     text: "Rapor menunjukkan status, data pembanding, dan konteksnya. Jika data tidak cukup, hasil menyatakannya secara terbuka.",
                   },
                 ].map(({ icon: Icon, title, text }, index) => (
@@ -766,7 +695,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                 ))}
               </div>
               <div className="verdict-guide">
-                <h2>Satu klaim, beberapa kemungkinan.</h2>
+                <h2>Arti status pemeriksaan</h2>
                 <div>
                   {[
                     {
@@ -806,7 +735,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                 className="primary-button"
                 onClick={() => navigate("check")}
               >
-                Oke, coba satu klaim <ArrowRight size={17} />
+                Periksa klaim
               </button>
             </section>
           )}
@@ -822,11 +751,10 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
               <span className="footer-brand">
                 <CheckCheck size={17} /> cekdulu.
               </span>
-              <span>Jernih melihat. Bijak menyikapi.</span>
             </div>
             <p>Cek Dulu adalah alat informasi dan analisis, bukan nasihat investasi. Status klaim menilai kesesuaian klaim dengan data yang tersedia, bukan kelayakan membeli atau menjual saham. Data bersumber dari Sectors dan dapat tertinggal dari kondisi terkini. Lakukan riset sendiri sebelum mengambil keputusan.</p>
             <button onClick={() => setModal("about")}>
-              Built for Sectors Hackathon <ArrowUpRight size={12} />
+              Tentang Cek Dulu
             </button>
           </footer>
         </main>
@@ -839,22 +767,13 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
       )}
       {modal === "about" && (
         <Modal
-          title="Rasa penasaran yang sehat."
+          title="Tentang Cek Dulu"
           onClose={() => setModal(null)}
         >
           <p>
             Cek Dulu membantu investor ritel memahami klaim saham melalui bukti
             dan konteks. Dibuat untuk Sectors Hackathon 2026.
           </p>
-          <div className="modal-callout">
-            <Sparkles size={22} />
-            <div>
-              <b>Pipeline agen terhubung ke backend.</b>
-              <p>
-                Pemeriksaan normal memakai LLM terkonfigurasi dan cache Sectors. Demo fixture tersedia secara terpisah. Riwayat anonim tersimpan di perangkat; sesi Supabase dapat memuat riwayat server.
-              </p>
-            </div>
-          </div>
           <p>
             Mode demo berisi ilustrasi offline. Pemeriksaan normal memerlukan konfigurasi server dan data cache yang tersedia.
           </p>

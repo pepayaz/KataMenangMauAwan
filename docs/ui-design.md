@@ -1,76 +1,92 @@
-# UI Cek Dulu: ruang pemeriksaan klaim
+# Revisi UI Cek Dulu
 
-## Arah desain
+## Dasar keputusan
 
-`design.md` dari tim menjadi dasar warna, tipografi, dan hierarki produk. Arahnya
-kuat: terminal riset keuangan dengan nuansa cyberpunk yang terkendali. Implementasi
-memakai permukaan gelap, garis tipis, angka monospaced, dan aksen yang memiliki
-fungsi. Komposisi asimetris tetap mengikuti urutan baca yang jelas.
+Arah gelap dan aksen cyan dari design.md dipertahankan. Koreksi tim mengubah
+penekanannya: antarmuka riset yang tenang, bukan terminal futuristis atau halaman
+promosi. Judul menjelaskan tugas, teks bantuan menjelaskan tindakan berikutnya.
 
-Pengguna harus dapat memberikan klaim, memahami statusnya, lalu menelusuri bukti.
-Hero dibuat pendek agar input segera terlihat. Panel contoh memakai fixture ADRO
-dari shared dan diberi label demo serta tanggal fakta; tidak ada grafik, aktivitas
-pasar, atau statistik pengguna buatan.
+Dalam audit ini, “AI slop” berarti elemen yang terasa seperti template tanpa
+alasan produk: slogan berulang, label teknis dekoratif, tipografi yang menghambat
+pembacaan, dan CTA yang tidak mengikuti urutan kerja. Warna gelap, kartu, dan
+animasi tidak otomatis termasuk slop; masing-masing harus punya fungsi.
+
+Aturan [anti-slop](https://github.com/miqdadbadjuber/anti-slop) digunakan sebagai
+rujukan audit, bukan installer atau library komponen. Panduan dibaca tanpa
+menjalankan skripnya atau menambahkan instruksi ke AGENTS.md.
 
 ## Referensi
 
-- [Koyfin](https://www.koyfin.com/): orientasi riset, pembandingan angka, dan akses ke data.
-- [Full Fact](https://fullfact.org/): fokus penilaian pada klaim dan kejelasan sumber.
-- [Anti AI Slop UI](https://github.com/rwcod/anti-ai-slop-ui): pedoman pemilihan arah
-  visual, konsistensi token, dan penghindaran dekorasi generik. Sumber ini berupa
-  panduan agen, bukan library komponen. Plugin dengan nama tersebut tidak ditemukan
-  di katalog sesi; tidak ada plugin atau dependensi template baru yang dipasang.
+- [Koyfin dashboards](https://www.koyfin.com/features/my-dashboards/): navigasi
+  sederhana dan hierarki informasi riset. Aplikasi publiknya ditinjau secara visual.
+- [Quartr AI chat](https://quartr.com/features/ai-chat): teks yang terbaca,
+  panel riset, dan akses sumber. Halaman ditinjau secara visual.
+- [Source Sans 3](https://github.com/adobe-fonts/source-sans): keluarga font untuk
+  antarmuka. Font dilayani lokal, dengan lisensi OFL disertakan.
 
-Referensi digunakan untuk prinsip alur dan hierarki, bukan menyalin halaman.
+Referensi memberi prinsip, bukan salinan layout atau klaim pemasaran.
 
-## Sistem visual
+## Yang berubah dan alasannya
 
-- Token terpusat di `apps/web/styles/theme.css`.
-- Oxanium untuk judul, Manrope untuk teks, IBM Plex Mono untuk angka dan metadata.
-  Font dilayani lokal lewat `next/font/local`; lisensi OFL disertakan.
-- Cyan untuk tindakan, lime untuk didukung, amber untuk menyesatkan, merah untuk
-  dibantah, violet untuk belum dapat diverifikasi, abu-abu untuk di luar cakupan.
-  Semua status juga memiliki ikon dan label, sehingga tidak bergantung pada warna.
-- Tanpa gradien dekoratif, grafik palsu, glassmorphism berlapis, atau efek glow besar.
-- Transisi singkat untuk interaksi; `prefers-reduced-motion` menonaktifkan animasi.
+- Semua slogan yang ditandai tim dihapus, termasuk hero, rail tiga langkah,
+  catatan sidebar, motto footer, serta judul promosi pada panduan dan riwayat.
+- Source Sans 3 menggantikan Oxanium, Manrope, dan font mono. Angka memakai
+  bentuk tabular agar pembandingan tetap rapi; teks utama 16px.
+- Charcoal dan cyan lembut mengurangi intensitas visual. Warna status tetap
+  disertai ikon dan teks, tidak menjadi satu-satunya pembeda.
+- Pilihan input berupa kontrol bersegmen dengan ikon yang sesuai. Pada media,
+  tombol baca menjadi CTA penuh selebar panel. Editor dan tombol cek muncul
+  setelah pembacaan menghasilkan teks atau meminta fallback teks manual.
+- Perubahan link/berkas membatalkan kesiapan hasil lama. Saat membaca, mode dan
+  cek dikunci. Gagal membaca tetap menawarkan percobaan ulang dan alasan.
+- Mengubah input menyembunyikan rapor lama agar tidak tertukar dengan klaim baru.
+  Cek selesai mengarahkan fokus ke hasil; drawer mengembalikan fokus ke pemicunya.
+- Upload mendukung pemilih berkas dan drag-drop. Batas tipe, ukuran, satu berkas,
+  serta keterangan pemrosesan tetap tersedia.
+- Rapor, sumber, dan trace menampilkan informasi terbaca, tanpa blok JSON.
+  Kutipan, evidence, rumus yang tersedia, periode, dan kredit tidak dikarang.
+- Gerak dipakai untuk pergantian panel, status membaca, hasil baru, dan drawer.
+  prefers-reduced-motion menonaktifkannya. Tidak ada efek glow atau animasi latar.
 
-## Perubahan alur
+Pilihan intensitas dari toolkit anti-slop: ENERGY 1, RHYTHM 2, MOTION 2.
+Ritme berasal dari form, panel contoh, rapor perbandingan, dan daftar riwayat yang
+memiliki bentuk berbeda sesuai fungsi.
 
-1. Teks, screenshot, tautan video, dan unggahan video tetap memakai adapter yang sama.
-   Instruksi file dan peninjauan transkripsi tetap terlihat.
-2. Rapor menampilkan kutipan berdasarkan span teks bersih, penjelasan backend,
-   konteks yang hilang, dan perbandingan angka. Tidak ada nilai pengganti buatan.
-3. Tombol sumber membuka dialog dengan nilai, tanggal pengambilan, asal, dan periode
-   bila tersedia. Parameter teknis disimpan dalam bagian yang dapat dibuka.
-   Semua sumber dalam mode demo ditandai sebagai fixture.
-4. Timeline memuat event SSE aktual. Tidak ada persentase progres atau tahapan
-   sukses yang dikarang. Detail teknis dan penggunaan kredit tetap dapat dibuka.
-5. Riwayat, simpan rapor, filter, panduan, dan disclaimer permanen dipertahankan.
+## Audit dan verifikasi
 
-## Responsif dan aksesibilitas
+- **Hard constraints:** tindakan memiliki handler nyata; fixture diberi label
+  historis; tanpa statistik buatan; sumber dan disclaimer permanen dipertahankan.
+- **Purpose:** pilih input → baca media → tinjau/koreksi → cek → baca hasil/sumber.
+  Tombol baca dominan sebelum transkripsi, lalu tombol cek mengambil prioritas.
+- **Liveliness:** hover, fokus, perubahan mode, indikator membaca, toast simpan,
+  dan drawer merespons tindakan nyata. Tidak ada progres persentase palsu.
+- **Craft:** desktop dan mobile ditinjau; pemeriksaan overflow, fokus, Escape,
+  ukuran kontrol, dan kontras tercatat bersama preview. Pengujian interaksi
+  memakai jaringan mock, termasuk teks lama, fallback, error, dan batas unggahan.
 
-Desktop memakai input dan contoh berdampingan. Mobile memakai satu kolom, navigasi
-yang dapat ditutup dengan Escape, dan panel sumber dari bawah. Navigasi tertutup
-tidak dapat menerima fokus. Dialog sumber memakai dialog native untuk fokus modal
-dan Escape; latar tidak ikut menggulir. Kontrol memiliki label, status mempunyai
-ikon, dan fokus keyboard terlihat. Ukuran viewport 390 × 844 dan 1280 × 900
-ditinjau; pemeriksaan browser juga memastikan tidak ada overflow horizontal mobile.
+Viewport 1280 × 900 dan 390 × 844 diperiksa tanpa overflow horizontal.
+Pilihan input mobile memiliki tinggi 48px, CTA baca 54px. Kontras teks utama
+terhadap panel 14,90:1, teks bantuan 7,10:1, dan teks CTA 10,62:1.
+ADRO menghasilkan misleading, BBCA supported (fixture sintetis), dan BBRI
+out_of_scope melalui UI offline. Sumber, Escape/pengembalian fokus, simpan rapor,
+serta pencarian riwayat diperiksa langsung.
 
-## Validasi dan batasnya
+Hasil akhir: pnpm test lulus 724 test di 26 file; pnpm -r typecheck dan build
+produksi lulus. Dependensi Testing Library dan jsdom hanya dipakai untuk test.
 
-- Seluruh test Vitest, typecheck workspace, dan build produksi dijalankan.
-- UI demo: ADRO → misleading, BBCA → supported, BBRI → out_of_scope, semuanya
-  tanpa kredit Sectors. BBCA memakai angka sintetis berlabel dari fixture.
-- Panel sumber, penutupan Escape, penyimpanan rapor, navigasi dan input media
-  ditinjau melalui browser. Test kontrak menambahkan kutipan multi-klaim, normalisasi
-  persen, sumber kosong, serta timeline yang hanya berisi event aktual.
-- Ini validasi UI dan alur offline. Ketersediaan video platform, kualitas transkripsi,
-  data pasar asli, dan konfigurasi deployment tidak dibuktikan oleh redesign ini.
-- Belum dilakukan uji usability bersama pengguna atau audit screen reader menyeluruh;
-  keputusan estetika tetap perlu ditinjau tim.
+Preview terisolasi memakai CHECK_UI_PREVIEW=1 dengan direktori .next-ui-preview,
+agar tidak bertabrakan dengan kompilasi server development anggota lain.
+Pengaturan default tetap .next. Mekanisme mengikuti
+[distDir Next.js](https://nextjs.org/docs/pages/api-reference/config/next-config-js/distDir).
+
+Validasi ini membuktikan UI dan alur mock/offline. Ketersediaan video platform,
+akurasi transkripsi langsung, dan kelengkapan cache pasar tidak dibuktikan oleh
+revisi tampilan. Belum ada uji usability bersama pengguna atau audit screen reader
+menyeluruh; penilaian estetika perlu tetap ditinjau tim.
 
 ## Preview
 
 - [Input desktop](ui-preview-desktop.jpg)
+- [Tombol baca video](ui-preview-video.jpg)
 - [Rapor ADRO offline](ui-preview-report.jpg)
 - [Panel sumber mobile](ui-preview-mobile.jpg)

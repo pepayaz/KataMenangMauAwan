@@ -1,30 +1,54 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type DragEvent } from 'react';
+import { FileText, Image, Link, Video, Upload, LoaderCircle, ScanText, RotateCcw } from 'lucide-react';
 import { InputAdaptationSchema, type InputAdaptation } from '@cek-dulu/shared/schemas';
 
-export default function InputAdapter({ disabled, onPrepared, onBusyChange }: { disabled: boolean; onPrepared: (input: InputAdaptation) => void; onBusyChange: (busy: boolean) => void }) {
-  const [mode, setMode] = useState<'text' | 'screenshot' | 'link' | 'video'>('text');
+export type InputMode = 'text' | 'screenshot' | 'link' | 'video';
+type Props = {
+  disabled: boolean; mode: InputMode; prepared: boolean; needsText?: boolean;
+  onModeChange: (mode: InputMode) => void; onReset: () => void;
+  onPrepared: (input: InputAdaptation) => void; onBusyChange: (busy: boolean) => void;
+};
+const modes = [
+  { id: 'text', label: 'Teks', icon: FileText }, { id: 'screenshot', label: 'Screenshot', icon: Image },
+  { id: 'link', label: 'Link video', icon: Link }, { id: 'video', label: 'Unggah video', icon: Video },
+] as const;
+
+export default function InputAdapter({ disabled, mode, prepared, needsText = false, onModeChange, onReset, onPrepared, onBusyChange }: Props) {
   const [image, setImage] = useState<File | null>(null), [preview, setPreview] = useState('');
   const [video, setVideo] = useState<File | null>(null);
   const [url, setUrl] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [dragging, setDragging] = useState(false);
   useEffect(() => {
     if (!image) { setPreview(''); return; }
     const objectUrl = URL.createObjectURL(image); setPreview(objectUrl);
     return () => URL.revokeObjectURL(objectUrl);
   }, [image]);
+  function selectFile(file: File | null) {
+    onReset(); setError('');
+    const screenshot = mode === 'screenshot';
+    const types = screenshot ? ['image/png', 'image/jpeg', 'image/webp'] : ['video/mp4', 'video/webm'];
+    const limit = (screenshot ? 3 : 4) * 1024 * 1024;
+    const valid = !file || (types.includes(file.type) && file.size <= limit && file.size > 0);
+    if (!valid) setError(screenshot ? 'Pilih gambar PNG, JPEG, atau WebP maksimal 3 MB.' : 'Pilih video MP4 atau WebM maksimal 4 MB.');
+    if (screenshot) setImage(valid ? file : null); else setVideo(valid ? file : null);
+  }
+  function drop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault(); setDragging(false);
+    if (disabled || busy) return;
+    if (event.dataTransfer.files.length !== 1) { onReset(); setImage(null); setVideo(null); setError('Pilih satu berkas untuk dibaca.'); return; }
+    selectFile(event.dataTransfer.files[0] ?? null);
+  }
   async function prepare() {
+    if (disabled || busy) return;
     setError(''); setBusy(true); onBusyChange(true);
     try {
       let body: FormData | string;
-      if (mode === 'screenshot') {
-        if (!image || image.size > 3 * 1024 * 1024 || !['image/png','image/jpeg','image/webp'].includes(image.type))
-          throw new Error('Pilih gambar PNG, JPEG, atau WebP maksimal 3 MB.');
-        body = new FormData(); body.set('image', image);
-      } else if (mode === 'video') {
-        if (!video || video.size > 4 * 1024 * 1024 || !['video/mp4','video/webm'].includes(video.type))
-          throw new Error('Pilih video MP4 atau WebM maksimal 4 MB.');
-        body = new FormData(); body.set('video', video);
-      } else body = JSON.stringify({ url });
+      if (mode === 'screenshot' || mode === 'video') {
+        const file = mode === 'screenshot' ? image : video;
+        if (!file) throw new Error('Pilih berkas terlebih dahulu.');
+        body = new FormData(); body.set(mode === 'screenshot' ? 'image' : 'video', file);
+      } else body = JSON.stringify({ url: url.trim() });
       const response = await fetch('/api/input', { method: 'POST', body,
         ...(typeof body === 'string' ? { headers: { 'Content-Type': 'application/json' } } : {}) });
       const result: unknown = await response.json();
@@ -33,33 +57,46 @@ export default function InputAdapter({ disabled, onPrepared, onBusyChange }: { d
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Input belum dapat dibaca.'); }
     finally { setBusy(false); onBusyChange(false); }
   }
+  const screenshot = mode === 'screenshot';
+  const file = screenshot ? image : video;
+  const available = mode === 'link' ? !!url.trim() : !!file;
   return <div className="input-adapter">
-    <div role="group" aria-label="Jenis input" className="integration-controls">
-      {([['text','Teks'], ['screenshot','Screenshot'], ['link','Link video'], ['video','Unggah video']] as const).map(([id,label]) =>
-        <button type="button" className={`example-chip ${mode === id ? 'selected' : ''}`} aria-pressed={mode === id}
-          disabled={disabled || busy} key={id} onClick={() => { setMode(id); setError(''); }}>{label}</button>)}
+    <div role="group" aria-label="Jenis input" className="input-modes">
+      {modes.map(({ id, label, icon: Icon }) => <button type="button" key={id}
+        aria-pressed={mode === id} disabled={disabled || busy}
+        onClick={() => { onModeChange(id); setError(''); setDragging(false); }}>
+        <Icon size={18} aria-hidden="true" />{label}
+      </button>)}
     </div>
-    {mode === 'screenshot' && <div>
-      <label htmlFor="screenshot-image">Unggah screenshot</label>
-      <input id="screenshot-image" type="file" accept="image/png,image/jpeg,image/webp" disabled={disabled || busy}
-        onChange={event => { setImage(event.target.files?.[0] ?? null); setError(''); }} />
-      {preview && <img className="screenshot-preview" src={preview} alt="Pratinjau screenshot pilihan" />}
-      <p>PNG, JPEG, atau WebP · maksimal 3 MB. Gambar dikirim ke penyedia LLM untuk membaca teks dan tidak disimpan dalam riwayat. Potong bagian pribadi sebelum unggah.</p>
-      <button type="button" className="text-button" disabled={disabled || busy || !image} onClick={() => void prepare()}>{busy ? 'Membaca gambar…' : 'Baca teks screenshot'}</button>
-    </div>}
-    {mode === 'link' && <div>
-      <label htmlFor="video-link">Tautan video publik</label>
-      <input id="video-link" type="url" value={url} placeholder="https://www.tiktok.com/@akun/video/..." disabled={disabled || busy}
-        onChange={event => setUrl(event.target.value)} />
-      <p>Ucapan dan tulisan dalam video akan ditranskripsikan untuk kamu tinjau. Jika akses dibatasi, gunakan unggahan atau screenshot.</p>
-      <button type="button" className="text-button" disabled={disabled || busy || !url.trim()} onClick={() => void prepare()}>{busy ? 'Membaca video…' : 'Baca isi video'}</button>
-    </div>}
-    {mode === 'video' && <div>
-      <label htmlFor="video-file">Unggah video dari perangkat</label>
-      <input id="video-file" type="file" accept="video/mp4,video/webm" disabled={disabled || busy}
-        onChange={event => { setVideo(event.target.files?.[0] ?? null); setError(''); }} />
-      <p>MP4 atau WebM · maksimal 4 MB. Audio dan frame dikirim ke penyedia LLM untuk transkripsi; video tidak disimpan dalam riwayat.</p>
-      <button type="button" className="text-button" disabled={disabled || busy || !video} onClick={() => void prepare()}>{busy ? 'Membaca video…' : 'Baca isi video'}</button>
+    {mode !== 'text' && <div className="media-panel" key={mode}>
+      {mode === 'link' ? <>
+        <label className="field-label" htmlFor="video-link">Tautan video publik</label>
+        <input id="video-link" type="url" value={url} placeholder="Tempel link TikTok, YouTube, atau video publik lain"
+          disabled={disabled || busy} onChange={event => { setUrl(event.target.value); setError(''); onReset(); }} />
+        <p>Audio dan tulisan pada video dibaca menjadi teks. Akses yang dibatasi platform dapat memerlukan unggahan berkas.</p>
+      </> : <>
+        <label className={`upload-zone ${dragging ? 'is-dragging' : ''} ${disabled || busy ? 'is-disabled' : ''}`}
+          htmlFor={screenshot ? 'screenshot-image' : 'video-file'} onDrop={drop}
+          onDragOver={event => { event.preventDefault(); if (!disabled && !busy) setDragging(true); }}
+          onDragLeave={() => setDragging(false)}>
+          <Upload size={24} aria-hidden="true" />
+          <strong>{file ? file.name : screenshot ? 'Pilih screenshot' : 'Pilih berkas video'}</strong>
+          <span>{file ? `${(file.size / 1024 / 1024).toLocaleString('id-ID', { maximumFractionDigits: 2 })} MB · Klik untuk mengganti` : 'Klik untuk memilih atau seret berkas ke sini'}</span>
+          <input className="sr-only" id={screenshot ? 'screenshot-image' : 'video-file'} type="file"
+            aria-label={screenshot ? 'Unggah screenshot' : 'Unggah video dari perangkat'}
+            accept={screenshot ? 'image/png,image/jpeg,image/webp' : 'video/mp4,video/webm'} disabled={disabled || busy}
+            onChange={event => selectFile(event.target.files?.[0] ?? null)} />
+        </label>
+        {screenshot && preview && <img className="screenshot-preview" src={preview} alt="Pratinjau screenshot pilihan" />}
+        <p>{screenshot ? 'PNG, JPEG, atau WebP · maksimal 3 MB.' : 'MP4 atau WebM · maksimal 4 MB.'}</p>
+        <details className="media-privacy"><summary>Bagaimana berkas diproses?</summary><p>Konten dikirim ke penyedia AI untuk pembacaan dan tidak disimpan dalam riwayat. Hapus bagian pribadi sebelum mengunggah.</p></details>
+      </>}
+      <button type="button" className={`${prepared ? 'secondary-button' : 'primary-button'} media-read-button`}
+        disabled={disabled || busy || !available} onClick={() => void prepare()}>
+        {busy ? <LoaderCircle className="spin" size={20} /> : prepared ? <RotateCcw size={20} /> : <ScanText size={20} />}
+        {busy ? screenshot ? 'Membaca screenshot…' : 'Membaca video…' : prepared ? 'Baca ulang' : screenshot ? 'Baca teks screenshot' : 'Baca isi video'}
+      </button>
+      <p className="media-next" role={busy ? 'status' : undefined}>{busy ? 'Pembacaan sedang berlangsung. Tunggu hasilnya di halaman ini.' : prepared ? needsText ? 'Pembacaan belum lengkap. Tempel teks klaim di bawah untuk melanjutkan.' : 'Hasil pembacaan tersedia di bawah. Periksa dan koreksi sebelum melanjutkan.' : 'Setelah dibaca, tinjau teksnya sebelum memeriksa klaim.'}</p>
     </div>}
     {error && <p className="integration-error" role="alert">{error}</p>}
   </div>;

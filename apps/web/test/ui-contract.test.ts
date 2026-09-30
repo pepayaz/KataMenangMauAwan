@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { checkFixtures } from '../../../packages/shared/fixtures/index.js';
-import { formatEvidence, readHistory, historyMatches, HistoryItemSchema, examples, type HistoryItem } from '../lib/check-view';
+import { formatEvidence, readableSourceText, readHistory, historyMatches, HistoryItemSchema, examples, type HistoryItem } from '../lib/check-view';
 import { restoreStoredCheck, storedTimestamp } from '../lib/stored-check';
 import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders } from '../lib/history-client';
 import CheckReport from '../components/check-report';
@@ -51,7 +51,7 @@ describe('rapor dan riwayat UI memakai hasil shared', () => {
   it('prediksi tanpa evidence tidak menawarkan pembanding atau tombol sumber aktif', () => {
     const prediction = checkFixtures[2]!;
     const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, text: prediction.input.rawText, result: prediction.result } }));
-    expect(html).toContain('Di luar cakupan'); expect(html).toContain('<strong>—</strong>');
+    expect(html).toContain('Di luar cakupan'); expect(html).toContain('<strong>Belum tersedia</strong>');
     expect(html).toContain('class="evidence-button" disabled=""');
   });
   it('jejak hanya memuat event aktual, error dan kredit yang diterima', () => {
@@ -87,6 +87,17 @@ describe('rapor dan riwayat UI memakai hasil shared', () => {
 });
 it('data kosong diberi label eksplisit', () => {
   expect(formatEvidence({value: 'empty'})).toBe('Data belum tersedia');
+});
+it('nama field dan rumus fixture menjadi teks terbaca tanpa mengubah angka atau label lain', () => {
+  expect(readableSourceText('Angka Sectors dividend_yield_avg.avg_yield')).toBe('Rata-rata yield dividen menurut Sectors');
+  expect(readableSourceText('sum(total_yield per tahun) / jumlah tahun')).toBe('Jumlah yield tahunan dibagi jumlah tahun');
+  expect(readableSourceText('PER sintetis untuk pengujian')).toBe('PER sintetis untuk pengujian');
+  expect(readableSourceText('2021–2025')).toBe('2021–2025');
+  expect(readableSourceText('dividend.cash_payout_ratio ADRO')).toBe('Rasio pembayaran dividen terhadap kas ADRO');
+  expect(readableSourceText('dividend.year_coverage ADRO 2026')).toBe('Ketersediaan data dividen ADRO 2026');
+  expect(readableSourceText('valuation.pe BBCA 2025')).toBe('PER BBCA 2025');
+  expect(formatEvidence({ value: 'unknown' })).toBe('Belum diketahui');
+  expect(formatEvidence({ value: 'available' })).toBe('Data tersedia');
 });
 describe('rekonstruksi riwayat SQL', () => {
   it('timestamp Postgres dengan offset dinormalisasi ke UTC shared', () => {

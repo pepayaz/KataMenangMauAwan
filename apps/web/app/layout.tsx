@@ -5,9 +5,7 @@ import PwaRegistration from '../components/pwa-registration';
 import type { ReactNode } from 'react';
 import localFont from 'next/font/local';
 
-const displayFont = localFont({ src: '../public/fonts/oxanium.ttf', variable: '--font-display-loaded', weight: '400 700', display: 'swap' });
-const uiFont = localFont({ src: '../public/fonts/manrope.ttf', variable: '--font-ui-loaded', weight: '400 800', display: 'swap' });
-const dataFont = localFont({ src: '../public/fonts/ibm-plex-mono.ttf', variable: '--font-data-loaded', weight: '400', display: 'swap' });
+const uiFont = localFont({ src: '../public/fonts/source-sans-3.ttf', variable: '--font-ui-loaded', weight: '200 900', display: 'swap' });
 
 export const metadata = {
   title: 'Cek Dulu',
@@ -17,7 +15,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="id" className={`${displayFont.variable} ${uiFont.variable} ${dataFont.variable}`}>
+    <html lang="id" className={uiFont.variable}>
       <body><PwaRegistration />{children}</body>
     </html>
   );

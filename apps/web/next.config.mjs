@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Isolated UI previews can run alongside the team's development server.
+  distDir: process.env.CHECK_UI_PREVIEW === '1' ? '.next-ui-preview' : '.next',
   // Paket workspace di-ekspor sebagai TypeScript mentah supaya tidak ada langkah
   // build antar-paket; Next yang mentranspilasinya.
   transpilePackages: ['@cek-dulu/agent', '@cek-dulu/shared', '@cek-dulu/sectors', '@cek-dulu/verifiers'],

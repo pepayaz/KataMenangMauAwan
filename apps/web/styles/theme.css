@@ -1,17 +1,17 @@
 /* Investigation console: tokens shared by input, reports, and history. */
 :root {
   color-scheme: dark;
-  --canvas: #05070b;
-  --surface: #090d14;
-  --surface-raised: #0e1420;
-  --surface-hover: #151d2a;
+  --canvas: #11151b;
+  --surface: #161c24;
+  --surface-raised: #1b222c;
+  --surface-hover: #242e3b;
   --ink: #f4f7fb;
   --muted: #aab6c5;
-  --subtle: #8795a8;
-  --line: #202b3a;
-  --line-bright: #30445c;
-  --accent: #37d7ff;
-  --success: #b8ff5c;
+  --subtle: #a0aec0;
+  --line: #2d3847;
+  --line-bright: #44546a;
+  --accent: #8bdce5;
+  --success: #a6d8ae;
   --amber: #ffb547;
   --danger: #ff5f6d;
   --violet: #a98bff;
@@ -19,7 +19,7 @@
   --dark: var(--surface);
   --lime: var(--success);
   --radius: 16px;
-  --font-ui: var(--font-ui-loaded, "Manrope"), sans-serif;
-  --font-display: var(--font-display-loaded, "Oxanium"), sans-serif;
-  --font-data: var(--font-data-loaded, "IBM Plex Mono"), monospace;
+  --font-ui: var(--font-ui-loaded, "Source Sans 3"), sans-serif;
+  --font-display: var(--font-ui);
+  --font-data: var(--font-ui);
 }

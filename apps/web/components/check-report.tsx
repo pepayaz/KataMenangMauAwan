@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ExternalLink, FileSearch, Layers3, X } from 'lucide-react';
 import type { ClaimType, Evidence } from '@cek-dulu/shared/schemas';
 import { cleanText } from '../../../packages/agent/src/clean-text';
-import { formatEvidence, type HistoryItem } from '../lib/check-view';
+import { formatEvidence, readableSourceText, type HistoryItem } from '../lib/check-view';
 import VerdictBadge from './verdict-badge';
 
 const typeLabels: Record<ClaimType, string> = { dividend: 'Dividen', valuation: 'Valuasi', price_move: 'Perubahan harga',
@@ -12,17 +12,21 @@ const sourceParamLabels: Record<string, string> = { formula: 'Rumus', period: 'P
 
 function EvidenceDrawer({ evidence, demo, onClose }: { evidence: Evidence[]; demo: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => { ref.current?.showModal(); }, []);
+  useEffect(() => {
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = ref.current;
+    dialog?.showModal();
+    return () => { if (dialog?.open) dialog.close(); trigger?.focus({ preventScroll: true }); };
+  }, []);
   return <dialog ref={ref} className="evidence-drawer" aria-labelledby="evidence-title" onCancel={onClose}
     onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
-    <div className="drawer-head"><div><span className="eyebrow">CATATAN SUMBER</span><h2 id="evidence-title">Telusuri buktinya.</h2></div><button className="icon-button" aria-label="Tutup sumber" onClick={onClose}><X size={22} /></button></div>
+    <div className="drawer-head"><h2 id="evidence-title">Sumber pemeriksaan</h2><button className="icon-button" aria-label="Tutup sumber" onClick={onClose}><X size={22} /></button></div>
     <p className="drawer-intro">Nilai, periode, dan asal data yang digunakan dalam rapor ini.</p>
     {evidence.map(record => <article className="evidence-record" key={record.evidenceId}>
-      <h3>{record.label}</h3><strong className="evidence-value">{formatEvidence(record)}</strong>
+      <h3>{readableSourceText(record.label)}</h3><strong className="evidence-value">{formatEvidence(record)}</strong>
       <dl><div><dt>Diambil</dt><dd>{new Date(record.fetchedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' })} WIB</dd></div><div><dt>Asal</dt><dd>{demo || record.tool.startsWith('fixture:') ? 'Fixture contoh, bukan data pasar terkini' : record.cached ? 'Data tersimpan' : 'Sectors API'}</dd></div>
-        {Object.entries(record.params).filter(([key]) => key in sourceParamLabels).map(([key, value]) => <div key={key}><dt>{sourceParamLabels[key]}</dt><dd>{String(value)}</dd></div>)}
+        {Object.entries(record.params).filter(([key]) => key in sourceParamLabels).map(([key, value]) => <div key={key}><dt>{sourceParamLabels[key]}</dt><dd>{readableSourceText(String(value))}</dd></div>)}
       </dl>
-      <details className="trace-detail"><summary>Detail teknis sumber</summary><pre>{JSON.stringify({ tool: record.tool, params: record.params, evidenceId: record.evidenceId }, null, 2)}</pre></details>
     </article>)}
     <a className="text-button" href="https://docs.sectors.app" target="_blank" rel="noreferrer">Dokumentasi sumber Sectors <ExternalLink size={14} /></a>
   </dialog>;
@@ -48,9 +52,9 @@ export default function CheckReport({ item }: { item: HistoryItem }) {
           <p className="claim-explanation">{verdict.explanation}</p>
           {verdict.missingContext.length > 0 && <div className="context-finding"><div className="context-finding-title"><Layers3 size={17} /><h3>Konteks yang hilang</h3></div>{verdict.missingContext.map(context => <p key={context.hypId}>{context.summary}</p>)}</div>}
         </div>
-        <div className="report-evidence"><div className="metric-compare"><div><span>Diklaim{asserted?.period ? ` · ${asserted.period}` : ''}</span><strong>{assertedValue}</strong></div><ArrowRight size={18} aria-hidden="true" /><div><span>Hasil pembanding</span><strong>{verdict.computed ? formatEvidence(verdict.computed) : '—'}</strong></div></div>
-          <p className="comparison-note">{verdict.computed ? evidence.find(record => record.evidenceId === verdict.computed?.evidenceId)?.label : verdict.verdict === 'out_of_scope' ? 'Prediksi tidak memiliki angka pembanding historis.' : 'Belum ada evidence numerik yang memadai.'}</p>
-          <button className="evidence-button" disabled={!evidence.length} onClick={() => setSelectedEvidence(evidence)}><FileSearch size={16} />Lihat sumber<span>{evidence.length} bukti</span><ArrowRight size={16} /></button>
+        <div className="report-evidence"><div className="metric-compare"><div><span>Diklaim{asserted?.period ? ` · ${asserted.period}` : ''}</span><strong>{assertedValue}</strong></div><ArrowRight size={18} aria-hidden="true" /><div><span>Hasil pembanding</span><strong>{verdict.computed ? formatEvidence(verdict.computed) : 'Belum tersedia'}</strong></div></div>
+          <p className="comparison-note">{verdict.computed ? readableSourceText(evidence.find(record => record.evidenceId === verdict.computed?.evidenceId)?.label ?? '') : verdict.verdict === 'out_of_scope' ? 'Prediksi tidak memiliki angka pembanding historis.' : 'Belum ada data angka yang memadai.'}</p>
+          <button className="evidence-button" disabled={!evidence.length} onClick={() => setSelectedEvidence(evidence)}><FileSearch size={16} />Lihat sumber<span>{evidence.length} bukti</span></button>
         </div>
       </article>;
     })}

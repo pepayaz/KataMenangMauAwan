@@ -198,7 +198,7 @@ describe('route input, share dan alur ke pipeline', () => {
     expect(response.headers.get('Content-Security-Policy')).toContain('nonce-');expect(response.headers.get('Cache-Control')).toBe('no-store');
   });
   it('UI menawarkan input screenshot, link dan unggah video', () => {
-    const html = renderToStaticMarkup(createElement(InputAdapter,{disabled:false,onPrepared:()=>{},onBusyChange:()=>{}}));
+    const html = renderToStaticMarkup(createElement(InputAdapter,{disabled:false,mode:'text',prepared:false,onModeChange:()=>{},onReset:()=>{},onPrepared:()=>{},onBusyChange:()=>{}}));
     expect(html).toContain('Screenshot');expect(html).toContain('Link video');expect(html).toContain('Unggah video');
   });
   it('semua fixture adaptasi valid; ready kosong ditolak', () => {
