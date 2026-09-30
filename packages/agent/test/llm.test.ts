@@ -167,6 +167,20 @@ describe('provider gemini', () => {
     expect(second.contents[0].parts[1]).toEqual({ inlineData: { mimeType: 'image/png', data: 'iVBORw0KGgo=' } });
     expect(second.contents[0].parts[2].text).toContain('invalid_json');
   });
+  it('video dikirim sebagai inlineData ke Gemini dengan schema JSON', async () => {
+    const fetchImpl = reply(ok('{"value":3}'));
+    const videoDataUrl = 'data:video/mp4;base64,AAAAFGZ0eXBpc29t';
+    expect(await new LlmAdapter({ env: geminiEnv, fetchImpl }).generate({ ...request, videoDataUrl })).toEqual({ value: 3 });
+    const body = JSON.parse(String((fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+    expect(body.contents[0].parts[1]).toEqual({ inlineData: { mimeType: 'video/mp4', data: 'AAAAFGZ0eXBpc29t' } });
+    expect(body.generationConfig.responseJsonSchema.type).toBe('object');
+  });
+  it('provider lain dan format video tidak valid ditolak terkontrol', async () => {
+    await expect(new LlmAdapter({ env: geminiEnv, fetchImpl: reply(ok('{"value":3}')) }).generate({ ...request,
+      videoDataUrl:'data:video/avi;base64,AAAA' })).rejects.toMatchObject({ code:'INPUT' });
+    await expect(new LlmAdapter({ env:{LLM_PROVIDER:'openai',LLM_MODEL:'x',LLM_API_KEY:'dummy-unit-test'} }).generate({ ...request,
+      videoDataUrl:'data:video/mp4;base64,AAAA' })).rejects.toMatchObject({ code:'INPUT' });
+  });
 
   it('bagian thought diabaikan', async () => {
     const fetchImpl = reply({ candidates: [{ finishReason: 'STOP', content: { parts: [

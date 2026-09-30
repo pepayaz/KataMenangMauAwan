@@ -1,4 +1,4 @@
-# Screenshot, caption video dan Web Share Target
+# Screenshot, isi video dan Web Share Target
 
 ## Screenshot
 
@@ -17,19 +17,31 @@ Tidak ada caption/transkrip buatan jika OCR gagal: gunakan teks manual.
 
 ## Link video
 
-Pilih Link video, masukkan URL HTTPS lalu Ambil caption. TikTok memakai
-https://www.tiktok.com/oembed?url=... sesuai dokumentasi resmi:
-https://developers.tiktok.com/docs/en/embed-videos . Hanya title/caption dipakai;
-author_name, html, thumbnail dan video tidak diambil/dieksekusi/disimpan.
-Request memiliki timeout 10 detik, batas respons 64 KiB dan redirect ditolak.
-Host TikTok eksplisit saja; input URL tidak pernah menjadi alamat fetch server.
-Link pendek diteruskan ke oEmbed; jika layanan tidak menerima link tersebut,
-pengguna diminta memakai URL lengkap atau teks/screenshot.
+Pilih Link video dan masukkan URL HTTPS video publik. Ekstraktor yt-dlp dari
+`youtube-dl-exec` mengambil satu video (tanpa playlist, login, cookie atau DRM),
+maksimal 8 MB dan 180 detik, dengan timeout unduhan 45 detik. Host sosial yang
+diizinkan tercantum di `apps/web/lib/video-downloader.ts`; dukungan tiap situs
+tergantung perubahan platform. URL internal dan kredensial dalam URL ditolak.
+Video sementara dikirim ke Gemini sebagai inline video untuk membaca suara dan
+teks di frame. Hanya teks hasil transkripsi yang diteruskan untuk koreksi pengguna;
+video tidak disimpan. Model yang dikonfigurasi harus mendukung input video dan
+structured output. Input video saat ini memakai `LLM_PROVIDER=gemini`.
 
-Caption ditampilkan untuk koreksi. CheckInput tetap memakai source paste dengan
-url sumber (enum source lama tidak diubah). Ucapan/tulisan di dalam video tidak
-ditranskripsikan. Caption kosong/tidak tersedia atau platform lain memberi
-needs_text; URL tetap tampil dan teks manual/screenshot dapat dipakai.
+Jika unduhan gagal, TikTok mencoba caption oEmbed resmi sebagai fallback.
+Fallback diberi `status: needs_text` dan peringatan bahwa suara/frame **belum**
+diperiksa. Platform lain meminta unggah video, screenshot, atau teks. Caption
+tidak pernah diberi label seolah-olah seluruh video telah dibaca. CheckInput
+tetap memakai source paste dan URL sumber; kontrak klaim/evidence tidak berubah.
+
+## Unggah video
+
+Pilih Unggah video untuk MP4 atau WebM maksimal 4 MB. Server memvalidasi ukuran,
+MIME dan tanda tangan file sebelum mengirimnya ke Gemini. Ini membantu video
+privat atau platform yang ekstraktornya gagal. Batas 4 MB berada di bawah batas
+payload Vercel Function 4,5 MB; video yang lebih besar butuh unggah langsung ke
+penyimpanan sementara berizin dengan penghapusan otomatis. Tanpa itu, gunakan
+link publik, screenshot, atau teks manual. Unggahan video memakai source paste
+karena CheckSource belum memiliki varian video; peringatan input menyebut asalnya.
 
 ## Web Share Target dan PWA
 
@@ -43,7 +55,8 @@ flag share_target juga dapat diaktifkan pada feature_flags. Default tetap mati. 
 PNG/JPEG/WebP maksimal 3 MB dan menolak format lain dengan pesan yang jelas.
 Instal Cek Dulu melalui menu Chrome, lalu bagikan gambar/teks/link ke aplikasi.
 Penerima POST /share memakai multipart/form-data. Gambar melewati OCR; teks
-langsung dipertahankan; URL tunggal memakai oEmbed. Semua menunggu peninjauan
+langsung dipertahankan; URL tunggal menjalani pembacaan isi video dengan fallback
+caption yang diberi label. Semua menunggu peninjauan
 pengguna di halaman utama. Payload teks dipindahkan via sessionStorage per tab,
 dihapus setelah dibaca; tidak dikirim lewat query URL. HTML handoff memakai
 escaping dan CSP nonce. Saat flag mati, POST ditolak dan manifest tidak
@@ -59,24 +72,18 @@ trace SSE baru dimulai saat pengguna mengirim teks yang telah ditinjau.
 C: workspace menambah kontrol input/preview/peringatan, meneruskan source/url,
 menyimpan metadata sumber pada riwayat lokal, menambahkan manifest/registrasi PWA.
 B: detail riwayat meneruskan source/url agar membuka rapor mempertahankan
-sumber screenshot/link; route baru /api/input serta adapter oEmbed/upload; /api/check tetap memakai
+sumber screenshot/link; route /api/input menangani OCR, video publik dan upload; /api/check tetap memakai
 kontrak dan pipeline yang sama. LLM A diperluas dengan input_image menggunakan
 Responses API: https://developers.openai.com/api/docs/guides/images-vision .
 Semua akses data saham tetap melalui packages/sectors dan cache_only.
 
 ## Verifikasi
 
-Test tanpa jaringan mencakup OCR mock -> input siap -> pipeline/SSE ADRO,
-retry/invalid OCR, bytes/MIME/ukuran unggahan, caption valid/kosong/error,
-URL tidak aman/platform lain tanpa fetch, tidak meneruskan kreator/HTML,
-kontrak fixture, flag share target, handoff aman dan structured vision request.
-OCR provider nyata memerlukan env/key yang belum tersedia pada mesin ini.
-Berbagi dari Chrome Android terpasang belum diuji pada perangkat nyata;
-feature flag tetap mati. Tidak ada scraping atau panggilan Sectors live.
-
-Browser lokal memverifikasi pilihan gambar/pratinjau, error OCR tanpa konfigurasi,
-dan link platform lain yang mempertahankan URL sambil meminta teks manual.
-Unit test memakai mock OCR; tidak ada pengujian OCR provider nyata.
-
-Hasil akhir: pnpm test 677 test / 24 file lulus, pnpm -r typecheck lulus,
-dan build produksi Next.js lulus termasuk /api/input, /share dan manifest.
+Test tanpa jaringan mencakup OCR, validasi unggahan, host URL sosial, penolakan
+URL internal, input video inline ke Gemini, fallback caption yang jelas, serta
+handoff Web Share Target. Video TikTok publik yang diberikan pengguna berhasil
+diunduh sebagai MP4 sekitar 2,2 MB dan ditranskripsikan oleh Gemini menjadi
+judul serta ticker yang tampil di video; tidak ada panggilan Sectors live.
+Berbagi dari Chrome Android terpasang dan deployment yt-dlp di Vercel masih
+memerlukan smoke test pada lingkungan target. Video privat/DRM dan situs yang
+mengubah proteksi dapat gagal; fallback unggah/screenshot/teks tetap tersedia.

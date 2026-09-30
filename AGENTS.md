@@ -19,7 +19,7 @@ Lomba: Sectors Hackathon 2026, Track 1 (AI Agents & Assistants). Tim 4 orang. **
 3. **Status verdict ditentukan oleh aturan kode** (adjudicator), bukan oleh LLM.
 4. **Semua akses ke Sectors hanya lewat `packages/sectors`.** Jangan pernah `fetch` Sectors dari tempat lain. Modul itu yang mengurus cache, buku kredit, dan mode replay.
 5. **Tidak ada nasihat investasi.** Dilarang menulis kata/frasa rekomendasi (beli, jual, hold, target harga, "layak dibeli", dsb.) di output produk. Disclaimer wajib tampil permanen.
-6. **Tidak ada scraping** TikTok, X, Instagram, atau platform lain dari server. Input hanya dari yang diberikan pengguna (teks, screenshot, link + oEmbed resmi, atau teks yang dibaca ekstensi dari halaman yang sedang dibuka pengguna).
+6. **Link video adalah input isi konten, bukan hanya caption.** Server boleh mengambil video publik dari platform sosial melalui API resmi atau ekstraktor yang terawat untuk membaca audio dan frame. Jangan melewati login, paywall, DRM, atau pembatasan akses; jangan menerima URL internal/pribadi, kredensial dalam URL, atau unduhan tanpa batas ukuran/waktu. Tampilkan kegagalan platform secara jelas dan sediakan unggah video/screenshot/teks sebagai jalur cadangan. Media hanya diproses sementara, tidak disimpan dalam riwayat atau log; pengguna meninjau transkripsi sebelum cek. Jangan pernah mengklaim video sudah dibaca bila hanya caption yang tersedia.
 7. **Sasaran pemeriksaan adalah klaim, bukan pembuat konten.** Jangan menyimpan atau menampilkan nama kreator sebagai subjek penilaian.
 8. **Tidak ada rahasia di repo.** API key hanya di `.env.local` dan pengaturan Vercel. `.env*` ada di `.gitignore`. Jangan pernah menulis key di kode, test, fixture, atau log.
 9. **Jangan mengarang nama endpoint atau field Sectors.** Kalau tidak yakin, cek dokumentasi (bagian 6) atau data cache yang sudah ada, lalu tulis TODO yang jelas. Jangan menebak.
@@ -61,7 +61,7 @@ cek-dulu/
 
 | # | Tahap | Masukan → keluaran | LLM? |
 |---|---|---|---|
-| 0 | Input adapter | teks / screenshot (OCR via LLM vision) / link (oEmbed caption) → teks mentah | OCR saja |
+| 0 | Input adapter | teks / screenshot (OCR) / link video publik (audio + frame, caption bila ada) / berkas video pengguna → teks klaim mentah untuk ditinjau | transkripsi/OCR saja |
 | 1 | Normalizer | teks → teks bersih + `Entity[]` (sebutan → ticker) | fallback saja |
 | 2 | Claim extractor | teks → `Claim[]` bertipe | ya |
 | 3 | Router | klaim → rencana panggilan tool + estimasi kredit | tidak |
@@ -187,6 +187,9 @@ Skema `InputAdaptationSchema` membatasi teks 5000 karakter dan mewajibkan teks t
 kosong untuk ready. Hasil OCR/caption ditinjau pengguna sebelum menjadi CheckInput.
 Link memakai source paste dengan url; screenshot memakai source screenshot,
 Web Share Target memakai source share_target. Tidak ada perubahan Claim atau Evidence.
+Transkripsi video juga menghasilkan teks yang ditinjau pengguna sebelum menjadi CheckInput.
+Link video memakai source paste dengan url sumber; asal video dicatat pada peringatan
+input. Jika audio/frame tidak terbaca, jangan mengubah caption menjadi klaim video.
 
 Fondasi shared juga mengekspor skema `ToolCall` dan `Hypothesis` (bagian 5).
 `Hypothesis.test` adalah fungsi sinkron lokal yang divalidasi Zod, bukan payload JSON LLM.
@@ -218,8 +221,9 @@ ADRO, BBRI, BBCA, BMRI, TLKM, ASII, BREN, GOTO, ANTM, PTBA, UNVR, ICBP, AMAR, CU
 
 ## 10. Input
 - **Tempel teks** (P0).
-- **Screenshot** lewat upload atau Web Share Target (manifest `share_target` dengan `method: POST`, `enctype: multipart/form-data`, menerima `image/*`) → OCR via LLM vision. Ini jalur utama untuk konten TikTok, karena share TikTok hanya mengirim URL.
-- **Link**: ambil caption lewat oEmbed resmi (`https://www.tiktok.com/oembed?url=...`). Kalau kosong, tampilkan kolom tempel teks dengan link sudah terisi.
+- **Screenshot** lewat upload atau Web Share Target (manifest `share_target` dengan `method: POST`, `enctype: multipart/form-data`, menerima `image/*`) → OCR via LLM vision. Ini jalur cadangan bila video tidak dapat diambil atau klaim hanya ada di satu frame.
+- **Link video**: ambil caption lewat API resmi bila tersedia, lalu peroleh media publik melalui API/ekstraktor yang terawat dan transkripsikan ucapan serta tulisan pada frame memakai model multimodal. Berlaku lintas platform yang didukung ekstraktor; dukungan tiap situs dapat berubah. Jika video privat, dibatasi, terlalu besar, atau tidak dapat diambil, jelaskan alasannya dan arahkan pengguna ke unggah berkas video, screenshot, atau teks. URL tetap menjadi sumber. Jangan menyimpulkan klaim dari caption saja seolah-olah seluruh video sudah diperiksa.
+- **Unggah video**: jalur cadangan untuk video yang dimiliki/diberikan pengguna. Validasi jenis dan ukuran berkas, proses sementara, dan minta peninjauan transkripsi. Untuk deployment serverless, batas unggah platform harus diperhatikan; gunakan penyimpanan sementara dengan akses terbatas untuk berkas besar.
 - **Ekstensi X**: content script membaca teks postingan yang sedang dibuka pengguna.
 - Web Share Target hanya jalan di Chrome Android; iOS memakai salin-tempel.
 

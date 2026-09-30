@@ -54,13 +54,14 @@ Sudah berjalan:
 - Pipeline agen lengkap, structured output, context hunter P0, grounding angka
   dan filter nasihat investasi
 - Pilihan ticker pengguna yang divalidasi terhadap kandidat server
-- Input screenshot melalui OCR vision dengan peninjauan teks, link TikTok melalui
-  oEmbed resmi, dan penerima Web Share Target di balik feature flag
+- Input screenshot melalui OCR vision dengan peninjauan teks, link video publik
+  melalui ekstraktor yt-dlp dan Gemini untuk audio/frame, caption TikTok melalui
+  oEmbed sebagai fallback yang diberi label, unggah video kecil, serta Web Share Target
 - Antarmuka C terintegrasi di Next.js: streaming progres, rapor seluruh klaim,
   pilihan ticker, bookmark dan riwayat lokal; riwayat server memakai sesi Supabase
 - Test otomatis memakai mock dan fixture tanpa API live
 
-Belum tuntas: verifikasi integrasi memakai cache asli, LLM nyata dan Supabase nyata,
+Belum tuntas: verifikasi integrasi memakai cache asli dan Supabase nyata,
 sebagian hipotesis lanjutan (A), verifikasi PWA/share target di Android, ekstensi X dan set
 evaluasi (D). Demo fixture diberi label jelas; angka demo bukan data pasar terkini.
 
@@ -70,7 +71,8 @@ evaluasi (D). Demo fixture diberi label jelas; angka demo bukan data pasar terki
 pnpm install
 # Next berjalan dari apps/web; letakkan env lokal web di folder tersebut
 cp .env.example apps/web/.env.local
-# Isi LLM_PROVIDER, LLM_MODEL dan LLM_API_KEY untuk cek normal
+# Isi LLM_PROVIDER, LLM_MODEL dan LLM_API_KEY untuk cek normal;
+# pembacaan video membutuhkan provider Gemini
 pnpm dev
 ```
 

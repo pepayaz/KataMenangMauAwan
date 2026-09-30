@@ -15,6 +15,7 @@ export type LlmRequest = {
   prompt: string;
   input: string;
   imageDataUrl?: string;
+  videoDataUrl?: string;
   format: { type: 'json_schema'; name: string; strict: true; schema: Record<string, unknown> };
   attempt: number;
   feedback: readonly LlmValidationIssue[];
@@ -46,6 +47,7 @@ class OpenAiProvider implements LlmProvider {
       ...(fetchImpl ? { fetch: fetchImpl } : {}) });
   }
   async complete(request: LlmRequest): Promise<unknown> {
+    if (request.videoDataUrl) throw new LlmError('INPUT', request.attempt);
     const response = await this.client.responses.create({
       model: request.model, store: false,
       input: [
@@ -91,6 +93,11 @@ class GeminiProvider implements LlmProvider {
     const parts: Record<string, unknown>[] = [{ text: request.input }];
     if (request.imageDataUrl) {
       const match = /^data:(image\/(?:png|jpeg|webp));base64,(.+)$/.exec(request.imageDataUrl);
+      if (!match) throw new LlmError('INPUT', request.attempt);
+      parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
+    }
+    if (request.videoDataUrl) {
+      const match = /^data:(video\/(?:mp4|webm));base64,(.+)$/.exec(request.videoDataUrl);
       if (!match) throw new LlmError('INPUT', request.attempt);
       parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
     }
@@ -177,10 +184,13 @@ export class LlmAdapter {
   }
 
   async generate<S extends z.ZodTypeAny>(options: {
-    schema: S; name: string; prompt: string; input: string; imageDataUrl?: string; signal?: AbortSignal;
+    schema: S; name: string; prompt: string; input: string; imageDataUrl?: string; videoDataUrl?: string; signal?: AbortSignal;
   }): Promise<z.infer<S>> {
     if (options.imageDataUrl !== undefined && (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(options.imageDataUrl)
       || options.imageDataUrl.length > 4_200_000)) throw new LlmError('INPUT');
+    if (options.videoDataUrl !== undefined && (!/^data:video\/(mp4|webm);base64,[A-Za-z0-9+/]+={0,2}$/.test(options.videoDataUrl)
+      || options.videoDataUrl.length > 11_300_000)) throw new LlmError('INPUT');
+    if (options.imageDataUrl && options.videoDataUrl) throw new LlmError('INPUT');
     let format: LlmRequest['format'];
     try {
       if (!(options.schema instanceof z.ZodObject) || !isStructuredSchema(options.schema)) throw new LlmError('SCHEMA');
@@ -193,7 +203,8 @@ export class LlmAdapter {
       try {
         output = await this.provider.complete({ model: this.model, prompt: options.prompt,
           input: options.input, format, attempt, feedback, signal: options.signal,
-          ...(options.imageDataUrl ? { imageDataUrl: options.imageDataUrl } : {}) });
+          ...(options.imageDataUrl ? { imageDataUrl: options.imageDataUrl } : {}),
+          ...(options.videoDataUrl ? { videoDataUrl: options.videoDataUrl } : {}) });
       } catch (error) {
         if (error instanceof LlmError) throw error;
         // Jangan membawa pesan provider, raw response, atau key ke error/log produk.

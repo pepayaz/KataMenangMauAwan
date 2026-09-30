@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { LlmAdapter } from '@cek-dulu/agent';
 import { InputAdaptationSchema, type InputAdaptation } from '@cek-dulu/shared';
-import { imageDataUrl, inputForm, inputUrl, readScreenshot, readVideoLink, InputError } from './input-adapter';
+import { imageDataUrl, inputForm, inputUrl, readScreenshot, readVideoContentLink, InputError } from './input-adapter';
 
-export async function readSharedInput(request: Request): Promise<InputAdaptation> {
+export async function readSharedInput(request: Request, deps: { readVideo?: typeof readVideoContentLink } = {}): Promise<InputAdaptation> {
   const form = await inputForm(request), images = form.getAll('image').filter(item => item instanceof Blob && item.size > 0);
   if (images.length > 1) throw new InputError(400, 'Bagikan satu screenshot setiap kali.');
   if (images[0] instanceof Blob) {
@@ -17,7 +17,7 @@ export async function readSharedInput(request: Request): Promise<InputAdaptation
   if (text && !/^https:\/\/\S+$/.test(text)) return InputAdaptationSchema.parse({ status: 'ready', rawText: text, source: 'share_target',
     ...(explicitUrl ? { url: inputUrl(explicitUrl).href } : {}), warnings: ['Periksa teks berbagi sebelum memulai cek.'] });
   const rawUrl = explicitUrl || (/^https:\/\/\S+$/.test(text) ? text : '');
-  if (rawUrl) return InputAdaptationSchema.parse({ ...await readVideoLink(inputUrl(rawUrl).href, fetch, request.signal), source: 'share_target' });
+  if (rawUrl) return InputAdaptationSchema.parse({ ...await (deps.readVideo ?? readVideoContentLink)(inputUrl(rawUrl).href, {}, request.signal), source: 'share_target' });
   return InputAdaptationSchema.parse({ status: text ? 'ready' : 'needs_text', rawText: text, source: 'share_target',
     warnings: ['Periksa teks berbagi sebelum memulai cek.'] });
 }

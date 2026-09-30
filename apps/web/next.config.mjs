@@ -3,8 +3,13 @@ const nextConfig = {
   // Paket workspace di-ekspor sebagai TypeScript mentah supaya tidak ada langkah
   // build antar-paket; Next yang mentranspilasinya.
   transpilePackages: ['@cek-dulu/agent', '@cek-dulu/shared', '@cek-dulu/sectors', '@cek-dulu/verifiers'],
+  serverExternalPackages: ['youtube-dl-exec'],
 
-  outputFileTracingIncludes: { '/api/check': ['../../packages/agent/prompts/*.md'] },
+  outputFileTracingIncludes: {
+    '/api/check': ['../../packages/agent/prompts/*.md'],
+    '/api/input': ['../../node_modules/.pnpm/youtube-dl-exec@*/node_modules/youtube-dl-exec/bin/*'],
+    '/share': ['../../node_modules/.pnpm/youtube-dl-exec@*/node_modules/youtube-dl-exec/bin/*'],
+  },
 
   experimental: {
     // Bab 3.7: satu cek bisa 15-40 detik. Route handler mengalirkan SSE selama itu.
