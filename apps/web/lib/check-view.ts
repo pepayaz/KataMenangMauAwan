@@ -29,12 +29,13 @@ export function historyMatches(item: HistoryItem, query: string, filter: string,
   return (!savedOnly || item.saved) && item.text.toLowerCase().includes(query.toLowerCase())
     && (filter === 'Semua' || item.result.verdicts.some(verdict => verdictLabels[verdict.verdict] === filter));
 }
-export function formatEvidence(evidence: Pick<Evidence, 'value' | 'unit'>): string {
+export function formatEvidence(evidence: Pick<Evidence, 'value' | 'unit'>, maximumFractionDigits = 2): string {
   if (typeof evidence.value !== 'number') return ({ empty: 'Data belum tersedia', available: 'Data tersedia', unknown: 'Belum diketahui' } as Record<string, string>)[evidence.value] ?? evidence.value;
   // Pipeline normalizes % to fractions; formatting only, never ask LLM to calculate.
-  const value = evidence.unit === '%' ? evidence.value * 100 : evidence.value;
-  const text = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 4 }).format(value);
-  return evidence.unit === 'IDR' ? `Rp${text}` : `${text}${evidence.unit === '%' ? '%' : evidence.unit === 'x' ? '×' : evidence.unit ? ` ${evidence.unit}` : ''}`;
+  // Intl's decimal scaling avoids binary multiplication artifacts in full-precision percentages.
+  if (evidence.unit === '%') return new Intl.NumberFormat('id-ID', { style: 'percent', maximumFractionDigits }).format(evidence.value);
+  const text = new Intl.NumberFormat('id-ID', { maximumFractionDigits }).format(evidence.value);
+  return evidence.unit === 'IDR' ? `Rp${text}` : `${text}${evidence.unit === 'x' ? '×' : evidence.unit ? ` ${evidence.unit}` : ''}`;
 }
 
 /** Present documented fixture field names as prose without changing evidence or values. */

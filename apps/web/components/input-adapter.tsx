@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, type DragEvent } from 'react';
-import { FileText, Image, Link, Video, Upload, LoaderCircle, ScanText, RotateCcw } from 'lucide-react';
+import { FileText, Image, Link, Video, Upload, LoaderCircle, ScanText, RotateCcw, Check } from 'lucide-react';
 import { InputAdaptationSchema, type InputAdaptation } from '@cek-dulu/shared/schemas';
 
 export type InputMode = 'text' | 'screenshot' | 'link' | 'video';
@@ -69,11 +69,18 @@ export default function InputAdapter({ disabled, mode, prepared, needsText = fal
       </button>)}
     </div>
     {mode !== 'text' && <div className="media-panel" key={mode}>
+      <ol className="media-steps" aria-label="Langkah input media">
+        <li className={prepared ? 'is-complete' : 'is-current'} aria-current={!prepared ? 'step' : undefined}><span>{prepared ? <Check size={14} /> : '1'}</span>Baca konten</li>
+        <li className={prepared ? 'is-current' : ''} aria-current={prepared ? 'step' : undefined}><span>2</span>Tinjau teks</li>
+        <li><span>3</span>Periksa klaim</li>
+      </ol>
+      <details className="media-setup" open={!prepared || busy}>
+      <summary hidden={!prepared}>Ganti input atau baca ulang</summary>
       {mode === 'link' ? <>
         <label className="field-label" htmlFor="video-link">Tautan video publik</label>
         <input id="video-link" type="url" value={url} placeholder="Tempel link TikTok, YouTube, atau video publik lain"
           disabled={disabled || busy} onChange={event => { setUrl(event.target.value); setError(''); onReset(); }} />
-        <p>Audio dan tulisan pada video dibaca menjadi teks. Akses yang dibatasi platform dapat memerlukan unggahan berkas.</p>
+        <div className="media-capabilities"><span><Video size={15} />Audio + tulisan video</span><details><summary>Jika link gagal?</summary><p>Platform dapat membatasi akses. Gunakan unggah video, screenshot, atau teks.</p></details></div>
       </> : <>
         <label className={`upload-zone ${dragging ? 'is-dragging' : ''} ${disabled || busy ? 'is-disabled' : ''}`}
           htmlFor={screenshot ? 'screenshot-image' : 'video-file'} onDrop={drop}
@@ -96,7 +103,9 @@ export default function InputAdapter({ disabled, mode, prepared, needsText = fal
         {busy ? <LoaderCircle className="spin" size={20} /> : prepared ? <RotateCcw size={20} /> : <ScanText size={20} />}
         {busy ? screenshot ? 'Membaca screenshot…' : 'Membaca video…' : prepared ? 'Baca ulang' : screenshot ? 'Baca teks screenshot' : 'Baca isi video'}
       </button>
-      <p className="media-next" role={busy ? 'status' : undefined}>{busy ? 'Pembacaan sedang berlangsung. Tunggu hasilnya di halaman ini.' : prepared ? needsText ? 'Pembacaan belum lengkap. Tempel teks klaim di bawah untuk melanjutkan.' : 'Hasil pembacaan tersedia di bawah. Periksa dan koreksi sebelum melanjutkan.' : 'Setelah dibaca, tinjau teksnya sebelum memeriksa klaim.'}</p>
+      </details>
+      {busy && <p className="media-next" role="status">Pembacaan sedang berlangsung. Tunggu hasilnya di halaman ini.</p>}
+      {prepared && needsText && <p className="media-incomplete" role="status">Pembacaan belum lengkap. Tempel teks klaim di bawah untuk melanjutkan.</p>}
     </div>}
     {error && <p className="integration-error" role="alert">{error}</p>}
   </div>;

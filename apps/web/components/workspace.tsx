@@ -18,6 +18,7 @@ import {
   MessageSquareQuote,
   Plus,
   Search,
+  ScanText,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -375,8 +376,11 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       onReset={() => { setMediaReady(false); setMediaNeedsText(false); setInputWarnings([]); setInputUrl(undefined); setChoices([]); setSelections({}); setActive(null); setTraces([]); setError(''); }}
                       onPrepared={acceptInput} onBusyChange={setInputBusy} />
                     {showText && <>
-                    {inputUrl && <p className="input-origin">Link sumber: <a href={inputUrl} target="_blank" rel="noreferrer">{inputUrl}</a><button type="button" className="text-button" disabled={running || inputBusy} onClick={() => setInputUrl(undefined)}>Lepas link</button></p>}
-                    {inputWarnings.length > 0 && <div role="status" className="input-review">{inputWarnings.map((warning,index) => <p key={index}>{warning}</p>)}<p>Koreksi teks di bawah, lalu tekan Cek klaim ini.</p></div>}
+                    {inputUrl && <p className="input-origin"><a href={inputUrl} target="_blank" rel="noreferrer">Sumber · {new URL(inputUrl).hostname} <ArrowUpRight size={15} /></a><button type="button" className="text-button" disabled={running || inputBusy} onClick={() => setInputUrl(undefined)}>Lepas link</button></p>}
+                    {inputMode !== 'text' && <div className="input-review">
+                      <div className="review-prompt"><ScanText size={20} /><div><strong>Periksa saham dan angka</strong><span>Teks hasil pembacaan bisa keliru. Koreksi langsung di bawah.</span></div></div>
+                      {inputWarnings.length > 0 && <details open={mediaNeedsText}><summary>Catatan pembacaan <span>{inputWarnings.length}</span></summary>{inputWarnings.map((warning,index) => <p key={index}>{warning}</p>)}</details>}
+                    </div>}
                     <label className="editor-label" htmlFor="claim">
                       {inputMode === 'text' ? 'Teks klaim saham' : 'Tinjau hasil pembacaan'}
                     </label>
@@ -393,13 +397,13 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                     />
                     <div className="input-meta">
                       <span>
-                        {inputMode === 'text' ? 'Sertakan nama saham, angka, dan periode jika ada.' : 'Koreksi teks yang salah terbaca sebelum memeriksa.'}
+                        {inputMode === 'text' ? 'Saham · angka · periode' : 'Teks dapat diedit'}
                       </span>
                       <span>
                         {input.length.toLocaleString("id-ID")} / 5.000
                       </span>
                     </div>
-                    <div className="example-row">
+                    {inputMode === 'text' && <div className="example-row">
                       <span>Coba contoh</span>
                       {examples.map((example) => (
                         <button
@@ -413,7 +417,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                           <span>{example.category}</span>
                         </button>
                       ))}
-                    </div>
+                    </div>}
                     <div className="integration-controls">
                       {fixtureDemo && <label><input type="checkbox" checked={demo} disabled={running || inputBusy}
                         onChange={event => { setDemo(event.target.checked); setChoices([]); setSelections({}); }} /> Demo fixture offline</label>}

@@ -10,6 +10,7 @@ import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders } from '../lib/hi
 import CheckReport from '../components/check-report';
 import Workspace from '../components/workspace';
 import TraceTimeline from '../components/trace-timeline';
+import { explanationParts } from '../lib/report-presentation';
 
 const fixture = checkFixtures[0]!;
 const item: HistoryItem = { id: fixture.result.checkId, text: fixture.input.rawText, createdAt: fixture.input.createdAt,
@@ -29,7 +30,7 @@ function sqlFixture() {
 describe('rapor dan riwayat UI memakai hasil shared', () => {
   it.each(checkFixtures)('menampilkan verdict backend $input.checkId tanpa fixture UI sendiri', fixture => {
     const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, id: fixture.result.checkId, text: fixture.input.rawText, result: fixture.result, traces: fixture.traces } }));
-    expect(html).toContain(fixture.result.verdicts[0]!.explanation);
+    explanationParts(fixture.result.verdicts[0]!.explanation).forEach(part => expect(html).toContain(part));
     expect(html).toContain('Demo fixture offline');
   });
   it('menampilkan semua klaim, bukan hanya hasil pertama', () => {

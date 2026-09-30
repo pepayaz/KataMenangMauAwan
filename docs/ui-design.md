@@ -45,6 +45,25 @@ Referensi memberi prinsip, bukan salinan layout atau klaim pemasaran.
   serta keterangan pemrosesan tetap tersedia.
 - Rapor, sumber, dan trace menampilkan informasi terbaca, tanpa blok JSON.
   Kutipan, evidence, rumus yang tersedia, periode, dan kredit tidak dikarang.
+- Input media menunjukkan tiga tahap kerja nyata: baca, tinjau, lalu periksa.
+  Setelah pembacaan, pengaturan sumber disusutkan. Pengguna tetap bisa mengganti
+  berkas/link atau membaca ulang; perubahan sumber membatalkan teks lama.
+- Tautan sumber ditampilkan sebagai domain. Pengingat untuk meninjau saham dan
+  angka selalu terlihat; seluruh catatan pembacaan tersedia dalam disclosure.
+  Pembacaan tidak lengkap ditandai terbuka, dan contoh teks disembunyikan saat
+  pengguna sedang meninjau media agar tidak bersaing dengan tindakan utama.
+- Rapor mendahulukan status besar, alasan singkat dari tabel verdict, konteks
+  backend, dan dua batang pembanding. Penjelasan asli tersedia per kalimat dalam
+  disclosure; angka dan isi penjelasan tidak ditulis ulang oleh UI atau LLM baru.
+- Angka tampilan dibulatkan dua desimal. Nilai lengkap tetap dapat dibuka;
+  pembulatan pada refuted menambah presisi bila dua angka akan terlihat sama.
+  Grafik membandingkan satuan yang sama dan memakai sumbu nol, termasuk nilai
+  negatif. Data kosong tidak ditampilkan sebagai nol.
+- Panel sumber memiliki ringkasan bukti yang mendasari computed/konteks, serta
+  semua sumber dengan pencarian dan rincian nilai, waktu, asal, serta rumus.
+  Riwayat menjadi grafik hanya bila metadata metrik, saham, satuan, dan periode
+  eksplisit cocok. Periode tahun dan tanggal dipisahkan; observasi bertentangan
+  pada periode sama membatalkan grafik. Riwayat panjang dapat digulir.
 - Gerak dipakai untuk pergantian panel, status membaca, hasil baru, dan drawer.
   prefers-reduced-motion menonaktifkannya. Tidak ada efek glow atau animasi latar.
 
@@ -71,7 +90,7 @@ ADRO menghasilkan misleading, BBCA supported (fixture sintetis), dan BBRI
 out_of_scope melalui UI offline. Sumber, Escape/pengembalian fokus, simpan rapor,
 serta pencarian riwayat diperiksa langsung.
 
-Hasil akhir: pnpm test lulus 724 test di 26 file; pnpm -r typecheck dan build
+Hasil akhir: pnpm test lulus 745 test di 27 file; pnpm -r typecheck dan build
 produksi lulus. Dependensi Testing Library dan jsdom hanya dipakai untuk test.
 
 Preview terisolasi memakai CHECK_UI_PREVIEW=1 dengan direktori .next-ui-preview,
@@ -90,3 +109,4 @@ menyeluruh; penilaian estetika perlu tetap ditinjau tim.
 - [Tombol baca video](ui-preview-video.jpg)
 - [Rapor ADRO offline](ui-preview-report.jpg)
 - [Panel sumber mobile](ui-preview-mobile.jpg)
+- [Ringkasan sumber desktop](ui-preview-sources.jpg)

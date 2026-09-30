@@ -4,6 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Workspace from '../components/workspace';
 import CheckReport from '../components/check-report';
+import EvidenceExplorer from '../components/evidence-explorer';
 import TraceTimeline from '../components/trace-timeline';
 import { checkFixtures } from '../../../packages/shared/fixtures';
 
@@ -74,6 +75,7 @@ describe('alur pembacaan media', () => {
     expect(screen.getByText('Pembacaan sedang berlangsung. Tunggu hasilnya di halaman ini.')).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Cek klaim ini' })).toBeNull();
     await act(async () => complete(Response.json(prepared)));
+    fireEvent.click(screen.getByText('Ganti input atau baca ulang'));
     expect(screen.getByRole('button', { name: 'Baca ulang' })).toBeDefined();
   });
   it('mengganti link menghapus kesiapan transkripsi sebelumnya', async () => {
@@ -81,6 +83,7 @@ describe('alur pembacaan media', () => {
     fireEvent.change(screen.getByLabelText('Tautan video publik'), { target: { value: prepared.url } });
     fireEvent.click(screen.getByRole('button', { name: 'Baca isi video' }));
     await screen.findByLabelText('Tinjau hasil pembacaan');
+    fireEvent.click(screen.getByText('Ganti input atau baca ulang'));
     fireEvent.change(screen.getByLabelText('Tautan video publik'), { target: { value: 'https://example.com/other-video' } });
     expect(screen.queryByLabelText('Tinjau hasil pembacaan')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Cek klaim ini' })).toBeNull();
@@ -133,6 +136,7 @@ describe('alur pembacaan media', () => {
     await screen.findByLabelText('Tinjau hasil pembacaan');
     const request = network.mock.calls.find(([url]) => url === '/api/input')!;
     expect((request[1]?.body as FormData).get('image')).toBe(file);
+    fireEvent.click(screen.getByText('Ganti input atau baca ulang'));
     fireEvent.change(upload, { target: { files: [new File(['other'], 'other.png', { type: 'image/png' })] } });
     expect(screen.queryByLabelText('Tinjau hasil pembacaan')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Cek klaim ini' })).toBeNull();
@@ -146,6 +150,50 @@ describe('alur pembacaan media', () => {
     expect(screen.getByRole('alert').textContent).toContain('maksimal 4 MB');
     expect(network.mock.calls.some(([url]) => url === '/api/input')).toBe(false);
   });
+});
+it('catatan pembacaan tetap dapat dibuka dan semua peringatan dipertahankan', async () => {
+  await openLink();
+  const warnings = ['Audio dan frame dibaca. Periksa kembali angka.', 'Ada bagian video yang tidak jelas.'];
+  network.mockResolvedValueOnce(Response.json({ ...prepared, warnings }));
+  fireEvent.change(screen.getByLabelText('Tautan video publik'), { target: { value: prepared.url } });
+  fireEvent.click(screen.getByRole('button', { name: 'Baca isi video' }));
+  await screen.findByLabelText('Tinjau hasil pembacaan');
+  expect(screen.getByText('Periksa saham dan angka')).toBeDefined();
+  const notes = screen.getByText('Catatan pembacaan').closest('details')!;
+  expect(notes.open).toBe(false); fireEvent.click(notes.querySelector('summary')!);
+  expect(notes.open).toBe(true); warnings.forEach(warning => expect(screen.getByText(warning)).toBeDefined());
+  expect((screen.getByLabelText('Tautan video publik').closest('details') as HTMLDetailsElement).open).toBe(false);
+});
+it('rapor ringkas mempertahankan penjelasan lengkap dan semua bukti dapat dicari', () => {
+  const item = { id: fixture.result.checkId, text: fixture.input.rawText, createdAt: fixture.input.createdAt,
+    demo: true, saved: false, result: fixture.result, traces: fixture.traces };
+  render(createElement(CheckReport, { item }));
+  const explanation = screen.getByText('Baca penjelasan lengkap').closest('details')!;
+  expect(explanation.open).toBe(false); fireEvent.click(explanation.querySelector('summary')!);
+  expect(explanation.open).toBe(true);
+  expect([...explanation.querySelectorAll('p')].map(p => p.textContent).join(' ')).toBe(fixture.result.verdicts[0]!.explanation);
+  fireEvent.click(screen.getByRole('button', { name: /Lihat sumber/ }));
+  expect(screen.getByRole('heading', { name: 'Angka yang mendasari hasil' })).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: /Semua sumber/ }));
+  expect(document.querySelectorAll('.evidence-record')).toHaveLength(fixture.result.evidence.length);
+  fireEvent.change(screen.getByLabelText('Cari sumber'), { target: { value: 'no-such-metric' } });
+  expect(screen.getByText('Tidak ada sumber yang cocok. Coba kata lain.')).toBeDefined();
+  fireEvent.change(screen.getByLabelText('Cari sumber'), { target: { value: '' } });
+  const record = document.querySelector<HTMLDetailsElement>('.evidence-record')!;
+  fireEvent.click(record.querySelector('summary')!); expect(record.open).toBe(true);
+  expect(record.textContent).toContain('Nilai lengkap'); expect(record.textContent).toContain('Diambil');
+});
+it('grafik riwayat sumber memakai periode dan nilai evidence, termasuk angka negatif', () => {
+  const observations = [2024, 2025].map((year, index) => ({ ...fixture.result.evidence[0]!,
+    evidenceId: `synthetic-chart-${year}`, label: `PER sintetis ${year}`, value: index === 0 ? -2 : 6, unit: 'x',
+    params: { synthetic: true, hunter: { metric: 'valuation.pe', symbol: 'ADRO', year } },
+  }));
+  render(createElement(EvidenceExplorer, { evidence: observations, verdict: fixture.result.verdicts[0]!, demo: true, onClose: vi.fn() }));
+  const chart = screen.getByRole('figure', { name: 'PER ADRO per periode' });
+  expect(chart.textContent).toContain('2024'); expect(chart.textContent).toContain('-2×');
+  expect(chart.textContent).toContain('2025'); expect(chart.textContent).toContain('6×');
+  expect(chart.querySelector<HTMLElement>('.bar-fill.negative')?.style.width).toBe('25%');
+  expect(chart.querySelector<HTMLElement>('.bar-zero')?.style.left).toBe('25%');
 });
 it('sumber dan trace menampilkan data yang terbaca tanpa JSON atau blok kode', () => {
   const item = { id: fixture.result.checkId, text: fixture.input.rawText, createdAt: fixture.input.createdAt,
