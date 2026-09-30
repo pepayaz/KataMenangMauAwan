@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { LlmAdapter, MockLlmProvider } from '@cek-dulu/agent';
+import { LlmAdapter, LlmError, MockLlmProvider } from '@cek-dulu/agent';
 import { InputAdaptationSchema } from '@cek-dulu/shared';
 import { inputAdaptationFixtures } from '../../../packages/shared/fixtures/input-adaptation';
-import { imageDataUrl, readScreenshot, readVideoLink, readVideoContentLink, readVideoUpload, inputUrl, limitedBody, MAX_IMAGE_BYTES } from '../lib/input-adapter';
+import { imageDataUrl, inputFailure, readScreenshot, readVideoLink, readVideoContentLink, readVideoUpload, inputUrl, limitedBody, MAX_IMAGE_BYTES } from '../lib/input-adapter';
 import { publicVideoUrl, videoMime, VideoDownloadError } from '../lib/video-downloader';
 import { readSharedInput, shareHandoff } from '../lib/share-input';
 import { POST } from '../app/api/input/route';
@@ -204,5 +204,17 @@ describe('route input, share dan alur ke pipeline', () => {
   it('semua fixture adaptasi valid; ready kosong ditolak', () => {
     inputAdaptationFixtures.forEach(input => expect(InputAdaptationSchema.parse(input)).toEqual(input));
     expect(InputAdaptationSchema.safeParse({status:'ready',source:'paste',rawText:' ',warnings:[]}).success).toBe(false);
+  });
+});
+
+describe('pesan kegagalan LLM pada input', () => {
+  it.each([
+    ['QUOTA', 'Kuota layanan pembaca'],
+    ['UNAVAILABLE', 'sedang sibuk'],
+    ['PROVIDER', 'Input belum dapat dibaca'],
+  ] as const)('%s dijelaskan tanpa pesan mentah provider', async (code, text) => {
+    const response = inputFailure(new LlmError(code, 1));
+    expect(response.status).toBe(503);
+    expect((await response.json() as { error: string }).error).toContain(text);
   });
 });

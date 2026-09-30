@@ -211,17 +211,25 @@ describe('provider gemini', () => {
     } finally { vi.useRealTimers(); }
   });
 
-  it('HTTP gagal menjadi PROVIDER tanpa membocorkan isi respons', async () => {
+  it('503 terus-menerus menjadi UNAVAILABLE sesudah retry tanpa membocorkan isi respons', async () => {
     vi.useFakeTimers();
     try {
-      const fetchImpl = reply({ error: { message: 'pesan privat provider' } }, 429);
+      const fetchImpl = reply({ error: { message: 'pesan privat provider' } }, 503);
       const pending = new LlmAdapter({ env: geminiEnv, fetchImpl }).generate(request).catch((e: unknown) => e);
       await vi.advanceTimersByTimeAsync(20000);
       const error = await pending;
-      expect(error).toMatchObject({ code: 'PROVIDER' });
+      expect(error).toMatchObject({ code: 'UNAVAILABLE' });
       expect(String((error as Error).message)).not.toContain('privat');
       expect(fetchImpl).toHaveBeenCalledTimes(5);
     } finally { vi.useRealTimers(); }
+  });
+
+  it('429 kuota habis langsung QUOTA tanpa retry', async () => {
+    const fetchImpl = reply({ error: { message: 'You exceeded your current quota' } }, 429);
+    const error = await new LlmAdapter({ env: geminiEnv, fetchImpl }).generate(request).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'QUOTA' });
+    expect(String((error as Error).message)).not.toContain('exceeded');
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
   it('HTTP 400 tidak dicoba ulang', async () => {

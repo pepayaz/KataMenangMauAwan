@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
-export type LlmErrorCode = 'INPUT' | 'CONFIG' | 'SCHEMA' | 'PROVIDER' | 'REFUSED' | 'INCOMPLETE' | 'INVALID_OUTPUT';
+export type LlmErrorCode = 'INPUT' | 'CONFIG' | 'SCHEMA' | 'PROVIDER' | 'QUOTA' | 'UNAVAILABLE' | 'REFUSED' | 'INCOMPLETE' | 'INVALID_OUTPUT';
 export class LlmError extends Error {
   constructor(readonly code: LlmErrorCode, readonly attempts = 0) {
     super(`LLM gagal secara terkontrol: ${code}.`);
@@ -70,7 +70,8 @@ class OpenAiProvider implements LlmProvider {
 }
 
 const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
-const GEMINI_TRANSIENT_STATUS = new Set([429, 500, 503]);
+// 429 (kuota/batas laju) tidak dicoba ulang: kuota harian tidak pulih dalam hitungan detik.
+const GEMINI_TRANSIENT_STATUS = new Set([500, 503]);
 const sleep = (ms: number, signal?: AbortSignal): Promise<void> => new Promise((resolve, reject) => {
   if (signal?.aborted) { reject(signal.reason); return; }
   const timer = setTimeout(() => { signal?.removeEventListener('abort', onAbort); resolve(); }, ms);
@@ -124,6 +125,8 @@ class GeminiProvider implements LlmProvider {
       await sleep(this.retryDelaysMs[retry]!, request.signal);
     }
     // Pesan provider tidak dibawa: adapter mengubah error apa pun menjadi PROVIDER.
+    if (response.status === 429) throw new LlmError('QUOTA', request.attempt);
+    if (GEMINI_TRANSIENT_STATUS.has(response.status)) throw new LlmError('UNAVAILABLE', request.attempt);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const result = await response.json() as GeminiResponse;
     if (result.promptFeedback?.blockReason) throw new LlmError('REFUSED', request.attempt);

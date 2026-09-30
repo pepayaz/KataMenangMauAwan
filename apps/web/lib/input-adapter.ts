@@ -1,4 +1,4 @@
-import { LlmAdapter } from '@cek-dulu/agent';
+import { LlmAdapter, LlmError } from '@cek-dulu/agent';
 import { InputAdaptationSchema, type InputAdaptation } from '@cek-dulu/shared';
 import { z } from 'zod';
 import { downloadPublicVideo, publicVideoUrl, videoMime, VideoDownloadError, type DownloadedVideo } from './video-downloader';
@@ -156,8 +156,16 @@ export async function adaptInputRequest(request: Request): Promise<InputAdaptati
   const parsed = z.object({ url: z.string() }).strict().parse(JSON.parse(new TextDecoder().decode(body)));
   return readVideoContentLink(parsed.url, {}, request.signal);
 }
+/** Pesan per penyebab LLM; tanpa pesan mentah provider. */
+const LLM_FAILURE_MESSAGES: Partial<Record<LlmError['code'], string>> = {
+  QUOTA: 'Kuota layanan pembaca (LLM) sedang habis. Coba lagi nanti, atau tempel teks klaim secara manual.',
+  UNAVAILABLE: 'Layanan pembaca (LLM) sedang sibuk. Coba lagi sebentar lagi, atau tempel teks klaim.',
+  CONFIG: 'Pembaca screenshot/video belum dikonfigurasi di server. Tempel teks klaim secara manual.',
+};
 export function inputFailure(cause: unknown): Response {
-  return Response.json({ error: cause instanceof InputError ? cause.message : 'Input belum dapat dibaca. Periksa konfigurasi LLM untuk OCR, atau tempel teks klaim.' },
+  const llmMessage = cause instanceof LlmError ? LLM_FAILURE_MESSAGES[cause.code] : undefined;
+  return Response.json({ error: cause instanceof InputError ? cause.message
+    : llmMessage ?? 'Input belum dapat dibaca. Coba lagi, atau tempel teks klaim.' },
     { status: cause instanceof InputError ? cause.status : cause instanceof z.ZodError || cause instanceof SyntaxError ? 400 : 503,
       headers: { 'Cache-Control': 'no-store' } });
 }
