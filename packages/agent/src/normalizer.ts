@@ -3,8 +3,9 @@ import { MANUAL_ALIASES, resolveEntities, CONFIDENCE_THRESHOLD,
   type AliasEntry, type Entity } from '@cek-dulu/shared';
 import type { LlmAdapter } from './llm.js';
 
+/** ticker null = pengguna menyatakan sebutan itu bukan saham. */
 export const UserTickerSelectionSchema = z.object({ surface: z.string().min(1).max(200),
-  ticker: z.string().regex(/^[A-Z]{4}$/) }).strict();
+  ticker: z.string().regex(/^[A-Z]{4}$/).nullable() }).strict();
 export type UserTickerSelection = z.infer<typeof UserTickerSelectionSchema>;
 export class UserTickerSelectionError extends Error {
   constructor() { super('Pilihan saham tidak cocok dengan kandidat pada teks ini.'); this.name = 'UserTickerSelectionError'; }
@@ -55,6 +56,10 @@ export function createFixtureTickerDirectory(options: {
       .sort((a, b) => b.score - a.score || a.ticker.localeCompare(b.ticker)).slice(0, Math.min(10, Math.max(0, limit)));
   } };
 }
+
+// Kandidat fuzzy di bawah ambang ini terlalu mirip kata umum ("buku"~BUKA 0,75,
+// "rumah"~timah 0,6) untuk ditawarkan; salah ketik nyata ("Adaroo"~adaro 0,83) tetap lolos.
+export const FUZZY_MIN_SCORE = 0.8;
 
 // Kata umum klaim bukan sebutan saham. Alias/explicit yang sudah cocok tetap didahulukan.
 const NON_ENTITY_WORDS = new Set(['bakal', 'akan', 'pasti', 'menurut', 'saya', 'harga', 'saham',
@@ -122,7 +127,7 @@ export async function normalizeText(raw: string, options: {
     const seen = new Set<string>();
     const candidates = (await directory.search(surface, 10)).filter((c) => {
       if (!directory.tickers.has(c.ticker) || seen.has(c.ticker) || !Number.isFinite(c.score)
-        || c.score < 0 || c.score > 1) return false;
+        || c.score < FUZZY_MIN_SCORE || c.score > 1) return false;
       seen.add(c.ticker); return true;
     }).sort((a, b) => b.score - a.score || a.ticker.localeCompare(b.ticker)).slice(0, 10);
     if (!candidates.length) continue;
@@ -143,7 +148,9 @@ export async function normalizeText(raw: string, options: {
     const index = choices.findIndex(choice => key(choice.surface) === key(selection.surface));
     const choice = choices[index];
     // Hitung ulang kandidat dari teks/directory server, bukan percaya daftar kiriman UI.
-    if (!choice || !choice.candidates.some(candidate => candidate.ticker === selection.ticker))
+    if (!choice) throw new UserTickerSelectionError();
+    if (selection.ticker === null) { choices.splice(index, 1); continue; }
+    if (!choice.candidates.some(candidate => candidate.ticker === selection.ticker))
       throw new UserTickerSelectionError();
     if (!entities.some(entity => entity.ticker === selection.ticker)) entities.push({
       surface: choice.surface, ticker: selection.ticker, confidence: 1, method: 'user' });

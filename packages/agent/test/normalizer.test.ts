@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { EntitySchema } from '@cek-dulu/shared';
 import { cleanText, createFixtureTickerDirectory, fuzzySimilarity, normalizeText,
-  type TickerDirectory } from '../src/normalizer.js';
+  type TickerDirectory, FUZZY_MIN_SCORE } from '../src/normalizer.js';
 import { LlmAdapter, MockLlmProvider } from '../src/llm.js';
 
 function mock(outputs: unknown[]) {
@@ -139,7 +139,7 @@ describe('fuzzy sementara dan LLM terbatas', () => {
 describe('pilihan pengguna dibatasi kandidat server', () => {
   const directory = createFixtureTickerDirectory({ tickers: ['ADRO', 'PTBA', 'BREN'], aliases: [
     { alias: 'bara', ticker: 'ADRO', weight: 1 }, { alias: 'bara', ticker: 'PTBA', weight: 1 },
-    { alias: 'prajogo', ticker: 'BREN', weight: 0.6 }] });
+    { alias: 'prajogo', ticker: 'BREN', weight: 0.6 }, { alias: 'adaro', ticker: 'ADRO', weight: 1 }] });
   it('mengubah alias ambigu menjadi Entity user tanpa LLM', async () => {
     const opts = mock([]);
     const result = await normalizeText('bara', { directory, ...opts, userSelections: [{ surface: 'bara', ticker: 'PTBA' }] });
@@ -162,6 +162,15 @@ describe('pilihan pengguna dibatasi kandidat server', () => {
       { surface: 'bara', ticker: 'ADRO' }, { surface: 'Adarro', ticker: 'ADRO' }] });
     expect(result.status).toBe('ready'); expect(result.entities).toHaveLength(1);
   });
+  it('ticker null berarti bukan saham: pertanyaan dihapus tanpa Entity', async () => {
+    const result = await normalizeText('bara prajogo', { directory, userSelections: [
+      { surface: 'bara', ticker: null }, { surface: 'prajogo', ticker: null }] });
+    expect(result).toMatchObject({ status: 'ready', choices: [], entities: [] });
+  });
+  it('bukan saham tetap harus merujuk pertanyaan yang ada', async () => {
+    await expect(normalizeText('bara', { directory, userSelections: [{ surface: 'palsu', ticker: null }] }))
+      .rejects.toThrow('Pilihan saham');
+  });
   it.each([
     ['ticker di luar kandidat', 'bara', [{ surface: 'bara', ticker: 'BREN' }]],
     ['surface tidak tertulis', 'bara', [{ surface: 'palsu', ticker: 'ADRO' }]],
@@ -172,7 +181,7 @@ describe('pilihan pengguna dibatasi kandidat server', () => {
     ['ticker tidak valid', 'bara', [{ surface: 'bara', ticker: 'ad' }]],
   ])('menolak %s', async (_, text, userSelections) => {
     await expect(normalizeText(text as string, { directory,
-      userSelections: userSelections as Array<{ surface: string; ticker: string }> })).rejects.toThrow('Pilihan saham');
+      userSelections: userSelections as Array<{ surface: string; ticker: string | null }> })).rejects.toThrow('Pilihan saham');
   });
 });
 
@@ -187,5 +196,26 @@ describe('kata umum tidak menjadi kandidat fuzzy', () => {
     const directory = createFixtureTickerDirectory({ tickers: ['CUAN'], aliases: [{ alias: 'cuan', ticker: 'CUAN', weight: 1 }] });
     const result = await normalizeText('cuan', { directory });
     expect(result.entities[0]?.ticker).toBe('CUAN');
+  });
+});
+
+describe('ambang fuzzy menolak kata umum Indonesia', () => {
+  const text = `PT Unilever Indonesia Tbk memutuskan pembagian dividen interim tahun buku 2025 sebesar Rp87 per saham atau secara keseluruhan mencapai Rp3,3 triliun. Keputusan diambil melalui rapat direksi dan bersumber dari laba bersih. Penjualan segmen kebutuhan rumah tangga mencapai Rp17,52 triliun.`;
+  const directory = createFixtureTickerDirectory({
+    tickers: ['UNVR', 'INCO', 'SMGR', 'BUKA', 'ANTM', 'RAJA', 'ADRO', 'TINS'],
+    aliases: [{ alias: 'unilever', ticker: 'UNVR', weight: 1 }, { alias: 'vale indonesia', ticker: 'INCO', weight: 1 },
+      { alias: 'semen indonesia', ticker: 'SMGR', weight: 1 }, { alias: 'antam', ticker: 'ANTM', weight: 1 },
+      { alias: 'adaro', ticker: 'ADRO', weight: 1 }, { alias: 'timah', ticker: 'TINS', weight: 1 }] });
+  it('teks dividen UNVR hanya menghasilkan UNVR tanpa pertanyaan', async () => {
+    const result = await normalizeText(text, { directory });
+    expect(result.entities.map((e) => e.ticker)).toEqual(['UNVR']);
+    expect(result.choices).toEqual([]);
+    expect(result.status).toBe('ready');
+  });
+  it('salah ketik yang dekat tetap ditawarkan', async () => {
+    const result = await normalizeText('dividen Adaroo besar', { directory });
+    expect(result.choices.map((c) => c.surface)).toEqual(['Adaroo']);
+    expect(result.choices[0]!.candidates[0]!.ticker).toBe('ADRO');
+    expect(FUZZY_MIN_SCORE).toBe(0.8);
   });
 });
