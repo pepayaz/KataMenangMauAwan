@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkFixtures } from '../../../packages/shared/fixtures/index.js';
 import type { Evidence } from '@cek-dulu/shared/schemas';
-import { barScale, comparisonFor, evidenceSeries, explanationParts, verdictSummaries } from '../lib/report-presentation';
+import { barScale, comparisonFor, evidenceSeries, explanationParts, sourceCharts, verdictSummaries } from '../lib/report-presentation';
 import { formatEvidence } from '../lib/check-view';
 
 const fixture = checkFixtures[0]!;
@@ -97,5 +97,27 @@ describe('common scale has an explicit zero axis', () => {
   it('handles all-zero observations without dividing by zero', () => {
     expect(barScale([0, 0]).bar(0)).toEqual({ left: 0, width: 0 });
     expect(barScale([-2, -1]).zero).toBe(100);
+  });
+});
+describe('source charts do not require fabricated history', () => {
+  it('renders the ADRO yield snapshots without mixing in payout ratios or rupiah', () => {
+    const charts = sourceCharts(fixture.result.evidence, claim, verdict);
+    expect(charts[0]?.key).toBe('yield-snapshot');
+    expect(charts[0]?.rows.map(row => row.value)).toEqual([0.255, 0.236, 0.452, 0.0556]);
+    expect(charts[0]?.note).toContain('bukan urutan waktu');
+    expect(charts[0]?.rows.every(row => fixture.result.evidence.some(record => record.evidenceId === row.evidenceId))).toBe(true);
+  });
+  it('falls back to claim vs data for valuation without historical observations', () => {
+    const fixture = checkFixtures[1]!;
+    expect(sourceCharts(fixture.result.evidence, fixture.result.claims[0], fixture.result.verdicts[0])[0]?.rows.map(row => row.value)).toEqual([3, 3]);
+  });
+  it('does not draw numbers when evidence is missing or units are incompatible', () => {
+    expect(sourceCharts([], claim, verdict)).toEqual([]);
+    expect(sourceCharts(fixture.result.evidence.filter(record => record.unit !== '%'), claim,
+      { ...verdict, computed: { value: -0.897, unit: 'x', evidenceId: 'adro-cash' } })).toEqual([]);
+  });
+  it('deduplicates identical snapshots while retaining all original records', () => {
+    const records = [...fixture.result.evidence, fixture.result.evidence[0]!];
+    expect(sourceCharts(records)[0]?.rows).toHaveLength(4); expect(records).toHaveLength(7);
   });
 });

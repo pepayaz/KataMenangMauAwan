@@ -171,9 +171,10 @@ it('rapor ringkas mempertahankan penjelasan lengkap dan semua bukti dapat dicari
   const explanation = screen.getByText('Baca penjelasan lengkap').closest('details')!;
   expect(explanation.open).toBe(false); fireEvent.click(explanation.querySelector('summary')!);
   expect(explanation.open).toBe(true);
-  expect([...explanation.querySelectorAll('p')].map(p => p.textContent).join(' ')).toBe(fixture.result.verdicts[0]!.explanation);
+  expect([...explanation.querySelectorAll('.explanation-parts > li')].map(p => p.textContent).join(' ')).toBe(fixture.result.verdicts[0]!.explanation);
+  expect(document.querySelector('.report-main > p, .claim-conclusion > p')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: /Lihat sumber/ }));
-  expect(screen.getByRole('heading', { name: 'Angka yang mendasari hasil' })).toBeDefined();
+  expect(screen.getByRole('figure', { name: 'Perbandingan yield' })).toBeDefined();
   fireEvent.click(screen.getByRole('button', { name: /Semua sumber/ }));
   expect(document.querySelectorAll('.evidence-record')).toHaveLength(fixture.result.evidence.length);
   fireEvent.change(screen.getByLabelText('Cari sumber'), { target: { value: 'no-such-metric' } });
@@ -189,11 +190,36 @@ it('grafik riwayat sumber memakai periode dan nilai evidence, termasuk angka neg
     params: { synthetic: true, hunter: { metric: 'valuation.pe', symbol: 'ADRO', year } },
   }));
   render(createElement(EvidenceExplorer, { evidence: observations, verdict: fixture.result.verdicts[0]!, demo: true, onClose: vi.fn() }));
-  const chart = screen.getByRole('figure', { name: 'PER ADRO per periode' });
+  const chart = screen.getByRole('figure', { name: 'PER ADRO' });
   expect(chart.textContent).toContain('2024'); expect(chart.textContent).toContain('-2×');
   expect(chart.textContent).toContain('2025'); expect(chart.textContent).toContain('6×');
-  expect(chart.querySelector<HTMLElement>('.bar-fill.negative')?.style.width).toBe('25%');
-  expect(chart.querySelector<HTMLElement>('.bar-zero')?.style.left).toBe('25%');
+  expect(chart.querySelector('.chart-column.is-negative')?.getAttribute('width')).toBe('125');
+  expect(chart.querySelector('.chart-axis')?.getAttribute('x1')).toBe('125');
+});
+it('source charts appear without historical periods and observations are interactive', () => {
+  const item = { id: fixture.result.checkId, text: fixture.input.rawText, createdAt: fixture.input.createdAt,
+    demo: true, saved: false, result: fixture.result, traces: fixture.traces };
+  render(createElement(CheckReport, { item }));
+  fireEvent.click(screen.getByRole('button', { name: /Lihat sumber/ }));
+  const drawer = screen.getByRole('dialog');
+  const graph = screen.getByRole('figure', { name: 'Perbandingan yield' });
+  expect(graph.querySelectorAll('rect')).toHaveLength(4);
+  fireEvent.click(screen.getByRole('button', { name: '12 bulan terakhir 5,56%' }));
+  expect(graph.querySelector('[role=status]')?.textContent).toContain('Yield TTM');
+  expect(drawer.querySelector('.source-conclusion')?.textContent).toContain('Benar tapi menyesatkan');
+  fireEvent.change(screen.getByLabelText('Pilih grafik'), { target: { value: 'claim-comparison' } });
+  expect(screen.getByRole('figure', { name: 'Klaim vs data' })).toBeDefined();
+});
+it('clicking a transcript number selects its exact span in the original text', async () => {
+  await openLink();
+  const text = '📊 ADRO yield 25,5% setahun dan pembayaran Rp1.358,18';
+  network.mockResolvedValueOnce(Response.json({ ...prepared, rawText: text }));
+  fireEvent.change(screen.getByLabelText('Tautan video publik'), { target: { value: prepared.url } });
+  fireEvent.click(screen.getByRole('button', { name: 'Baca isi video' }));
+  const editor = await screen.findByLabelText('Tinjau hasil pembacaan') as HTMLTextAreaElement;
+  fireEvent.click(screen.getByRole('button', { name: 'Tinjau angka 25,5%' }));
+  expect(editor.value.slice(editor.selectionStart, editor.selectionEnd)).toBe('25,5%');
+  expect(editor.value).toBe(text); expect(document.activeElement).toBe(editor);
 });
 it('sumber dan trace menampilkan data yang terbaca tanpa JSON atau blok kode', () => {
   const item = { id: fixture.result.checkId, text: fixture.input.rawText, createdAt: fixture.input.createdAt,

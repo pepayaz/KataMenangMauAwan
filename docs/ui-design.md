@@ -52,18 +52,26 @@ Referensi memberi prinsip, bukan salinan layout atau klaim pemasaran.
   angka selalu terlihat; seluruh catatan pembacaan tersedia dalam disclosure.
   Pembacaan tidak lengkap ditandai terbuka, dan contoh teks disembunyikan saat
   pengguna sedang meninjau media agar tidak bersaing dengan tindakan utama.
-- Rapor mendahulukan status besar, alasan singkat dari tabel verdict, konteks
-  backend, dan dua batang pembanding. Penjelasan asli tersedia per kalimat dalam
-  disclosure; angka dan isi penjelasan tidak ditulis ulang oleh UI atau LLM baru.
+- Rapor mendahulukan status besar, indikator singkat dari tabel verdict, kartu
+  konteks dengan angka evidence, dan dua batang pembanding. Tidak ada paragraf
+  penjelasan di tampilan awal. Penjelasan asli tersedia sebagai poin bernomor
+  dalam disclosure; angka dan isi penjelasan tidak ditulis ulang oleh LLM baru.
 - Angka tampilan dibulatkan dua desimal. Nilai lengkap tetap dapat dibuka;
   pembulatan pada refuted menambah presisi bila dua angka akan terlihat sama.
   Grafik membandingkan satuan yang sama dan memakai sumbu nol, termasuk nilai
   negatif. Data kosong tidak ditampilkan sebagai nol.
-- Panel sumber memiliki ringkasan bukti yang mendasari computed/konteks, serta
-  semua sumber dengan pencarian dan rincian nilai, waktu, asal, serta rumus.
-  Riwayat menjadi grafik hanya bila metadata metrik, saham, satuan, dan periode
+- Panel sumber langsung membuka grafik SVG interaktif, termasuk ADRO tanpa
+  metadata riwayat: yield rata-rata Sectors, rata-rata mandiri, pembayaran khusus,
+  dan TTM dibandingkan sebagai definisi berbeda, bukan timeline buatan. Jika
+  hanya pembanding tersedia, grafik klaim vs data tetap ditampilkan. Batang bisa
+  disentuh/difokuskan untuk nilai lengkap. Status dan tombol tutup tetap terlihat
+  saat panel digulir. Semua bukti dapat dicari dan diperiksa asal, nilai, serta rumusnya.
+- Riwayat menjadi grafik hanya bila metadata metrik, saham, satuan, dan periode
   eksplisit cocok. Periode tahun dan tanggal dipisahkan; observasi bertentangan
   pada periode sama membatalkan grafik. Riwayat panjang dapat digulir.
+- Label dan bantuan yang berulang pada input dihapus. Contoh di sisi form
+  menggunakan grafik, bukan paragraf. Angka dalam transkripsi menjadi tombol
+  navigasi ke span tepat di editor; ini alat tinjau, bukan tanda verifikasi.
 - Gerak dipakai untuk pergantian panel, status membaca, hasil baru, dan drawer.
   prefers-reduced-motion menonaktifkannya. Tidak ada efek glow atau animasi latar.
 
@@ -90,7 +98,7 @@ ADRO menghasilkan misleading, BBCA supported (fixture sintetis), dan BBRI
 out_of_scope melalui UI offline. Sumber, Escape/pengembalian fokus, simpan rapor,
 serta pencarian riwayat diperiksa langsung.
 
-Hasil akhir: pnpm test lulus 745 test di 27 file; pnpm -r typecheck dan build
+Hasil akhir: pnpm test lulus 751 test di 27 file; pnpm -r typecheck dan build
 produksi lulus. Dependensi Testing Library dan jsdom hanya dipakai untuk test.
 
 Preview terisolasi memakai CHECK_UI_PREVIEW=1 dengan direktori .next-ui-preview,

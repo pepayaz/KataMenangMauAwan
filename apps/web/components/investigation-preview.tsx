@@ -1,20 +1,21 @@
-import { Layers3 } from 'lucide-react';
 import { adroDividendFixture } from '../../../packages/shared/fixtures';
 import { formatEvidence } from '../lib/check-view';
 import VerdictBadge from './verdict-badge';
+import SourceChart from './source-chart';
 
 export default function InvestigationPreview({ onExplore, disabled = false }: { onExplore: () => void; disabled?: boolean }) {
   const fixture = adroDividendFixture;
   const avg = fixture.result.evidence.find(item => item.evidenceId === 'adro-avg')!;
   const ttm = fixture.result.evidence.find(item => item.evidenceId === 'adro-ttm')!;
   return <aside className="investigation-preview" aria-label="Contoh rapor ADRO">
-    <div className="preview-header"><h2>Contoh pemeriksaan</h2><span className="preview-label">Historis</span></div>
-    <div className="preview-ticker">ADRO<span>Dividen</span></div>
+    <div className="preview-header"><h2>Contoh ADRO</h2><span className="preview-label">Historis</span></div>
     <blockquote>“{fixture.input.rawText}”</blockquote>
     <VerdictBadge verdict="misleading" />
-    <div className="preview-values"><div><span>Angka Sectors · rata-rata</span><strong>{formatEvidence(avg)}</strong></div><div><span>Yield TTM</span><strong>{formatEvidence(ttm)}</strong></div></div>
-    <div className="preview-context"><Layers3 size={17} /><div><b>Pembayaran khusus</b><p>Ada pembayaran terkait pemisahan AADI. Rata-rata historis bukan janji pembayaran berulang.</p></div></div>
-    <p className="preview-provenance">Contoh berdasarkan fakta 23 Sep 2026.<br />Data historis, bukan pemeriksaan terbaru.</p>
+    <SourceChart chart={{ key: 'example-yield', title: 'Yield dividen', note: 'Definisi berbeda · bukan urutan waktu', rows: [
+      { label: 'Rata-rata Sectors', value: avg.value as number, display: formatEvidence(avg), detail: 'Rata-rata historis menurut Sectors' },
+      { label: '12 bulan terakhir', value: ttm.value as number, display: formatEvidence(ttm), detail: 'Yield TTM menurut Sectors' },
+    ] }} />
+    <span className="preview-provenance">23 Sep 2026 · data contoh</span>
     <button type="button" className="preview-action" disabled={disabled} onClick={onExplore}>Gunakan contoh ADRO</button>
   </aside>;
 }

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, type DragEvent } from 'react';
-import { FileText, Image, Link, Video, Upload, LoaderCircle, ScanText, RotateCcw, Check } from 'lucide-react';
+import { FileText, Image, Link, Video, Upload, LoaderCircle, ScanText, RotateCcw, Check, ArrowRight } from 'lucide-react';
 import { InputAdaptationSchema, type InputAdaptation } from '@cek-dulu/shared/schemas';
 
 export type InputMode = 'text' | 'screenshot' | 'link' | 'video';
@@ -70,17 +70,17 @@ export default function InputAdapter({ disabled, mode, prepared, needsText = fal
     </div>
     {mode !== 'text' && <div className="media-panel" key={mode}>
       <ol className="media-steps" aria-label="Langkah input media">
-        <li className={prepared ? 'is-complete' : 'is-current'} aria-current={!prepared ? 'step' : undefined}><span>{prepared ? <Check size={14} /> : '1'}</span>Baca konten</li>
-        <li className={prepared ? 'is-current' : ''} aria-current={prepared ? 'step' : undefined}><span>2</span>Tinjau teks</li>
-        <li><span>3</span>Periksa klaim</li>
+        <li className={prepared ? 'is-complete' : 'is-current'} aria-current={!prepared ? 'step' : undefined}><span>{prepared ? <Check size={14} /> : <ScanText size={14} />}</span>Baca</li>
+        <li className={prepared ? 'is-current' : ''} aria-current={prepared ? 'step' : undefined}><span><FileText size={14} /></span>Tinjau</li>
+        <li><span><Check size={14} /></span>Cek</li>
       </ol>
       <details className="media-setup" open={!prepared || busy}>
       <summary hidden={!prepared}>Ganti input atau baca ulang</summary>
       {mode === 'link' ? <>
-        <label className="field-label" htmlFor="video-link">Tautan video publik</label>
+        <label className="sr-only" htmlFor="video-link">Tautan video publik</label>
         <input id="video-link" type="url" value={url} placeholder="Tempel link TikTok, YouTube, atau video publik lain"
           disabled={disabled || busy} onChange={event => { setUrl(event.target.value); setError(''); onReset(); }} />
-        <div className="media-capabilities"><span><Video size={15} />Audio + tulisan video</span><details><summary>Jika link gagal?</summary><p>Platform dapat membatasi akses. Gunakan unggah video, screenshot, atau teks.</p></details></div>
+        <details className="media-help"><summary>Info pembacaan</summary><p>Audio dan tulisan pada video dibaca. Jika platform membatasi akses, gunakan unggah video, screenshot, atau teks.</p></details>
       </> : <>
         <label className={`upload-zone ${dragging ? 'is-dragging' : ''} ${disabled || busy ? 'is-disabled' : ''}`}
           htmlFor={screenshot ? 'screenshot-image' : 'video-file'} onDrop={drop}
@@ -88,20 +88,20 @@ export default function InputAdapter({ disabled, mode, prepared, needsText = fal
           onDragLeave={() => setDragging(false)}>
           <Upload size={24} aria-hidden="true" />
           <strong>{file ? file.name : screenshot ? 'Pilih screenshot' : 'Pilih berkas video'}</strong>
-          <span>{file ? `${(file.size / 1024 / 1024).toLocaleString('id-ID', { maximumFractionDigits: 2 })} MB · Klik untuk mengganti` : 'Klik untuk memilih atau seret berkas ke sini'}</span>
+          <span>{file ? `${(file.size / 1024 / 1024).toLocaleString('id-ID', { maximumFractionDigits: 2 })} MB · Ganti berkas` : screenshot ? 'PNG / JPEG / WebP · 3 MB' : 'MP4 / WebM · 4 MB'}</span>
           <input className="sr-only" id={screenshot ? 'screenshot-image' : 'video-file'} type="file"
             aria-label={screenshot ? 'Unggah screenshot' : 'Unggah video dari perangkat'}
             accept={screenshot ? 'image/png,image/jpeg,image/webp' : 'video/mp4,video/webm'} disabled={disabled || busy}
             onChange={event => selectFile(event.target.files?.[0] ?? null)} />
         </label>
         {screenshot && preview && <img className="screenshot-preview" src={preview} alt="Pratinjau screenshot pilihan" />}
-        <p>{screenshot ? 'PNG, JPEG, atau WebP · maksimal 3 MB.' : 'MP4 atau WebM · maksimal 4 MB.'}</p>
-        <details className="media-privacy"><summary>Bagaimana berkas diproses?</summary><p>Konten dikirim ke penyedia AI untuk pembacaan dan tidak disimpan dalam riwayat. Hapus bagian pribadi sebelum mengunggah.</p></details>
+        <details className="media-privacy"><summary>Privasi berkas</summary><p>Konten dikirim ke penyedia AI untuk pembacaan dan tidak disimpan dalam riwayat. Hapus bagian pribadi sebelum mengunggah.</p></details>
       </>}
       <button type="button" className={`${prepared ? 'secondary-button' : 'primary-button'} media-read-button`}
         disabled={disabled || busy || !available} onClick={() => void prepare()}>
         {busy ? <LoaderCircle className="spin" size={20} /> : prepared ? <RotateCcw size={20} /> : <ScanText size={20} />}
         {busy ? screenshot ? 'Membaca screenshot…' : 'Membaca video…' : prepared ? 'Baca ulang' : screenshot ? 'Baca teks screenshot' : 'Baca isi video'}
+        {!busy && <ArrowRight size={18} aria-hidden="true" />}
       </button>
       </details>
       {busy && <p className="media-next" role="status">Pembacaan sedang berlangsung. Tunggu hasilnya di halaman ini.</p>}

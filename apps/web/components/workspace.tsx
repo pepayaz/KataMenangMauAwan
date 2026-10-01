@@ -36,6 +36,7 @@ import { readTickerChoices, type UiTickerChoice } from "../lib/ticker-choices";
 import type { TraceEvent } from "@cek-dulu/shared/schemas";
 import CheckReport from "./check-report";
 import InputAdapter, { type InputMode } from "./input-adapter";
+import InputNumbers from './input-numbers';
 import InvestigationPreview from "./investigation-preview";
 import TraceTimeline from "./trace-timeline";
 import VerdictBadge from "./verdict-badge";
@@ -356,7 +357,6 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
             <>
               <section className="page-heading">
                 <h1>Periksa klaim saham</h1>
-                <p>Tempel teks atau baca konten dari screenshot dan video.</p>
               </section>
               <div className="check-layout">
                 <section className="input-card">
@@ -378,12 +378,13 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                     {showText && <>
                     {inputUrl && <p className="input-origin"><a href={inputUrl} target="_blank" rel="noreferrer">Sumber · {new URL(inputUrl).hostname} <ArrowUpRight size={15} /></a><button type="button" className="text-button" disabled={running || inputBusy} onClick={() => setInputUrl(undefined)}>Lepas link</button></p>}
                     {inputMode !== 'text' && <div className="input-review">
-                      <div className="review-prompt"><ScanText size={20} /><div><strong>Periksa saham dan angka</strong><span>Teks hasil pembacaan bisa keliru. Koreksi langsung di bawah.</span></div></div>
+                      <div className="review-prompt"><ScanText size={20} /><strong>Periksa saham dan angka</strong></div>
                       {inputWarnings.length > 0 && <details open={mediaNeedsText}><summary>Catatan pembacaan <span>{inputWarnings.length}</span></summary>{inputWarnings.map((warning,index) => <p key={index}>{warning}</p>)}</details>}
                     </div>}
-                    <label className="editor-label" htmlFor="claim">
+                    <label className={inputMode === 'text' ? 'sr-only' : 'editor-label'} htmlFor="claim">
                       {inputMode === 'text' ? 'Teks klaim saham' : 'Tinjau hasil pembacaan'}
                     </label>
+                    {inputMode !== 'text' && <InputNumbers text={input} disabled={running || inputBusy} onSelect={span => { inputRef.current?.focus(); inputRef.current?.setSelectionRange(...span); }} />}
                     <textarea
                       id="claim"
                       ref={inputRef}
@@ -396,15 +397,13 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       }
                     />
                     <div className="input-meta">
-                      <span>
-                        {inputMode === 'text' ? 'Saham · angka · periode' : 'Teks dapat diedit'}
-                      </span>
+                      <span>{inputMode !== 'text' && 'Dapat diedit'}</span>
                       <span>
                         {input.length.toLocaleString("id-ID")} / 5.000
                       </span>
                     </div>
                     {inputMode === 'text' && <div className="example-row">
-                      <span>Coba contoh</span>
+                      <span>Contoh</span>
                       {examples.map((example) => (
                         <button
                           key={example.id}
@@ -434,9 +433,6 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                       </label>)}
                     </fieldset>}
                     <div className="input-card-footer">
-                      <span>
-                        {inputMode === 'text' ? 'Maksimal 5.000 karakter' : 'Teks ini akan diperiksa'}
-                      </span>
                       <button
                         className="primary-button"
                         type="submit"
@@ -449,7 +445,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                           </>
                         ) : (
                           <>
-                            Cek klaim ini
+                            Cek klaim ini <ArrowRight size={18} aria-hidden="true" />
                           </>
                         )}
                       </button>
