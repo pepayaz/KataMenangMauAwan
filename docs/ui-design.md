@@ -212,3 +212,47 @@ yang disembunyikan dalam disclosure.
 Verifikasi footer: 772 test / 27 file dan typecheck lulus, termasuk penjagaan
 teks disclaimer lengkap serta satu akses Tentang pada halaman cek dan About.
 Tampilan desktop 1280px dan ponsel 390px diperiksa tanpa overflow horizontal.
+
+## Arah visual solid dengan aksen lebih berani
+
+Revisi ini mengikuti pilihan pengguna: seluruh aplikasi tetap gelap, dengan
+warna lebih menonjol dan tanpa glassmorphism. Panel input memakai permukaan
+cobalt solid; tindakan utama memakai mint; konteks dan status menyesatkan memakai
+amber. Riwayat, tersimpan, panduan, Tentang, rapor, dan sumber mengikuti palet
+yang sama. Ukuran judul halaman tetap menggunakan satu token, dengan bobot lebih
+tegas. Logo mint dipertahankan. Gradien hanya menjadi aksen kecil pada identitas
+dan tipografi; kartu tidak memakai blur atau permukaan kaca transparan.
+
+Contoh ADRO menjadi tumpukan dokumen dengan pilihan Klaim, Data, dan Konteks.
+Perpindahan lapisan menggunakan animasi CSS singkat dan bisa dilakukan lewat
+keyboard. Angka berasal dari fixture yang sudah ada, termasuk pembayaran khusus
+terkait pemisahan AADI; tanggal dan label historis tetap terlihat. Perpindahan
+lapisan tidak menjalankan pemeriksaan atau meminta layanan eksternal. Tidak ada
+angka dekoratif, progres palsu, atau animasi count-up. Reduced-motion menonaktifkan
+animasi dan memiringkan kembali lembar depan menjadi posisi datar.
+
+Memilih batang grafik sumber membuka nilai lengkap, waktu pengambilan, asal,
+serta periode atau rumus bila tersedia di evidence. Hover hanya menunjukkan
+ringkasan; bukti dibuka melalui klik atau aktivasi keyboard. Tombol Bukti konteks
+membuka evidence yang dirujuk hipotesis langsung di bagian atas panel. Panel
+tetap memuat kesimpulan, seluruh sumber, pencarian, dan akses dokumentasi. Saat
+ditutup, fokus kembali ke tombol asal. Format angka, perhitungan, adjudicator,
+kontrak shared, dan integrasi backend tidak berubah.
+
+Referensi: [anti-slop](https://github.com/miqdadbadjuber/anti-slop) digunakan
+sebagai filter untuk menghindari copy pengisi dan UI tanpa tujuan; repo tersebut
+sendiri membedakan filter kualitas dari arah desain. [Linear](https://linear.app/)
+menjadi referensi hierarki produk dan interaksi, sedangkan
+[Koyfin](https://www.koyfin.com/features/custom-dashboards/) menjadi referensi
+visualisasi data finansial. Tidak menyalin layout atau memasukkan widget pasar
+tanpa data. Komponen memakai React, CSS, SVG, dan Lucide yang sudah tersedia;
+tidak menambahkan dependensi WebGL atau asset eksternal yang menghalangi input.
+
+Verifikasi: 775 test di 27 file dan typecheck lulus. Interaksi lapisan, pilihan
+grafik-ke-bukti, pemulihan fokus, asal fixture, periode, dan rumus memiliki test.
+Desktop 1280px serta ponsel 390px dan 320px diperiksa tanpa overflow horizontal.
+Pasangan warna utama memiliki kontras 5,58:1 (teks putih pada cobalt), 13,30:1
+(tombol mint), 9,88:1 (status amber), serta 10,50:1 (teks sekunder pada canvas).
+Ini pemeriksaan komponen utama, bukan sertifikasi aksesibilitas seluruh produk.
+Pemeriksaan UI memakai rapor historis lokal dan test mock; tidak memakai kredit
+Sectors live atau melakukan pembacaan video berbayar.

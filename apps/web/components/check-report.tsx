@@ -14,7 +14,7 @@ const typeLabels: Record<ClaimType, string> = { dividend: 'Dividen', valuation: 
 
 export default function CheckReport({ item }: { item: HistoryItem }) {
   const result = item.result;
-  const [selectedEvidence, setSelectedEvidence] = useState<{ evidence: Evidence[]; verdict: ClaimVerdict; claim?: Claim } | null>(null);
+  const [selectedEvidence, setSelectedEvidence] = useState<{ evidence: Evidence[]; verdict: ClaimVerdict; claim?: Claim; initialEvidenceId?: string } | null>(null);
   const tickers = [...new Set(result.claims.map(claim => claim.ticker))];
   const normalizedText = cleanText(item.text);
   // Preserve extraction failures from the pipeline; an error is not a claim-free input.
@@ -38,6 +38,11 @@ export default function CheckReport({ item }: { item: HistoryItem }) {
             return <section className="context-tile" key={context.hypId}><div className="context-tile-title"><Layers3 size={19} /><h3>{contextTitles[context.hypId] ?? 'Konteks tambahan'}</h3></div>
               {facts.length > 0 && <dl className="context-metrics">{facts.map(record => <div key={record.evidenceId}><dt>{readableSourceText(record.label)}</dt><dd>{formatEvidence(record)}</dd></div>)}</dl>}
               <details><summary>Mengapa penting?</summary><ul className="context-detail-points">{explanationParts(context.summary).map((part, partIndex) => <li key={partIndex}>{part}</li>)}</ul></details>
+              {context.evidenceIds.some(id => evidence.some(record => record.evidenceId === id)) && <button type="button" className="context-source-button"
+                aria-label={`Buka bukti ${contextTitles[context.hypId] ?? 'konteks tambahan'}`}
+                onClick={() => setSelectedEvidence({ evidence, verdict, claim, initialEvidenceId: facts[0]?.evidenceId ?? context.evidenceIds.find(id => evidence.some(record => record.evidenceId === id)) })}>
+                <FileSearch size={16} aria-hidden="true" /> Bukti konteks <ArrowRight size={16} aria-hidden="true" />
+              </button>}
             </section>;
           })}</div>}
           <details className="explanation-details"><summary>Baca penjelasan lengkap</summary><ol className="explanation-parts">{explanationParts(verdict.explanation).map((part, partIndex) => <li key={partIndex}>{part}</li>)}</ol></details>

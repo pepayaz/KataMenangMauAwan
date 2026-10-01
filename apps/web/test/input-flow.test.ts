@@ -6,6 +6,7 @@ import Workspace from '../components/workspace';
 import CheckReport from '../components/check-report';
 import EvidenceExplorer from '../components/evidence-explorer';
 import TraceTimeline from '../components/trace-timeline';
+import InvestigationPreview from '../components/investigation-preview';
 import { storageKey } from '../lib/check-view';
 import { checkFixtures } from '../../../packages/shared/fixtures';
 
@@ -232,9 +233,56 @@ it('source charts appear without historical periods and observations are interac
   expect(graph.querySelectorAll('rect')).toHaveLength(4);
   fireEvent.click(screen.getByRole('button', { name: '12 bulan terakhir 5,56%' }));
   expect(graph.querySelector('[role=status]')?.textContent).toContain('Yield TTM');
+  const record = screen.getByRole('region', { name: 'Bukti angka terpilih' });
+  expect(record.textContent).toContain('Yield TTM');
+  expect(record.textContent).toContain('5,56%');
+  expect(record.textContent).toContain('Diambil');
+  expect(record.textContent).toContain('Fixture contoh');
   expect(drawer.querySelector('.source-conclusion')?.textContent).toContain('Benar tapi menyesatkan');
   fireEvent.change(screen.getByLabelText('Pilih grafik'), { target: { value: 'claim-comparison' } });
   expect(screen.getByRole('figure', { name: 'Klaim vs data' })).toBeDefined();
+  expect(screen.queryByRole('region', { name: 'Bukti angka terpilih' })).toBeNull();
+});
+it('lapisan contoh memakai fixture, tetap historis, dan hanya tombol gunakan yang meneruskan input', () => {
+  const onExplore = vi.fn();
+  render(createElement(InvestigationPreview, { onExplore }));
+  expect(screen.getByText(`“${fixture.input.rawText}”`)).toBeDefined();
+  fireEvent.click(screen.getByRole('button', { name: /Data/ }));
+  expect(screen.getByRole('figure', { name: 'Yield dividen' }).textContent).toContain('5,56%');
+  fireEvent.click(screen.getByRole('button', { name: /Konteks/ }));
+  expect(screen.getByText('45,2%')).toBeDefined();
+  expect(screen.getByText('Rp1.358,18 per saham')).toBeDefined();
+  expect(screen.getByText('23 Sep 2026 · data contoh')).toBeDefined();
+  expect(onExplore).not.toHaveBeenCalled();
+  expect(network).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Gunakan contoh ADRO' }));
+  expect(onExplore).toHaveBeenCalledOnce();
+});
+it('bukti konteks langsung membuka evidence terkait dan menutup panel mengembalikan fokus', () => {
+  const item = { id: fixture.result.checkId, text: fixture.input.rawText, createdAt: fixture.input.createdAt,
+    demo: true, saved: false, result: fixture.result, traces: fixture.traces };
+  render(createElement(CheckReport, { item }));
+  const trigger = screen.getByRole('button', { name: 'Buka bukti Pembayaran khusus' });
+  trigger.focus(); fireEvent.click(trigger);
+  const record = screen.getByRole('region', { name: 'Bukti angka terpilih' });
+  expect(record.textContent).toContain('pemisahan AADI');
+  expect(record.textContent).toContain('Rp1.358,18');
+  fireEvent.click(screen.getByRole('button', { name: 'Tutup sumber' }));
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(document.activeElement).toBe(trigger);
+});
+it('hover grafik hanya menunjukkan nilai; klik membuka bukti asli beserta periode dan rumus', () => {
+  render(createElement(EvidenceExplorer, { evidence: fixture.result.evidence,
+    verdict: fixture.result.verdicts[0]!, claim: fixture.result.claims[0], demo: true, onClose: vi.fn() }));
+  const observation = screen.getByRole('button', { name: 'Rata-rata hitung ulang 23,6%' });
+  fireEvent.mouseEnter(observation);
+  expect(screen.queryByRole('region', { name: 'Bukti angka terpilih' })).toBeNull();
+  fireEvent.click(observation);
+  const record = screen.getByRole('region', { name: 'Bukti angka terpilih' });
+  expect(record.textContent).toContain('2021–2025');
+  expect(record.textContent).toContain('Rumus');
+  expect(record.textContent).toContain('Fixture contoh');
+  expect(record.textContent).toContain('23,6%');
 });
 it('clicking a transcript number selects its exact span in the original text', async () => {
   await openLink();
