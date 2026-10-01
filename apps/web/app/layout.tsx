@@ -1,6 +1,7 @@
 import '../styles/theme.css';
 import '../styles/styles.css';
 import '../styles/integration.css';
+import '../styles/about.css';
 import PwaRegistration from '../components/pwa-registration';
 import type { ReactNode } from 'react';
 import localFont from 'next/font/local';

@@ -6,6 +6,7 @@ import Workspace from '../components/workspace';
 import CheckReport from '../components/check-report';
 import EvidenceExplorer from '../components/evidence-explorer';
 import TraceTimeline from '../components/trace-timeline';
+import { storageKey } from '../lib/check-view';
 import { checkFixtures } from '../../../packages/shared/fixtures';
 
 const fixture = checkFixtures[0]!;
@@ -37,12 +38,37 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = function () { this.removeAttribute('open'); };
   HTMLElement.prototype.scrollIntoView = vi.fn();
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
+afterEach(() => { cleanup(); window.history.replaceState(null, '', '/'); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 async function openLink() {
   render(createElement(Workspace, { fixtureDemo: true }));
   fireEvent.click(screen.getByRole('button', { name: 'Link video' }));
   await waitFor(() => expect(screen.getByRole('button', { name: 'Baca isi video' })).toBeDefined());
 }
+it('rapor terakhir membuka hasil tersimpan tanpa meminta pemeriksaan baru', async () => {
+  const item = { id: fixture.result.checkId, text: fixture.input.rawText, createdAt: fixture.input.createdAt,
+    demo: true, saved: false, result: fixture.result, traces: fixture.traces };
+  localStorage.setItem(storageKey, JSON.stringify([item]));
+  render(createElement(Workspace, { fixtureDemo: true }));
+  fireEvent.click(await screen.findByRole('button', { name: /Rapor terakhir/ }));
+  await screen.findByRole('heading', { name: 'Hasil pemeriksaan' });
+  expect(screen.getByLabelText('Teks klaim saham').getAttribute('disabled')).toBeNull();
+  expect(screen.queryByRole('button', { name: /Rapor terakhir/ })).toBeNull();
+  expect(network.mock.calls.some(([url, init]) => url === '/api/check' && init?.method === 'POST')).toBe(false);
+});
+it('Tentang tidak meminta AI atau mengambil input share yang belum ditinjau', () => {
+  sessionStorage.setItem('cek-dulu-share-input', JSON.stringify(prepared));
+  render(createElement(Workspace, { fixtureDemo: true, initialPage: 'about' }));
+  expect(screen.getAllByRole('link', { name: 'Tentang Cek Dulu' })).toHaveLength(1);
+  expect(network).not.toHaveBeenCalled();
+  expect(sessionStorage.getItem('cek-dulu-share-input')).toBe(JSON.stringify(prepared));
+});
+it('navigasi memperbarui URL agar reload tidak kembali ke tampilan sebelumnya', () => {
+  render(createElement(Workspace, { fixtureDemo: true, initialPage: 'saved' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Cara kerja' }));
+  expect(window.location.search).toBe('?view=guide');
+  fireEvent.click(screen.getByRole('button', { name: 'Cek klaim' }));
+  expect(window.location.pathname + window.location.search).toBe('/');
+});
 describe('alur pembacaan media', () => {
   it('menampilkan tindakan baca dan menyembunyikan cek sampai teks dapat ditinjau', async () => {
     await openLink();

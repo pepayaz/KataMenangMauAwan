@@ -9,6 +9,8 @@ import { restoreStoredCheck, storedTimestamp } from '../lib/stored-check';
 import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders } from '../lib/history-client';
 import CheckReport from '../components/check-report';
 import Workspace from '../components/workspace';
+import Home from '../app/page';
+import About from '../app/about/page';
 import TraceTimeline from '../components/trace-timeline';
 import { explanationParts } from '../lib/report-presentation';
 
@@ -28,6 +30,30 @@ function sqlFixture() {
   };
 }
 describe('rapor dan riwayat UI memakai hasil shared', () => {
+  it('Tentang memakai halaman nyata dengan satu akses navigasi dan tanpa popup atau status penyimpanan', () => {
+    const home = renderToStaticMarkup(createElement(Workspace, { fixtureDemo: true }));
+    expect(home.match(/Tentang Cek Dulu/g)).toHaveLength(1);
+    expect(home).toContain('href="/about"');
+    expect(home).not.toContain('Data tersimpan');
+    const about = renderToStaticMarkup(createElement(About));
+    expect(about).toContain('<h1>Tentang Cek Dulu</h1>');
+    expect(about).toContain('href="/about" aria-current="page"');
+    expect(about).toContain('aria-label="Alur pemeriksaan"');
+    expect(about).toContain('Hal yang perlu diketahui');
+    expect(about).toContain('Revisi sumber saat build');
+    expect(about).not.toContain('<dialog');
+    expect(about).not.toContain('<textarea');
+    expect(about).toContain('bukan nasihat investasi');
+  });
+  it.each([['history', 'Riwayat pemeriksaan'], ['saved', 'Rapor tersimpan'], ['guide', 'Cara kerja']])('tautan kembali dari Tentang membuka tampilan %s', async (view, heading) => {
+    const html = renderToStaticMarkup(await Home({ searchParams: Promise.resolve({ view }) }));
+    expect(html).toContain(heading);
+    expect(html).not.toContain('id="claim"');
+  });
+  it.each(['about', 'invalid', ['history', 'saved']])('query tampilan tidak valid kembali ke pemeriksaan: %s', async view => {
+    const html = renderToStaticMarkup(await Home({ searchParams: Promise.resolve({ view }) }));
+    expect(html).toContain('<h1>Periksa klaim saham</h1>');
+  });
   it.each(checkFixtures)('menampilkan verdict backend $input.checkId tanpa fixture UI sendiri', fixture => {
     const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, id: fixture.result.checkId, text: fixture.input.rawText, result: fixture.result, traces: fixture.traces } }));
     explanationParts(fixture.result.verdicts[0]!.explanation).forEach(part => expect(html).toContain(part));

@@ -143,7 +143,7 @@ menyimpan HTML, CSS, atau respons API, sehingga bukan cache offline desain baru.
    CHECK_UI_PREVIEW yang sama: default .next, atau preview .next-ui-preview.
 4. Buka port yang tertulis di terminal server baru. Port 3000 dapat masih dilayani
    proses lama ketika proses baru berjalan pada 3001. Muat ulang penuh browser.
-5. Dialog Tentang Cek Dulu menampilkan revisi Git yang dimasukkan saat build.
+5. Halaman Tentang Cek Dulu (/about), bagian Informasi versi, menampilkan revisi Git yang dimasukkan saat build.
    Bandingkan nilai ini dengan commit lokal/remote. Nilainya adalah identitas sumber
    saat kompilasi, bukan klaim bahwa deployment selalu mengikuti branch terbaru.
 
@@ -158,3 +158,36 @@ mesin lain.
 - [Rapor ADRO offline](ui-preview-report.jpg)
 - [Panel sumber mobile](ui-preview-mobile.jpg)
 - [Ringkasan sumber desktop](ui-preview-sources.jpg)
+
+## Halaman Tentang dan akses rapor terakhir
+
+Tentang Cek Dulu menjadi route `/about` yang dapat dibuka langsung, dimuat ulang,
+dan dibagikan. Satu tautan berada di sidebar (menu pada mobile); akses berulang
+di header dan footer, status “Data tersimpan”, serta popup lama dihapus.
+Disclaimer footer tetap ada. Navigasi dari halaman Tentang kembali ke cek,
+riwayat, tersimpan, atau panduan melalui URL yang sesuai. Query tampilan tidak
+valid kembali ke cek klaim; perubahan tampilan internal juga memperbarui URL
+agar reload membuka tampilan yang sedang dilihat.
+
+Halaman menggunakan alur visual tiga tahap, penjelasan singkat peran AI,
+asal data, batas pemeriksaan, dan FAQ dengan disclosure native. Rincian versi
+build tetap dapat dibuka untuk membandingkan hasil pull/build di mesin lain.
+Halaman ini tidak meminta pemeriksaan AI dan tidak menghabiskan input Web Share
+Target yang masih menunggu ditinjau.
+
+Ruang kosong pada halaman cek diisi akses cepat ke rapor terakhir **hanya bila
+riwayat lokal tersedia**. Teks berasal dari rapor yang ada; label contoh historis
+dipertahankan. Membukanya tidak menjalankan cek baru. Tidak ada statistik,
+aktivitas pasar, atau hasil pemeriksaan yang dibuat untuk dekorasi.
+
+Ikon dan ilustrasi alur memakai dependensi Lucide yang sudah ada. Lisensi
+[Lucide](https://lucide.dev/license) adalah ISC, dengan ikon turunan Feather
+berlisensi MIT; pemberitahuan lisensi disertakan oleh paket. Asset raster baru
+dan dependensi tambahan tidak diperlukan. Gradien lembut, logo mint, kontras,
+aturan ukuran judul, reduced-motion, dan forced-colors yang ada dipertahankan.
+
+Verifikasi: 770 test di 27 file dan typecheck lulus. Preview desktop 1280 × 900
+serta mobile 390 × 844 diperiksa tanpa overflow horizontal. FAQ dapat dibuka
+melalui keyboard, menu mobile memuat satu akses Tentang, dan rapor terakhir
+membuka hasil historis yang sudah tersimpan. Pengujian ini tidak memakai API
+Sectors live atau membuktikan kesiapan layanan eksternal di mesin lain.
