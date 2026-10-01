@@ -344,17 +344,28 @@ input::placeholder { color: var(--subtle); }
 .toast { position: fixed; bottom: 25px; left: calc(50% + 114px); transform: translateX(-50%); display: flex; align-items: center; gap: 10px; z-index: 50; border: 1px solid var(--line-bright); background: var(--surface-raised); color: var(--ink); padding: 14px 18px; border-radius: 8px; font-size: 12px; max-width: calc(100% - 30px); box-shadow: 0 8px 28px #0008; }
 .toast > svg { color: var(--success); }
 .storage-error { margin-top: 24px; font-size: 12px; color: var(--amber); }
-footer { border-top: 1px solid var(--line); margin-top: 45px; padding: 25px 0 30px; color: var(--subtle); font-size: 12px; }
-footer > div { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-.footer-brand { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-family: var(--font-display); font-size: 17px; }
-footer p { max-width: 860px; font-size: 14px; line-height: 1.75; }
-footer > button { display: flex; align-items: center; gap: 8px; color: var(--subtle); padding: 16px 0 0; min-height: 44px; font-size: 14px; }
+.site-footer { position: relative; width: calc(100% - 76px); max-width: 1404px; margin: 48px auto 0; padding: 28px 0 32px; border-top: 1px solid var(--line-bright); color: var(--muted); }
+.site-footer::before { content: ''; position: absolute; top: -1px; left: 0; width: 180px; height: 1px; background: linear-gradient(90deg, var(--accent), transparent); }
+.footer-identity { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+.footer-signature { display: flex; align-items: center; gap: 22px; }
+.footer-wordmark { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); font-size: 24px; font-weight: 700; letter-spacing: -.5px; }
+.footer-wordmark .brand-mark { width: 30px; height: 30px; border-radius: 8px; }
+.footer-copyright { font-size: 13px; color: var(--subtle); }
+.footer-source { display: flex; align-items: center; gap: 14px; font-size: 14px; }
+.footer-source > span { display: inline-flex; align-items: center; gap: 7px; }
+.footer-source > a { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; color: var(--accent); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: #8bdce54d; transition: text-decoration-color 160ms ease; }
+.footer-source > a:hover { text-decoration-color: var(--accent); }
+.footer-disclaimer { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 36px; padding-top: 22px; }
+.footer-disclaimer p { max-width: 62ch; font-size: 14px; line-height: 1.65; }
+.footer-disclaimer p + p { margin-top: 8px; }
+.footer-disclaimer .footer-principle { color: var(--ink); font-weight: 600; }
 .sidebar-backdrop { position: fixed; inset: 0; background: #000a; z-index: 29; }
 @media (max-width: 1200px) {
   .sidebar { width: 210px; padding-inline: 14px; }
   .main-shell { margin-left: 210px; }
   .topbar { padding-inline: 28px; }
   main { padding-inline: 28px; }
+  .site-footer { width: calc(100% - 56px); }
   .check-layout { gap: 18px; grid-template-columns: minmax(0,1.5fr) minmax(250px,1fr); }
   .input-card-heading, .input-card-footer { padding-inline: 20px; }
   .input-card textarea { width: calc(100% - 40px); margin-inline: 20px; }
@@ -434,8 +445,11 @@ footer > button { display: flex; align-items: center; gap: 8px; color: var(--sub
   .evidence-drawer { inset: auto 0 0; height: 90dvh; max-height: 90dvh; width: 100%; border-radius: 18px 18px 0 0; border: 1px solid var(--line-bright); padding: 24px; }
   .drawer-head h2 { font-size: 27px; }
   .toast { font-size: 11px; width: max-content; }
-  footer > div { align-items: flex-start; }
-  footer > div > span:last-child { text-align: right; max-width: 130px; }
+  .site-footer { width: calc(100% - 40px); margin-top: 36px; padding-block: 24px 30px; }
+  .footer-identity { align-items: flex-start; flex-wrap: wrap; gap: 16px; padding-bottom: 18px; }
+  .footer-signature { flex-wrap: wrap; gap: 8px 16px; }
+  .footer-source { flex-basis: 100%; justify-content: space-between; }
+  .footer-disclaimer { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-top: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

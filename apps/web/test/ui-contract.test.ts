@@ -30,6 +30,16 @@ function sqlFixture() {
   };
 }
 describe('rapor dan riwayat UI memakai hasil shared', () => {
+  it.each(['check', 'about'] as const)('footer %s mempertahankan seluruh disclaimer dengan landmark dan sumber yang jelas', initialPage => {
+    const html = renderToStaticMarkup(createElement(Workspace, { fixtureDemo: true, initialPage }));
+    expect(html).toContain('</main><footer class="site-footer" aria-label="Informasi Cek Dulu">');
+    const footer = html.slice(html.indexOf('<footer'), html.indexOf('</footer>'));
+    const text = footer.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    expect(text).toContain('Cek Dulu adalah alat informasi dan analisis, bukan nasihat investasi. Status klaim menilai kesesuaian klaim dengan data yang tersedia, bukan kelayakan membeli atau menjual saham. Data bersumber dari Sectors dan dapat tertinggal dari kondisi terkini. Lakukan riset sendiri sebelum mengambil keputusan.');
+    expect(footer).toContain('href="https://docs.sectors.app" target="_blank" rel="noreferrer"');
+    expect(footer).not.toContain('Tentang Cek Dulu');
+    expect(footer).not.toContain('<details');
+  });
   it('Tentang memakai halaman nyata dengan satu akses navigasi dan tanpa popup atau status penyimpanan', () => {
     const home = renderToStaticMarkup(createElement(Workspace, { fixtureDemo: true }));
     expect(home.match(/Tentang Cek Dulu/g)).toHaveLength(1);

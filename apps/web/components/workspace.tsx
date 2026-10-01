@@ -38,6 +38,7 @@ import InputAdapter, { type InputMode } from "./input-adapter";
 import InputNumbers from './input-numbers';
 import InvestigationPreview from "./investigation-preview";
 import AboutContent from "./about-content";
+import SiteFooter from "./site-footer";
 import TraceTimeline from "./trace-timeline";
 import VerdictBadge from "./verdict-badge";
 import { InputAdaptationSchema, type CheckSource, type InputAdaptation } from "@cek-dulu/shared/schemas";
@@ -703,15 +704,8 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
               tersedia selama halaman ini terbuka.
             </p>
           )}
-          <footer>
-            <div>
-              <span className="footer-brand">
-                <CheckCheck size={17} /> cekdulu.
-              </span>
-            </div>
-            <p>Cek Dulu adalah alat informasi dan analisis, bukan nasihat investasi. Status klaim menilai kesesuaian klaim dengan data yang tersedia, bukan kelayakan membeli atau menjual saham. Data bersumber dari Sectors dan dapat tertinggal dari kondisi terkini. Lakukan riset sendiri sebelum mengambil keputusan.</p>
-          </footer>
         </main>
+        <SiteFooter />
       </div>
       {toast && (
         <div className="toast" role="status">

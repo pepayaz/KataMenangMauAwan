@@ -191,3 +191,24 @@ serta mobile 390 × 844 diperiksa tanpa overflow horizontal. FAQ dapat dibuka
 melalui keyboard, menu mobile memuat satu akses Tentang, dan rapor terakhir
 membuka hasil historis yang sudah tersimpan. Pengujian ini tidak memakai API
 Sectors live atau membuktikan kesiapan layanan eksternal di mesin lain.
+
+## Footer
+
+Footer memakai identitas produk yang sama dengan sidebar, copyright tahun
+berjalan, serta atribusi Sectors yang mengarah ke dokumentasi sumber data.
+Tidak ada akses Tentang tambahan, tautan kebijakan yang belum dibuat, atau
+badge kepercayaan tanpa dasar. Garis pemisah beraksen mint dan jarak konsisten
+menutup halaman tanpa bersaing dengan tombol pemeriksaan.
+
+Seluruh kalimat disclaimer bagian 14 AGENTS.md tetap tampil permanen.
+Pesan bukan nasihat investasi diberi bobot lebih kuat; kalimat tentang
+kesesuaian klaim berada di kolom kiri dan keterbatasan data di kanan.
+Pada ponsel, semuanya mengikuti satu kolom dengan pemisahan antarbagian.
+Footer berada di luar main sebagai landmark contentinfo yang diberi nama;
+ikon dekoratif tidak dibaca screen reader. Tautan sumber memiliki area sentuh
+44px dan label aksesibel yang menyebut tab baru. Tidak ada teks disclaimer
+yang disembunyikan dalam disclosure.
+
+Verifikasi footer: 772 test / 27 file dan typecheck lulus, termasuk penjagaan
+teks disclaimer lengkap serta satu akses Tentang pada halaman cek dan About.
+Tampilan desktop 1280px dan ponsel 390px diperiksa tanpa overflow horizontal.
