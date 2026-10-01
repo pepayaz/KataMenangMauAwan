@@ -45,7 +45,7 @@ export default function EvidenceExplorer({ evidence, verdict, claim, demo, onClo
         <summary><span>{readableSourceText(record.label)}</span><strong>{formatEvidence(record)}</strong><ChevronDown size={16} aria-hidden="true" /></summary>
         <dl><div><dt>Nilai lengkap</dt><dd>{formatEvidence(record, 20)}</dd></div>
           <div><dt>Diambil</dt><dd>{new Date(record.fetchedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' })} WIB</dd></div>
-          <div><dt>Asal</dt><dd>{demo || record.tool.startsWith('fixture:') ? 'Fixture contoh, bukan data pasar terkini' : record.cached ? 'Data tersimpan' : 'Sectors API'}</dd></div>
+          <div><dt>Asal</dt><dd>{demo || record.tool.startsWith('fixture:') ? 'Fixture contoh, bukan data pasar terkini' : record.cached ? 'Sectors · data tersimpan' : 'Sectors API'}</dd></div>
           {Object.entries(record.params).filter(([key]) => key in sourceParamLabels).map(([key, value]) => <div key={key}><dt>{sourceParamLabels[key]}</dt><dd>{readableSourceText(String(value))}</dd></div>)}
         </dl>
       </details>)}

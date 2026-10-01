@@ -11,6 +11,9 @@
   --line: #2d3847;
   --line-bright: #44546a;
   --accent: #8bdce5;
+  --accent-gradient: linear-gradient(115deg, #8aeee0, #94cfe9);
+  --title-gradient: linear-gradient(110deg, #f4f7fb 12%, #b8e7e5 62%, #e0d7f4);
+  --page-title-size: clamp(28px, 2.5vw, 36px);
   --success: #a6d8ae;
   --amber: #ffb547;
   --danger: #ff5f6d;

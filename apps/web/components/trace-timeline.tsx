@@ -23,6 +23,6 @@ export default function TraceTimeline({ events, running = false }: { events: Tra
       })}
       {running && !events.length && <li className="trace-active"><span className="trace-icon"><Circle size={13} /></span><div><strong>Memulai pemeriksaan</strong><p>Menunggu respons server.</p></div></li>}
     </ol>
-    <details className="console-metadata"><summary>Penggunaan data</summary><p>{events.reduce((total, event) => total + (event.credits ?? 0), 0)} kredit Sectors tercatat dalam jejak ini.</p></details>
+    <details className="console-metadata"><summary>Penggunaan data</summary><p>{events.reduce((total, event) => total + (event.credits ?? 0), 0)} kredit data tercatat dalam jejak ini.</p></details>
   </section>;
 }

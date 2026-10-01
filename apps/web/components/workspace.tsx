@@ -501,7 +501,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                 </section>
               )}
 
-              {llmReady === false && !demo && <p className="integration-error" role="status">Konfigurasi LLM belum tersedia. Pemeriksaan normal memerlukan konfigurasi server dan cache Sectors. Demo fixture dapat dipakai untuk menguji alur.</p>}
+              {llmReady === false && !demo && <p className="integration-error" role="status">Pemeriksaan belum tersedia. Konfigurasi AI dan data tersimpan perlu disiapkan di server. Contoh offline dapat dipakai untuk mencoba alur.</p>}
               {error && <p className="integration-error" role="alert">{error}</p>}
               {traces.length > 0 && !running && <details className="trace-panel">
                 <summary>Jejak pemeriksaan · {traces.length} event</summary>
@@ -671,7 +671,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                   {
                     icon: ChartNoAxesCombined,
                     title: "Perbandingan data",
-                    text: "Pada produk terintegrasi, data Sectors menjadi pembanding. Perhitungan dilakukan oleh kode, dengan periode yang sesuai.",
+                    text: "Data saham menjadi pembanding. Angka diperiksa melalui perhitungan, dengan periode yang sesuai.",
                   },
                   {
                     icon: Layers3,
@@ -772,11 +772,12 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
         >
           <p>
             Cek Dulu membantu investor ritel memahami klaim saham melalui bukti
-            dan konteks. Dibuat untuk Sectors Hackathon 2026.
+            dan konteks.
           </p>
           <p>
             Mode demo berisi ilustrasi offline. Pemeriksaan normal memerlukan konfigurasi server dan data cache yang tersedia.
           </p>
+          <p className="build-revision">Revisi sumber saat build: {process.env.NEXT_PUBLIC_SOURCE_REVISION ?? 'tidak tersedia'}</p>
         </Modal>
       )}
 

@@ -1,5 +1,12 @@
+import { execFileSync } from 'node:child_process';
+
+// Public commit identifier only; helps distinguish a stale server from a new build.
+let sourceRevision = 'tidak tersedia';
+try { sourceRevision = execFileSync('git', ['rev-parse', '--short=7', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch { /* Source archives may not contain Git metadata. */ }
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: { NEXT_PUBLIC_SOURCE_REVISION: sourceRevision },
   // Isolated UI previews can run alongside the team's development server.
   distDir: process.env.CHECK_UI_PREVIEW === '1' ? '.next-ui-preview' : '.next',
   // Paket workspace di-ekspor sebagai TypeScript mentah supaya tidak ada langkah

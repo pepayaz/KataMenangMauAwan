@@ -61,7 +61,7 @@ Referensi memberi prinsip, bukan salinan layout atau klaim pemasaran.
   Grafik membandingkan satuan yang sama dan memakai sumbu nol, termasuk nilai
   negatif. Data kosong tidak ditampilkan sebagai nol.
 - Panel sumber langsung membuka grafik SVG interaktif, termasuk ADRO tanpa
-  metadata riwayat: yield rata-rata Sectors, rata-rata mandiri, pembayaran khusus,
+  metadata riwayat: yield rata-rata tercatat, rata-rata hitung ulang, pembayaran khusus,
   dan TTM dibandingkan sebagai definisi berbeda, bukan timeline buatan. Jika
   hanya pembanding tersedia, grafik klaim vs data tetap ditampilkan. Batang bisa
   disentuh/difokuskan untuk nilai lengkap. Status dan tombol tutup tetap terlihat
@@ -92,8 +92,8 @@ memiliki bentuk berbeda sesuai fungsi.
   memakai jaringan mock, termasuk teks lama, fallback, error, dan batas unggahan.
 
 Viewport 1280 × 900 dan 390 × 844 diperiksa tanpa overflow horizontal.
-Pilihan input mobile memiliki tinggi 48px, CTA baca 54px. Kontras teks utama
-terhadap panel 14,90:1, teks bantuan 7,10:1, dan teks CTA 10,62:1.
+Pilihan input mobile memiliki tinggi 48px, CTA baca 54px. Pada palet dasar,
+kontras teks utama terhadap panel 14,90:1 dan teks bantuan 7,10:1.
 ADRO menghasilkan misleading, BBCA supported (fixture sintetis), dan BBRI
 out_of_scope melalui UI offline. Sumber, Escape/pengembalian fokus, simpan rapor,
 serta pencarian riwayat diperiksa langsung.
@@ -110,6 +110,46 @@ Validasi ini membuktikan UI dan alur mock/offline. Ketersediaan video platform,
 akurasi transkripsi langsung, dan kelengkapan cache pasar tidak dibuktikan oleh
 revisi tampilan. Belum ada uji usability bersama pengguna atau audit screen reader
 menyeluruh; penilaian estetika perlu tetap ditinjau tim.
+
+## Konsistensi dan aksen warna
+
+Judul Periksa klaim saham, Riwayat pemeriksaan, Rapor tersimpan, dan panduan
+memakai aturan tipografi yang sama: 28–36px sesuai lebar viewport, bobot 600,
+line-height 1,25. Logo kembali memakai simbol mint bergradien dengan sedikit
+kemiringan. Gradien putih–mint–lavender pada judul, mint–biru pada CTA, dan warna
+transparan pada latar/kartu menambah kedalaman tanpa mengurangi keterbacaan.
+Mode forced-colors kembali memakai warna sistem; reduced-motion tetap berlaku.
+Ukuran ketiga judul diverifikasi di browser: 32px / line-height 40px pada
+viewport 1280px, dan 28px / 35px pada viewport 390px, seluruhnya bobot 600.
+Kontras endpoint gradien CTA terhadap teks gelap minimal 9,75:1; endpoint
+gradien judul terhadap permukaan paling terang minimal 9,94:1.
+
+Label grafik menyebut Rata-rata tercatat dan Rata-rata hitung ulang; identitas
+Sectors tetap di bagian asal data, dokumentasi sumber, dan disclaimer. Bukti
+asli dan perhitungan tidak diubah. Gradien hanya presentasi, bukan indikator status.
+
+## Jika hasil pull masih menampilkan UI lama
+
+UI ini diimpor langsung oleh halaman utama, tanpa feature flag. CHECK_UI_PREVIEW
+hanya memilih direktori build, bukan desain. Service worker saat ini tidak
+menyimpan HTML, CSS, atau respons API, sehingga bukan cache offline desain baru.
+
+1. Pastikan checkout dan remote yang ditarik adalah feat/ui-investigation-console,
+   lalu cocokkan commit terbaru dengan GitHub. Pull branch lain tidak memindahkan
+   checkout secara otomatis.
+2. Hentikan proses server lama pada mesin tersebut. Build ulang tidak mengganti
+   proses next start yang sudah berjalan; proses itu perlu dijalankan ulang.
+3. Jalankan instalasi dan build dari root repo. Build dan start harus memakai
+   CHECK_UI_PREVIEW yang sama: default .next, atau preview .next-ui-preview.
+4. Buka port yang tertulis di terminal server baru. Port 3000 dapat masih dilayani
+   proses lama ketika proses baru berjalan pada 3001. Muat ulang penuh browser.
+5. Dialog Tentang Cek Dulu menampilkan revisi Git yang dimasukkan saat build.
+   Bandingkan nilai ini dengan commit lokal/remote. Nilainya adalah identitas sumber
+   saat kompilasi, bukan klaim bahwa deployment selalu mengikuti branch terbaru.
+
+Tanpa melihat checkout, revisi build, dan proses di mesin teman, penyebab spesifik
+belum dapat disimpulkan. Repo dan preview lokal saja tidak membuktikan keadaan
+mesin lain.
 
 ## Preview
 

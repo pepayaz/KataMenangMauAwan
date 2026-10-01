@@ -61,7 +61,7 @@ describe('rapor dan riwayat UI memakai hasil shared', () => {
       { checkId: 'c', ts: fixture.input.createdAt, stage: 'error', message: 'Data kedua kosong', credits: 0 },
     ] }));
     expect(html).toContain('Memeriksa angka'); expect(html).toContain('Ada kendala');
-    expect(html).toContain('2 kredit Sectors'); expect(html).not.toContain('Memisahkan klaim');
+    expect(html).toContain('2 kredit data'); expect(html).not.toContain('Memisahkan klaim');
     expect(html).not.toContain('trace-active');
   });
   it('contoh UI sama dengan input fixture pipeline dan SSR tanpa localStorage', () => {
@@ -90,7 +90,7 @@ it('data kosong diberi label eksplisit', () => {
   expect(formatEvidence({value: 'empty'})).toBe('Data belum tersedia');
 });
 it('nama field dan rumus fixture menjadi teks terbaca tanpa mengubah angka atau label lain', () => {
-  expect(readableSourceText('Angka Sectors dividend_yield_avg.avg_yield')).toBe('Rata-rata yield dividen menurut Sectors');
+  expect(readableSourceText('Angka Sectors dividend_yield_avg.avg_yield')).toBe('Rata-rata yield dividen yang dilaporkan');
   expect(readableSourceText('sum(total_yield per tahun) / jumlah tahun')).toBe('Jumlah yield tahunan dibagi jumlah tahun');
   expect(readableSourceText('PER sintetis untuk pengujian')).toBe('PER sintetis untuk pengujian');
   expect(readableSourceText('2021–2025')).toBe('2021–2025');

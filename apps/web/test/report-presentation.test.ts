@@ -104,6 +104,7 @@ describe('source charts do not require fabricated history', () => {
     const charts = sourceCharts(fixture.result.evidence, claim, verdict);
     expect(charts[0]?.key).toBe('yield-snapshot');
     expect(charts[0]?.rows.map(row => row.value)).toEqual([0.255, 0.236, 0.452, 0.0556]);
+    expect(charts[0]?.rows.map(row => row.label)).toEqual(['Rata-rata tercatat', 'Rata-rata hitung ulang', 'Pembayaran khusus', '12 bulan terakhir']);
     expect(charts[0]?.note).toContain('bukan urutan waktu');
     expect(charts[0]?.rows.every(row => fixture.result.evidence.some(record => record.evidenceId === row.evidenceId))).toBe(true);
   });
