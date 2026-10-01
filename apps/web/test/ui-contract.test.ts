@@ -64,6 +64,22 @@ describe('rapor dan riwayat UI memakai hasil shared', () => {
     expect(html).toContain('2 kredit data'); expect(html).not.toContain('Memisahkan klaim');
     expect(html).not.toContain('trace-active');
   });
+  it('ekstraksi gagal tidak ditampilkan sebagai "konten tanpa klaim"', () => {
+    const result = { ...item.result, claims: [], verdicts: [], evidence: [], hypothesisRuns: [] };
+    const traces = [{ checkId: item.id, ts: fixture.input.createdAt, stage: 'error' as const, credits: 0,
+      message: 'Kuota layanan LLM sedang habis, jadi klaim belum dapat diekstrak. Coba lagi nanti.',
+      data: { code: 'EXTRACTION_FAILED', llmCode: 'QUOTA' } }];
+    const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, result, traces } }));
+    expect(html).toContain('Kuota layanan LLM sedang habis');
+    expect(html).not.toContain('Konten sudah dibaca');
+    expect(html).toContain('Klaim belum dapat diperiksa.');
+    expect(html).toContain('tidak ada kesimpulan tentang isi konten');
+    expect(html).not.toContain('Sertakan pernyataan saham');
+    const empty = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, result, traces: [] } }));
+    expect(empty).toContain('Belum ada klaim yang bisa diperiksa.');
+    expect(empty).toContain('Sertakan pernyataan saham');
+    expect(empty).not.toContain('Kuota layanan LLM sedang habis');
+  });
   it('contoh UI sama dengan input fixture pipeline dan SSR tanpa localStorage', () => {
     expect(examples.map(example => example.text)).toEqual(checkFixtures.map(fixture => fixture.input.rawText));
     expect(renderToStaticMarkup(createElement(Workspace, { fixtureDemo: true }))).toContain('Cek klaim ini');

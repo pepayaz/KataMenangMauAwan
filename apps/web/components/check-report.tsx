@@ -17,9 +17,12 @@ export default function CheckReport({ item }: { item: HistoryItem }) {
   const [selectedEvidence, setSelectedEvidence] = useState<{ evidence: Evidence[]; verdict: ClaimVerdict; claim?: Claim } | null>(null);
   const tickers = [...new Set(result.claims.map(claim => claim.ticker))];
   const normalizedText = cleanText(item.text);
+  // Preserve extraction failures from the pipeline; an error is not a claim-free input.
+  const failure = item.traces.find(trace => trace.stage === 'error'
+    && (trace.data as { code?: unknown } | undefined)?.code === 'EXTRACTION_FAILED');
   return <>
-    <div className="report-summary"><div>{item.demo && <span className="eyebrow">Demo fixture offline</span>}<strong>{tickers.join(' / ') || 'Belum ada klaim'}<span>{result.verdicts.length} klaim diperiksa</span></strong></div><p>{item.demo ? 'Angka contoh bukan data pasar terkini.' : 'Berdasarkan data dan periode yang tersedia.'}</p></div>
-    {!result.verdicts.length && <div className="empty-report" role="status"><FileSearch size={26} /><div><h3>{result.claims.length === 0 ? 'Belum ada klaim yang bisa diperiksa.' : 'Pemeriksaan membutuhkan informasi tambahan.'}</h3><p>{result.claims.length === 0 ? 'Sertakan pernyataan saham, angka, atau periode. Judul, daftar ticker, dan pertanyaan saja belum cukup.' : 'Lihat pilihan saham atau jejak pemeriksaan untuk mengetahui data yang belum tersedia.'}</p></div></div>}
+    <div className="report-summary"><div>{item.demo && <span className="eyebrow">Demo fixture offline</span>}<strong>{tickers.join(' / ') || (failure ? 'Ekstraksi belum selesai' : 'Belum ada klaim')}<span>{result.verdicts.length} klaim diperiksa</span></strong></div><p>{failure ? 'Belum ada kesimpulan pemeriksaan.' : item.demo ? 'Angka contoh bukan data pasar terkini.' : 'Berdasarkan data dan periode yang tersedia.'}</p></div>
+    {!result.verdicts.length && <div className="empty-report" role="status"><FileSearch size={26} /><div><h3>{failure ? 'Klaim belum dapat diperiksa.' : result.claims.length === 0 ? 'Belum ada klaim yang bisa diperiksa.' : 'Pemeriksaan membutuhkan informasi tambahan.'}</h3><p>{failure ? `${failure.message} Klaim belum diperiksa; tidak ada kesimpulan tentang isi konten.` : result.claims.length === 0 ? 'Sertakan pernyataan saham, angka, atau periode. Judul, daftar ticker, dan pertanyaan saja belum cukup.' : 'Lihat pilihan saham atau jejak pemeriksaan untuk mengetahui data yang belum tersedia.'}</p></div></div>}
     {result.verdicts.map((verdict, index) => {
       const claim = result.claims.find(claim => claim.claimId === verdict.claimId);
       const evidence = result.evidence.filter(record => verdict.evidenceIds.includes(record.evidenceId));

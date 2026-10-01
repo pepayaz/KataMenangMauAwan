@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DividendSection } from '@cek-dulu/sectors';
-import { dividendBases, matchDividendYield, verifyDividend } from '../src/dividend.js';
+import { dividendBases, isDividendAmountClaim, matchDividendYield, verifyDividend } from '../src/dividend.js';
 import { ctx, makeClaim, seededClient } from './helpers.js';
 
 /**
@@ -150,5 +150,67 @@ describe('verifyDividend', () => {
     );
     expect(out.matches).toBeNull();
     expect(out.note).toContain('cache_only');
+  });
+});
+
+/** Data UNVR di cache Sectors (28 Sep 2026): interim tahun buku 2025 Rp87 dibayar 2025-12-15. */
+const UNVR_DIVIDEND: DividendSection = {
+  historical_dividends: {
+    // Nominal sama (Rp87) juga dibayar 2020; periode klaim harus memilih 2025.
+    '2020': { breakdown: [{ date: '2020-12-01', total: 87, yield: 0.0105 }], total_yield: 0.0105, total_dividend: 87 },
+    '2025': {
+      breakdown: [{ date: '2025-12-15', total: 87, yield: 0.0483 }, { date: '2025-06-16', total: 47, yield: 0.0261 }],
+      total_yield: 0.0744,
+      total_dividend: 134,
+    },
+    '2026': { breakdown: [{ date: '2026-06-15', total: 114, yield: 0.0699 }], total_yield: 0.0699, total_dividend: 114 },
+  },
+  upcoming_dividends: null,
+  yield_ttm: 0.1233,
+  dividend_yield_avg: { period: 5, avg_yield: 0.0488 },
+  dividend_ttm: 201,
+  payout_ratio: 1.0,
+  cash_payout_ratio: 2.26,
+  last_ex_dividend_date: '2026-06-15',
+};
+const unvrClient = () => seededClient([{ endpoint: 'fetchCompanyReport', params: { symbol: 'UNVR', sections: ['dividend'] },
+  response: { symbol: 'UNVR.JK', company_name: 'Unilever Indonesia', dividend: UNVR_DIVIDEND } }]);
+
+describe('dividen nominal per saham', () => {
+  it('Rp87 per saham tahun buku 2025 cocok dengan pembayaran interim, bukan dibandingkan ke yield', async () => {
+    const out = await verifyDividend(makeClaim('dividend', 'UNVR',
+      { metric: 'dividen interim per saham', value: 87, unit: 'IDR', period: 'tahun buku 2025' }), ctx(unvrClient()));
+    expect(out.matches).toBe(true);
+    expect(out.details).toMatchObject({ matchedBasis: 'payment', claimKind: 'per_share_amount',
+      matchedLabel: 'Dividen per saham UNVR 2025-12-15' });
+    expect(out.evidence.map((e) => e.label).some((l) => l.includes('2020'))).toBe(false);
+    expect(out.computed).toMatchObject({ value: 87, unit: 'IDR' });
+    expect(out.evidence.every((e) => e.unit === 'IDR')).toBe(true);
+    expect(out.evidence.map((e) => e.label)).not.toContain('Yield TTM UNVR');
+  });
+
+  it('nominal yang tidak pernah dibayar dibantah', async () => {
+    const out = await verifyDividend(makeClaim('dividend', 'UNVR',
+      { metric: 'dividen per saham', value: 150, unit: 'IDR', period: '2025' }), ctx(unvrClient()));
+    expect(out.matches).toBe(false);
+  });
+
+  it('total nilai dividen perusahaan (Rp3,3 triliun) tidak bisa diverifikasi', async () => {
+    const out = await verifyDividend(makeClaim('dividend', 'UNVR',
+      { metric: 'total dividen', value: 3.3e12, unit: 'IDR' }), ctx(unvrClient()));
+    expect(out.matches).toBeNull();
+    expect(out.note).toContain('per saham');
+  });
+
+  it('tanpa periode, dividen TTM juga menjadi dasar', async () => {
+    const out = await verifyDividend(makeClaim('dividend', 'UNVR',
+      { metric: 'dividen per saham', value: 201, unit: 'IDR' }), ctx(unvrClient()));
+    expect(out.details).toMatchObject({ matchedBasis: 'ttm' });
+  });
+
+  it('isDividendAmountClaim membedakan yield dan nominal', () => {
+    expect(isDividendAmountClaim({ asserted: { metric: 'yield', value: 5, unit: '%' } })).toBe(false);
+    expect(isDividendAmountClaim({ asserted: { metric: 'dividen', value: 87, unit: 'IDR' } })).toBe(true);
+    expect(isDividendAmountClaim({ asserted: { metric: 'dividend_per_share', value: 87 } })).toBe(true);
   });
 });
