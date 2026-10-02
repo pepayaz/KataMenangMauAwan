@@ -23,14 +23,14 @@ export default function CheckReport({ item }: { item: HistoryItem }) {
   return <>
     <div className="report-summary"><div>{item.demo && <span className="eyebrow">Demo fixture offline</span>}<strong>{tickers.join(' / ') || (failure ? 'Ekstraksi belum selesai' : 'Belum ada klaim')}<span>{result.verdicts.length} klaim diperiksa</span></strong></div><p>{failure ? 'Belum ada kesimpulan pemeriksaan.' : item.demo ? 'Angka contoh bukan data pasar terkini.' : 'Berdasarkan data dan periode yang tersedia.'}</p></div>
     {!result.verdicts.length && <div className="empty-report" role="status"><FileSearch size={26} /><div><h3>{failure ? 'Klaim belum dapat diperiksa.' : result.claims.length === 0 ? 'Belum ada klaim yang bisa diperiksa.' : 'Pemeriksaan membutuhkan informasi tambahan.'}</h3><p>{failure ? `${failure.message} Klaim belum diperiksa; tidak ada kesimpulan tentang isi konten.` : result.claims.length === 0 ? 'Sertakan pernyataan saham, angka, atau periode. Judul, daftar ticker, dan pertanyaan saja belum cukup.' : 'Lihat pilihan saham atau jejak pemeriksaan untuk mengetahui data yang belum tersedia.'}</p></div></div>}
-    {result.verdicts.map((verdict, index) => {
+    {result.verdicts.map(verdict => {
       const claim = result.claims.find(claim => claim.claimId === verdict.claimId);
       const evidence = result.evidence.filter(record => verdict.evidenceIds.includes(record.evidenceId));
       const asserted = claim?.asserted;
       const comparison = comparisonFor(claim, verdict);
       const quote = claim ? normalizedText.slice(claim.span[0], claim.span[1]) : item.text;
       return <article className={`report-card report-${verdict.verdict}`} key={verdict.claimId}>
-        <div className="claim-card-header"><span><span className="claim-index">{String(index + 1).padStart(2, '0')}</span><b>{claim?.ticker}</b><span className="claim-type">{claim ? typeLabels[claim.type] : 'Klaim'}</span></span></div>
+        <div className="claim-card-header"><span><b>{claim?.ticker}</b><span className="claim-type">{claim ? typeLabels[claim.type] : 'Klaim'}</span></span></div>
         <div className="report-main">
           <div className="claim-conclusion"><VerdictBadge verdict={verdict.verdict} /><ul className="verdict-signals">{verdictSignals[verdict.verdict].map((signal, signalIndex) => <li key={signal}>{verdict.verdict === 'misleading' && signalIndex === 1 ? <TriangleAlert size={15} /> : verdict.verdict === 'supported' || verdict.verdict === 'misleading' ? <Check size={15} /> : <Minus size={15} />}{signal}</li>)}</ul></div>
           <blockquote>“{quote || item.text}”</blockquote>

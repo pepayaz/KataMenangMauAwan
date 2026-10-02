@@ -55,7 +55,6 @@ body { background: linear-gradient(145deg,#1b263a 0,var(--canvas) 620px); }
 .report-main { padding:24px; }
 .report-main blockquote { font-family:var(--font-ui); font-size:22px; font-weight:600; line-height:1.4; margin:20px 0; }
 .claim-card-header { grid-column:auto; }
-.claim-index { font-size:14px; color:var(--muted); }
 .claim-conclusion .verdict { box-shadow:none; border-radius:6px; }
 .verdict-signals { font-size:14px; }
 .report-evidence { border:0; border-top:1px solid var(--line); background:none; padding:20px 0; }
@@ -82,12 +81,13 @@ body { background: linear-gradient(145deg,#1b263a 0,var(--canvas) 620px); }
 .verdict-refuted { color:var(--danger); background:#2d2020; }
 .site-footer::before { display:none; }
 @media(min-width:1024px) {
-  .sidebar { position:static; inset:auto; width:min(calc(100% - 64px),1200px); height:96px; margin:0 auto; padding:0; flex-direction:row; align-items:center; gap:24px; border:0; border-bottom:1px solid var(--line); background:none; }
+  .sidebar { position:static; inset:auto; width:min(calc(100% - 64px),1200px); height:96px; margin:0 auto; padding:0; flex-direction:row; align-items:center; gap:8px; border:0; border-bottom:1px solid var(--line); background:none; }
   .sidebar .brand { margin:0 auto 0 0; padding:0; }
-  .sidebar nav { display:flex; gap:8px; }
-  .sidebar .nav-item { width:auto; margin:0; padding:12px; font-size:16px; }
+  .sidebar nav { display:contents; }
+  .sidebar .nav-item { width:144px; flex:0 0 144px; justify-content:center; gap:0; text-align:center; white-space:nowrap; margin:0; padding:12px 8px; font-size:16px; }
+  .sidebar .nav-item > span:nth-child(2) { flex:0 1 auto; }
   .sidebar .nav-item svg,.sidebar .nav-count,.nav-divider { display:none; }
-  .sidebar-bottom { margin:0; padding:0; }
+  .sidebar-bottom { display:contents; margin:0; padding:0; }
   .main-shell { margin-left:0; }
   .topbar { display:none; }
   main { max-width:1264px; padding-inline:32px; }

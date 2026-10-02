@@ -124,7 +124,6 @@ main { max-width: 1480px; margin: 0 auto; padding: 0 38px; }
 .claim-card-header { grid-column: 1/-1; display: flex; justify-content: space-between; align-items: center; gap: 14px; border-bottom: 1px solid var(--line); padding: 18px 24px; background: var(--surface-raised); }
 .claim-card-header > span { display: flex; align-items: center; gap: 12px; }
 .claim-card-header b { font-family: var(--font-data); font-weight: 400; font-size: 14px; }
-.claim-index { font-family: var(--font-data); color: var(--subtle); font-size: 14px; }
 .claim-type { font-size: 14px; color: var(--subtle); border-left: 1px solid var(--line-bright); padding-left: 12px; }
 .verdict { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; line-height: 1.4; padding: 6px 9px; border: 1px solid currentColor; border-radius: 4px; width: fit-content; }
 .verdict-misleading, .verdict.amber { color: #30220e; background: var(--amber); border-color: var(--amber); }

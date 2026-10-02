@@ -38,8 +38,8 @@
 .input-review details { border-top: 1px solid var(--line); margin-top: 12px; }
 .input-review summary, .media-setup > summary { cursor: pointer; min-height: 44px; padding-block: 12px; font-size: 14px; color: var(--accent); }
 .input-review summary span { margin-left: 6px; color: var(--muted); }
-.media-steps { display: flex; gap: 12px; padding: 0 0 18px; margin: 0; list-style: none; border-bottom: 1px solid var(--line); }
-.media-steps li { display: flex; align-items: center; gap: 7px; flex: 1; font-size: 14px; color: var(--subtle); }
+.media-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 0 0 18px; margin: 0; list-style: none; border-bottom: 1px solid var(--line); }
+.media-steps li { display: flex; align-items: center; justify-content: center; gap: 7px; min-width: 0; font-size: 14px; color: var(--subtle); }
 .media-steps li > span { display: grid; place-items: center; flex-shrink: 0; width: 24px; height: 24px; border: 1px solid var(--line-bright); border-radius: 50%; font-size: 14px; }
 .media-steps .is-current { color: var(--ink); }
 .media-steps .is-current > span { border-color: var(--accent); color: var(--accent); }
@@ -73,8 +73,7 @@
   .integration-controls { margin-inline: 18px; }
   .ticker-choice, .input-origin, .input-review { margin-inline: 18px; }
   .media-steps { gap: 8px; }
-  .media-steps li { flex-direction: column; align-items: flex-start; gap: 6px; font-size: 14px; }
-  .media-steps li { flex-direction: row; align-items: center; }
+  .media-steps li { gap: 6px; font-size: 14px; }
   .input-numbers { margin-inline: 18px; }
   .media-capabilities { flex-wrap: wrap; }
   .media-capabilities details { text-align: left; }
