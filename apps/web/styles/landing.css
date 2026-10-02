@@ -5,6 +5,7 @@
 
 
 .landing { min-height:100dvh; --font-ui:var(--font-ui-loaded); --font-display:var(--font-display-loaded); font-family:var(--font-ui),sans-serif; }
+.landing header .brand { margin:0; padding:0; }
 .landing h1,.landing .sheet strong,.landing .sheet blockquote {font-family:var(--font-display),sans-serif;}
 .landing .sheet strong small {font-family:var(--font-ui),sans-serif;}
 .landing .site-footer {width:100%;max-width:1280px;margin:0 auto;padding:28px 40px 36px;}
