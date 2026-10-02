@@ -9,6 +9,8 @@ import localFont from 'next/font/local';
 
 const uiFont = localFont({ src: '../public/fonts/source-sans-3.ttf', variable: '--font-ui-loaded', weight: '200 900', display: 'swap' });
 
+const displayFont = localFont({ src: '../public/fonts/barlow-semi-condensed-600.ttf', variable: '--font-display-loaded', weight: '600', display: 'swap' });
+
 export const metadata = {
   title: 'Cek Dulu',
   manifest: '/manifest.webmanifest',
@@ -17,7 +19,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="id" className={uiFont.variable}>
+    <html lang="id" className={`${uiFont.variable} ${displayFont.variable}`}>
       <body><PwaRegistration />{children}</body>
     </html>
   );

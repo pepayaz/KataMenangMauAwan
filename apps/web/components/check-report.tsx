@@ -31,8 +31,14 @@ export default function CheckReport({ item }: { item: HistoryItem }) {
       const quote = claim ? normalizedText.slice(claim.span[0], claim.span[1]) : item.text;
       return <article className={`report-card report-${verdict.verdict}`} key={verdict.claimId}>
         <div className="claim-card-header"><span><span className="claim-index">{String(index + 1).padStart(2, '0')}</span><b>{claim?.ticker}</b><span className="claim-type">{claim ? typeLabels[claim.type] : 'Klaim'}</span></span></div>
-        <div className="report-main"><blockquote>“{quote || item.text}”</blockquote>
+        <div className="report-main">
           <div className="claim-conclusion"><VerdictBadge verdict={verdict.verdict} /><ul className="verdict-signals">{verdictSignals[verdict.verdict].map((signal, signalIndex) => <li key={signal}>{verdict.verdict === 'misleading' && signalIndex === 1 ? <TriangleAlert size={15} /> : verdict.verdict === 'supported' || verdict.verdict === 'misleading' ? <Check size={15} /> : <Minus size={15} />}{signal}</li>)}</ul></div>
+          <blockquote>“{quote || item.text}”</blockquote>
+        <div className="report-evidence">{comparison.values ? <div className="comparison-chart"><EvidenceBars label="Perbandingan angka klaim dan data" rows={[{ label: `Diklaim${asserted?.period ? ` · ${asserted.period}` : ''}`, value: comparison.values[0], display: comparison.left }, { label: 'Hasil pembanding', value: comparison.values[1], display: comparison.right }]} /></div> : <div className="metric-compare"><div><span>Diklaim{asserted?.period ? ` · ${asserted.period}` : ''}</span><strong>{comparison.left}</strong></div><ArrowRight size={18} aria-hidden="true" /><div><span>Hasil pembanding</span><strong>{comparison.right}</strong></div></div>}
+          <p className="comparison-note">{verdict.computed ? readableSourceText(evidence.find(record => record.evidenceId === verdict.computed?.evidenceId)?.label ?? '') : verdict.verdict === 'out_of_scope' ? 'Prediksi tidak memiliki angka pembanding historis.' : 'Belum ada data angka yang memadai.'}</p>
+          {verdict.computed && <details className="comparison-precision"><summary>Nilai sebelum pembulatan</summary><dl><div><dt>Klaim</dt><dd>{comparison.exactLeft ?? 'Tidak disebutkan'}</dd></div><div><dt>Data</dt><dd>{comparison.exactRight}</dd></div></dl></details>}
+          <button className="evidence-button" disabled={!evidence.length} onClick={() => setSelectedEvidence({ evidence, verdict, claim })}><FileSearch size={16} />Lihat sumber<span>{evidence.length} bukti</span></button>
+        </div>
           {verdict.missingContext.length > 0 && <div className="context-findings">{verdict.missingContext.map(context => {
             const facts = evidence.filter(record => context.evidenceIds.includes(record.evidenceId) && typeof record.value === 'number').slice(0, 2);
             return <section className="context-tile" key={context.hypId}><div className="context-tile-title"><Layers3 size={19} /><h3>{contextTitles[context.hypId] ?? 'Konteks tambahan'}</h3></div>
@@ -46,11 +52,6 @@ export default function CheckReport({ item }: { item: HistoryItem }) {
             </section>;
           })}</div>}
           <details className="explanation-details"><summary>Baca penjelasan lengkap</summary><ol className="explanation-parts">{explanationParts(verdict.explanation).map((part, partIndex) => <li key={partIndex}>{part}</li>)}</ol></details>
-        </div>
-        <div className="report-evidence">{comparison.values ? <div className="comparison-chart"><EvidenceBars label="Perbandingan angka klaim dan data" rows={[{ label: `Diklaim${asserted?.period ? ` · ${asserted.period}` : ''}`, value: comparison.values[0], display: comparison.left }, { label: 'Hasil pembanding', value: comparison.values[1], display: comparison.right }]} /></div> : <div className="metric-compare"><div><span>Diklaim{asserted?.period ? ` · ${asserted.period}` : ''}</span><strong>{comparison.left}</strong></div><ArrowRight size={18} aria-hidden="true" /><div><span>Hasil pembanding</span><strong>{comparison.right}</strong></div></div>}
-          <p className="comparison-note">{verdict.computed ? readableSourceText(evidence.find(record => record.evidenceId === verdict.computed?.evidenceId)?.label ?? '') : verdict.verdict === 'out_of_scope' ? 'Prediksi tidak memiliki angka pembanding historis.' : 'Belum ada data angka yang memadai.'}</p>
-          {verdict.computed && <details className="comparison-precision"><summary>Nilai sebelum pembulatan</summary><dl><div><dt>Klaim</dt><dd>{comparison.exactLeft ?? 'Tidak disebutkan'}</dd></div><div><dt>Data</dt><dd>{comparison.exactRight}</dd></div></dl></details>}
-          <button className="evidence-button" disabled={!evidence.length} onClick={() => setSelectedEvidence({ evidence, verdict, claim })}><FileSearch size={16} />Lihat sumber<span>{evidence.length} bukti</span></button>
         </div>
       </article>;
     })}

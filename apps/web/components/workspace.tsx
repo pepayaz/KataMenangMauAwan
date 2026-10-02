@@ -281,6 +281,10 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
 
       <div className="main-shell">
         <header className="topbar">
+          <a href="/" className="brand mobile-brand" onClick={event => { event.preventDefault(); navigate('check'); }}>
+            <span className="brand-mark"><CheckCheck size={26} strokeWidth={3} /></span>
+            <span>cek<span className="brand-light">dulu</span><span className="brand-period">.</span></span>
+          </a>
           <div className="breadcrumb">
             <button
               className="mobile-menu icon-button"
