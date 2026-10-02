@@ -1,65 +1,97 @@
-// Fixtures untuk presentasi UI; bukan hasil pemeriksaan data pasar langsung.
+// Static frontend fixtures only. No market API / backend integration in this package.
 export const examples = [
   {
     id: "dividend",
     ticker: "ADRO",
-    category: "Dividen",
-    text: "Yield dividen ADRO 25% setahun. Tinggal duduk manis, cuan ngalir terus!",
-    status: "Benar tapi menyesatkan",
+    category: "DIVIDEND",
+    text: "ADRO yield dividennya 25,5% setahun.",
+    status: "Benar, tapi menyesatkan",
+    shortStatus: "MISLEADING",
     tone: "amber",
-    title: "Angkanya punya cerita lain.",
+    headline: "Angkanya benar. Konteksnya mengubah cerita.",
     summary:
-      "Rata-rata historis dapat terlihat tinggi karena satu pembayaran dividen luar biasa. Angka tersebut tidak menggambarkan pembayaran rutin yang akan diterima setiap tahun.",
-    metrics: [
-      { label: "Yield dalam klaim", value: "25%", width: 83 },
-      { label: "Rata-rata 5 tahun", value: "25,5%", width: 85 },
-      { label: "Yield 12 bulan terakhir", value: "5,6%", width: 19 },
-    ],
-    context: "Pembayaran luar biasa mendominasi rata-rata",
+      "Rata-rata historis memang tinggi, tetapi satu pembayaran luar biasa menarik angkanya jauh ke atas. Yield berjalan saat ini jauh lebih rendah.",
+    claimed: "25,5%",
+    verified: "5,56%",
+    delta: "−19,94 pp",
+    context: "One-off dividend mendominasi rata-rata historis.",
     detail:
-      "Dalam skenario demo ini, pembayaran dividen khusus membuat rata-rata historis melambung. Bandingkan periode yang sama dan pisahkan pembayaran rutin dari pembayaran satu kali.",
-    evidence: "Fixture dividen ADRO · ilustrasi dari dokumen proyek",
-    number: "01",
+      "Pembayaran khusus tidak mewakili pola pembayaran rutin. Karena itu angka 25,5% benar sebagai rata-rata historis, tetapi menyesatkan bila dibaca sebagai yield yang berulang setiap tahun.",
+    evidenceCount: 4,
+    duration: "12,4s",
+    evidence: [
+      { label: "Yield 5Y Avg", value: "25,50%", flag: "MATCH" },
+      { label: "Yield TTM", value: "5,56%", flag: "GAP" },
+      { label: "Special dividend 2024", value: "Rp1.358,18", flag: "OUTLIER" },
+      { label: "Cash payout ratio", value: "−0,90", flag: "FLAG" },
+    ],
+    hypotheses: [
+      { code: "DIV_ONE_OFF", status: "TRIGGERED" },
+      { code: "DIV_TTM_GAP", status: "TRIGGERED" },
+      { code: "DIV_SHARE_CHANGE", status: "CLEAR" },
+    ],
+    source: "SECTORS · COMPANY REPORT / DIVIDEND",
   },
   {
     id: "valuation",
     ticker: "BBCA",
-    category: "Valuasi",
-    text: "PER BBCA cuma 3x. Valuasinya murah banget sekarang!",
+    category: "VALUATION",
+    text: "PER BBCA cuma 3x. Murah banget sekarang.",
     status: "Dibantah",
+    shortStatus: "REFUTED",
     tone: "red",
-    title: "Klaim dan data belum sejalan.",
+    headline: "Angka dalam klaim tidak cocok dengan pembanding.",
     summary:
-      "Angka PER dalam klaim berbeda jauh dari angka pembanding pada fixture demo. Pernyataan “murah” sendiri merupakan penilaian, bukan fakta yang bisa diputuskan hanya dari satu rasio.",
-    metrics: [
-      { label: "PER dalam klaim", value: "3×", width: 10 },
-      { label: "PER pembanding demo", value: "24×", width: 80 },
-    ],
-    context: "Satu rasio bukan keseluruhan cerita",
+      "PER pada klaim berbeda jauh dari angka pembanding pada fixture. Label “murah” tetap merupakan interpretasi dan tidak diputuskan dari satu rasio saja.",
+    claimed: "3×",
+    verified: "24×",
+    delta: "+21×",
+    context: "Satu rasio tidak cukup untuk menyimpulkan valuasi.",
     detail:
-      "Penilaian valuasi memerlukan periode laporan yang jelas, konteks sektor, serta kualitas laba. Rasio yang rendah tidak otomatis berarti saham layak dibeli.",
-    evidence: "Fixture valuasi BBCA · angka sintetis untuk demonstrasi",
-    number: "02",
+      "Periode laporan, kualitas laba, dan konteks historis perlu dibaca bersama. Pemeriksaan hanya menilai kecocokan klaim angkanya.",
+    evidenceCount: 3,
+    duration: "9,8s",
+    evidence: [
+      { label: "PER dalam klaim", value: "3×", flag: "CLAIM" },
+      { label: "PER pembanding", value: "24×", flag: "MISMATCH" },
+      { label: "Difference", value: "21×", flag: "GAP" },
+    ],
+    hypotheses: [
+      { code: "VAL_OWN_HISTORY", status: "CLEAR" },
+      { code: "VAL_ONE_OFF_EARNINGS", status: "CHECKED" },
+      { code: "VAL_PEER_GAP", status: "CHECKED" },
+    ],
+    source: "SECTORS · COMPANY REPORT / VALUATION",
   },
   {
     id: "price",
     ticker: "TLKM",
-    category: "Harga",
+    category: "PRICE MOVE",
     text: "Harga TLKM naik 10% dalam sebulan terakhir.",
     status: "Didukung",
-    tone: "green",
-    title: "Untuk contoh ini, angkanya cocok.",
+    shortStatus: "SUPPORTED",
+    tone: "lime",
+    headline: "Klaim dan data pembanding berada pada jendela yang sama.",
     summary:
-      "Perubahan harga pada fixture sesuai dengan klaim untuk jendela satu bulan yang sama. Kesesuaian data historis tidak menunjukkan arah harga berikutnya.",
-    metrics: [
-      { label: "Kenaikan dalam klaim", value: "10%", width: 66 },
-      { label: "Perubahan pada fixture", value: "10%", width: 66 },
-    ],
-    context: "Pastikan jendela waktunya sama",
+      "Perubahan harga pada fixture sesuai dengan klaim untuk periode satu bulan yang sama. Hasil ini tidak memprediksi arah harga berikutnya.",
+    claimed: "+10%",
+    verified: "+10%",
+    delta: "0,00 pp",
+    context: "Jendela waktu sudah disejajarkan sebelum dibandingkan.",
     detail:
-      "Persentase perubahan bergantung pada tanggal awal dan akhir. Dalam skenario ini kedua tanggal sudah disamakan, dan tidak ada konteks tambahan yang mengubah hasil demo.",
-    evidence: "Fixture harga TLKM · angka sintetis untuk demonstrasi",
-    number: "03",
+      "Persentase perubahan harga sangat bergantung pada tanggal awal dan akhir. Pada contoh ini keduanya konsisten.",
+    evidenceCount: 2,
+    duration: "8,1s",
+    evidence: [
+      { label: "Claim window", value: "30 hari", flag: "MATCH" },
+      { label: "Price change", value: "+10,00%", flag: "MATCH" },
+    ],
+    hypotheses: [
+      { code: "PRC_WINDOW", status: "CLEAR" },
+      { code: "PRC_SPLIT", status: "CLEAR" },
+      { code: "PRC_LOW_BASE", status: "CLEAR" },
+    ],
+    source: "SECTORS · DAILY PRICE",
   },
 ] as const;
 
@@ -71,28 +103,28 @@ export type HistoryItem = {
   createdAt: string;
   saved: boolean;
 };
-export const storageKey = "cek-dulu-frontend-history-v1";
+
+export const storageKey = "cek-dulu-frontend-history-v2";
 
 export function readHistory(): HistoryItem[] {
   try {
-    const parsed: unknown = JSON.parse(
-      localStorage.getItem(storageKey) || "[]",
-    );
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((item): item is HistoryItem =>
-        Boolean(
-          item &&
-          typeof item === "object" &&
-          typeof item.id === "string" &&
-          typeof item.text === "string" &&
-          typeof item.saved === "boolean" &&
-          typeof item.createdAt === "string" &&
-          Number.isFinite(Date.parse(item.createdAt)) &&
-          ["dividend", "valuation", "price", "custom"].includes(item.demoId),
-        ),
-      )
-      .slice(0, 50);
+    return parsed.filter((item): item is HistoryItem => {
+      if (!item || typeof item !== "object") return false;
+      const value = item as Partial<HistoryItem>;
+      return Boolean(
+        typeof value.id === "string" &&
+          typeof value.text === "string" &&
+          typeof value.createdAt === "string" &&
+          typeof value.saved === "boolean" &&
+          ["dividend", "valuation", "price", "custom"].includes(
+            String(value.demoId),
+          ),
+      );
+    });
   } catch {
     return [];
   }

@@ -1,27 +1,36 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
-  ArrowDownLeft,
+  Activity,
+  AlertTriangle,
   ArrowRight,
   ArrowUpRight,
   Bookmark,
-  ChartNoAxesCombined,
   Check,
+  CheckCircle2,
   CheckCheck,
+  ChevronDown,
   ChevronRight,
+  CircleDashed,
   CircleHelp,
+  Clock3,
+  Database,
+  FileSearch,
   FileText,
   Fingerprint,
   History,
+  Image as ImageIcon,
   Layers3,
-  Lightbulb,
-  LoaderCircle,
-  Menu,
-  MessageSquareQuote,
-  Plus,
+  Link2,
+  LockKeyhole,
+  MinusCircle,
   Search,
   ShieldCheck,
-  Sparkles,
+  UploadCloud,
+  Video,
+  Waypoints,
   X,
+  XCircle,
+  Zap,
 } from "lucide-react";
 import {
   examples,
@@ -31,13 +40,211 @@ import {
   type HistoryItem,
 } from "./demo";
 
-type Page = "check" | "history" | "saved" | "guide";
-const steps = [
-  "Mengenali emiten dan klaim",
-  "Membandingkan angka pada fixture",
-  "Mencari konteks yang terlewat",
-  "Menyusun rapor demo",
+type Page = "landing" | "check" | "history" | "saved";
+type Phase = "idle" | "analyzing" | "result";
+type InputMode = "text" | "screenshot" | "link" | "video";
+type LandingView = "home" | "product" | "how" | "data";
+
+type DemoFixture = (typeof examples)[number];
+
+const investigationSteps = [
+  {
+    id: "normalize",
+    title: "Normalize input",
+    subtitle: "Membaca ticker dan struktur kalimat",
+    meta: "ENTITY RESOLUTION",
+  },
+  {
+    id: "extract",
+    title: "Extract claim",
+    subtitle: "Memisahkan klaim yang bisa diverifikasi",
+    meta: "CLAIM PARSER",
+  },
+  {
+    id: "evidence",
+    title: "Fetch evidence",
+    subtitle: "Menyiapkan angka pembanding pada fixture",
+    meta: "EVIDENCE LAYER",
+  },
+  {
+    id: "context",
+    title: "Context Hunter",
+    subtitle: "Menguji konteks yang bisa mengubah makna",
+    meta: "HYPOTHESIS RUN",
+  },
+  {
+    id: "adjudicate",
+    title: "Adjudicate",
+    subtitle: "Menyusun status berdasarkan evidence",
+    meta: "VERDICT ENGINE",
+  },
 ];
+
+function Brand({ compact = false }: { compact?: boolean }) {
+  return (
+    <span className={`brand ${compact ? "brand-compact" : ""}`}>
+      <span className="brand-mark" aria-hidden="true">
+        <CheckCheck size={compact ? 19 : 22} strokeWidth={2.6} />
+      </span>
+      <span className="brand-word">
+        cek<span>dulu</span><i>.</i>
+      </span>
+    </span>
+  );
+}
+
+function VerdictIcon({ tone, size = 18 }: { tone: string; size?: number }) {
+  if (tone === "lime") return <CheckCircle2 size={size} />;
+  if (tone === "red") return <XCircle size={size} />;
+  if (tone === "amber") return <AlertTriangle size={size} />;
+  if (tone === "violet") return <CircleHelp size={size} />;
+  return <MinusCircle size={size} />;
+}
+
+function VerificationCore({ small = false }: { small?: boolean }) {
+  return (
+    <div className={`verification-core ${small ? "verification-core-small" : ""}`} aria-hidden="true">
+      <div className="core-orbit orbit-a" />
+      <div className="core-orbit orbit-b" />
+      <div className="core-orbit orbit-c" />
+      <div className="core-cross core-cross-x" />
+      <div className="core-cross core-cross-y" />
+      <div className="core-center">
+        <Fingerprint size={small ? 20 : 28} />
+      </div>
+      <span className="core-tick tick-a" />
+      <span className="core-tick tick-b" />
+      <span className="core-tick tick-c" />
+      <span className="core-tick tick-d" />
+    </div>
+  );
+}
+
+function LandingMachine() {
+  return (
+    <div className="machine" aria-hidden="true">
+      <svg className="machine-paths" viewBox="0 0 620 540" fill="none">
+        <defs>
+          <linearGradient id="pathGlow" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#37D7FF" />
+            <stop offset="0.58" stopColor="#5B78FF" />
+            <stop offset="1" stopColor="#A98BFF" />
+          </linearGradient>
+          <filter id="softGlow">
+            <feGaussianBlur stdDeviation="5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <path d="M62 122C170 84 193 183 286 208C361 228 405 215 490 159" className="path-neutral" />
+        <path d="M60 390C177 412 206 350 292 316C382 280 425 331 559 299" className="path-neutral" />
+        <path d="M128 476C228 410 255 403 322 347C385 294 432 251 531 227" className="path-neutral" />
+        <path d="M170 74C259 127 264 187 312 251C363 318 429 390 542 417" className="path-neutral" />
+        <path d="M62 122C170 84 193 183 286 208C361 228 405 215 490 159" className="path-active" filter="url(#softGlow)" />
+        <circle cx="62" cy="122" r="5" className="machine-dot dot-one" />
+        <circle cx="490" cy="159" r="5" className="machine-dot dot-two" />
+        <circle cx="559" cy="299" r="5" className="machine-dot dot-three" />
+        <circle cx="542" cy="417" r="5" className="machine-dot dot-four" />
+      </svg>
+
+      <div className="machine-glow" />
+      <div className="machine-core-wrap">
+        <VerificationCore />
+        <div className="core-caption">
+          <span>CONTEXT ENGINE</span>
+          <b>VERIFYING</b>
+        </div>
+      </div>
+
+      <div className="machine-card machine-claim">
+        <div className="machine-label">SOCIAL CLAIM</div>
+        <strong>“ADRO yield 25,5% setahun”</strong>
+        <span className="machine-tag">$ADRO · DIVIDEND</span>
+      </div>
+
+      <div className="machine-card machine-data">
+        <div className="machine-label">SECTORS / DIVIDEND</div>
+        <span>TTM YIELD</span>
+        <strong>5.56%</strong>
+        <small>Evidence available</small>
+      </div>
+
+      <div className="machine-card machine-context">
+        <div className="machine-label">CONTEXT FOUND</div>
+        <Layers3 size={17} />
+        <strong>One-off payment</strong>
+        <span>historical average distorted</span>
+      </div>
+
+      <div className="machine-verdict">
+        <AlertTriangle size={18} />
+        <span>
+          BENAR, TAPI
+          <b>MENYESATKAN</b>
+        </span>
+      </div>
+
+      <span className="machine-coordinate coordinate-a">NODE / 04</span>
+      <span className="machine-coordinate coordinate-b">TRACE 12.4S</span>
+      <span className="machine-coordinate coordinate-c">EVIDENCE 04</span>
+    </div>
+  );
+}
+
+function ProductPreview() {
+  return (
+    <div className="product-stage">
+      <div className="dot-field" />
+      <div className="preview-frame">
+        <div className="preview-metal-top">
+          <span /><span /><span />
+          <div className="preview-url">app.cekdulu.id/check/CD-240930-1842</div>
+          <div className="preview-top-status"><span /> LIVE TRACE</div>
+        </div>
+        <div className="preview-app">
+          <aside className="preview-sidebar">
+            <Brand compact />
+            <div className="preview-nav active"><Search size={14} /> Check</div>
+            <div className="preview-nav"><History size={14} /> History</div>
+            <div className="preview-nav"><Bookmark size={14} /> Saved</div>
+            <div className="preview-sidebar-glow" />
+          </aside>
+          <div className="preview-workspace">
+            <div className="preview-kicker">CHECK #CD-240930-1842 / ADRO · DIVIDEND</div>
+            <div className="preview-row">
+              <div className="preview-verdict-panel">
+                <div className="preview-badge"><AlertTriangle size={14} /> MISLEADING</div>
+                <h3>Benar secara angka.<br />Konteksnya berbeda.</h3>
+                <div className="preview-metrics">
+                  <div><span>CLAIMED</span><b>25.5%</b></div>
+                  <ArrowRight size={18} />
+                  <div><span>VERIFIED / TTM</span><b>5.56%</b></div>
+                </div>
+              </div>
+              <div className="preview-trace">
+                <div className="preview-trace-title"><Activity size={14} /> LIVE INVESTIGATION</div>
+                {investigationSteps.slice(0, 4).map((item, index) => (
+                  <div className="preview-trace-row" key={item.id}>
+                    <span className={index === 3 ? "active" : "done"}>{index === 3 ? "" : "✓"}</span>
+                    <div><b>{item.title}</b><small>{item.meta}</small></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="preview-evidence-grid">
+              <div><span>YIELD 5Y AVG</span><b>25.50%</b><em>MATCH</em></div>
+              <div><span>YIELD TTM</span><b>5.56%</b><em>GAP</em></div>
+              <div><span>SPECIAL DIVIDEND</span><b>1,358.18</b><em>OUTLIER</em></div>
+              <div><span>CONTEXT</span><b>1 OFF</b><em>TRIGGERED</em></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Modal({
   title,
@@ -48,1065 +255,1184 @@ function Modal({
   children: ReactNode;
   onClose: () => void;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    ref.current?.showModal();
+    dialogRef.current?.showModal();
   }, []);
+
   return (
     <dialog
-      ref={ref}
+      ref={dialogRef}
       className="modal"
       onCancel={onClose}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="modal-head">
-        <span className="eyebrow">CEK DULU / CATATAN</span>
-        <button
-          className="icon-button"
-          onClick={onClose}
-          aria-label="Tutup dialog"
-        >
-          <X size={20} />
+      <div className="modal-topline">
+        <span>CEK DULU / INSPECTOR</span>
+        <button className="icon-button" onClick={onClose} aria-label="Tutup dialog">
+          <X size={18} />
         </button>
       </div>
       <h2>{title}</h2>
       {children}
-      <button className="primary-button" onClick={onClose}>
-        Mengerti <Check size={17} />
-      </button>
     </dialog>
   );
 }
 
-function SignalArt() {
+function LegalStrip() {
   return (
-    <div className="signal-art" aria-hidden="true">
-      <div className="orbit orbit-one" />
-      <div className="orbit orbit-two" />
-      <span className="art-coordinate">SIGNAL / NOISE</span>
-      <div className="floating-claim">
-        <span className="mini-avatar">a</span>
+    <div className="legal-strip">
+      <ShieldCheck size={14} />
+      <span>
+        Cek Dulu adalah alat informasi dan analisis, bukan nasihat investasi. Status klaim menilai kesesuaian klaim dengan data yang tersedia, bukan kelayakan membeli atau menjual saham.
+      </span>
+    </div>
+  );
+}
+
+function LandingDetailPage({ view, enterWorkspace }: { view: Exclude<LandingView, "home">; enterWorkspace: () => void }) {
+  const content = {
+    product: {
+      index: "02 / PRODUCT",
+      eyebrow: "CLAIM INTELLIGENCE WORKSPACE",
+      title: "Satu ruang untuk membedah klaim sampai ke konteksnya.",
+      copy: "Lihat teks sumber, angka pembanding, konteks yang hilang, dan verdict dalam satu alur pemeriksaan.",
+    },
+    how: {
+      index: "03 / HOW IT WORKS",
+      eyebrow: "TRACEABLE PROCESS",
+      title: "Setiap hasil punya jejak yang bisa diikuti.",
+      copy: "Proses pemeriksaan bergerak dari klaim mentah menuju evidence, konteks, lalu verdict berbasis aturan.",
+    },
+    data: {
+      index: "04 / DATA",
+      eyebrow: "EVIDENCE LAYER",
+      title: "Angka tidak tampil tanpa dasar yang jelas.",
+      copy: "Setiap nilai pada report dikaitkan dengan evidence dan sumber modul yang digunakan dalam pemeriksaan.",
+    },
+  }[view];
+
+  const modules = view === "how" ? [
+    ["01", "INPUT", "Tangkap klaim", "Teks, screenshot, atau video diubah menjadi klaim yang dapat diperiksa."],
+    ["02", "VERIFY", "Bandingkan angka", "Nilai klaim dicocokkan dengan evidence yang tersedia."],
+    ["03", "CONTEXT", "Cari yang hilang", "Context Hunter menguji detail yang dapat mengubah makna angka."],
+    ["04", "VERDICT", "Susun report", "Status dan penjelasan dibangun dari hasil pemeriksaan."],
+  ] : [
+    ["01", "TRACEABLE", "Evidence terhubung", "Angka pembanding tetap dapat dilacak ke modul sumbernya."],
+    ["02", "GROUNDED", "Tidak ada angka liar", "Penjelasan hanya memakai nilai yang tersedia pada evidence."],
+    ["03", "CONTEXT", "Makna ikut diperiksa", "Angka benar belum tentu menceritakan keadaan secara utuh."],
+  ];
+
+  return (
+    <main key={view} className="landing-detail landing-detail-transition">
+      <section className="landing-detail-hero">
+        <div className="detail-index">{content.index}</div>
+        <div className="detail-copy">
+          <span className="eyebrow"><span className="pulse-dot" /> {content.eyebrow}</span>
+          <h1>{content.title}</h1>
+          <p>{content.copy}</p>
+          <button onClick={enterWorkspace}>Buka workspace <ArrowRight size={17} /></button>
+        </div>
+        <div className="detail-orbit" aria-hidden="true"><VerificationCore /><b>0{view === "product" ? 2 : view === "how" ? 3 : 4}</b></div>
+      </section>
+
+      {view === "product" ? (
+        <section className="detail-product"><ProductPreview /></section>
+      ) : (
+        <section className={`detail-modules detail-modules-${view}`}>
+          {modules.map(([number, tag, title, copy], index) => (
+            <article key={number} style={{ "--module-index": index } as CSSProperties}>
+              <span>{number} / {tag}</span>
+              <div>{index === 0 ? <FileSearch size={20} /> : index === 1 ? <Database size={20} /> : index === 2 ? <Layers3 size={20} /> : <ShieldCheck size={20} />}</div>
+              <h2>{title}</h2><p>{copy}</p>
+            </article>
+          ))}
+        </section>
+      )}
+    </main>
+  );
+}
+
+function LandingPage({
+  input,
+  setInput,
+  chooseExample,
+  enterWorkspace,
+}: {
+  input: string;
+  setInput: (value: string) => void;
+  chooseExample: (id: DemoId) => void;
+  enterWorkspace: (run?: boolean) => void;
+}) {
+  const howRef = useRef<HTMLElement>(null);
+  const landingRef = useRef<HTMLDivElement>(null);
+  const [landingView, setLandingView] = useState<LandingView>("home");
+
+  useEffect(() => {
+    const root = landingRef.current;
+    if (!root) return;
+
+    const sections = root.querySelectorAll<HTMLElement>(".landing-reveal, .landing-scroll-scene");
+    if (!("IntersectionObserver" in window)) {
+      sections.forEach((section) => section.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          entry.target.classList.toggle("is-visible", entry.isIntersecting);
+        });
+      },
+      { threshold: 0.14, rootMargin: "0px 0px -8% 0px" },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [landingView]);
+
+  return (
+    <div ref={landingRef} className="landing-page dashboard-view-transition landing-enter">
+      <div className="landing-ambient ambient-one" />
+      <div className="landing-ambient ambient-two" />
+      <header className="landing-nav landing-intro-nav">
+        <button className="landing-logo" onClick={() => { setLandingView("home"); window.scrollTo({ top: 0 }); }}>
+          <Brand />
+        </button>
+        <nav>
+          <button className={landingView === "product" ? "active" : ""} onClick={() => { setLandingView("product"); window.scrollTo({ top: 0 }); }}>Produk</button>
+          <button className={landingView === "how" ? "active" : ""} onClick={() => { setLandingView("how"); window.scrollTo({ top: 0 }); }}>Cara kerja</button>
+          <button className={landingView === "data" ? "active" : ""} onClick={() => { setLandingView("data"); window.scrollTo({ top: 0 }); }}>Data</button>
+        </nav>
+        <div className="landing-nav-actions">
+          <button className="nav-login" onClick={() => enterWorkspace(false)}>Masuk</button>
+          <button className="nav-cta" onClick={() => enterWorkspace(false)}>
+            Cek klaim <ArrowUpRight size={15} />
+          </button>
+        </div>
+      </header>
+
+      <main key={landingView} className="landing-page-view-transition">
+        {landingView === "home" && <section className="landing-hero landing-scroll-scene">
+          <div className="hero-grid-overlay" />
+          <svg className="hero-cable hero-cable-a" viewBox="0 0 700 420" fill="none" aria-hidden="true">
+            <path d="M0 318C180 220 272 404 407 247C504 135 573 152 700 39" />
+          </svg>
+          <svg className="hero-cable hero-cable-b" viewBox="0 0 700 420" fill="none" aria-hidden="true">
+            <path d="M34 49C190 102 223 16 359 111C486 199 534 314 700 345" />
+          </svg>
+
+          <div className="landing-copy landing-intro-copy">
+            <div className="eyebrow"><span className="pulse-dot" /> AI CLAIM VERIFICATION / SECTORS DATA</div>
+            <h1>
+              Sebelum ikut hype,
+              <span>cek dulu angkanya.</span>
+            </h1>
+            <p>
+              Pecah klaim saham menjadi evidence, konteks, dan verdict yang bisa diperiksa — tanpa mengubahnya menjadi rekomendasi beli atau jual.
+            </p>
+
+            <form
+              className="hero-input-dock"
+              onSubmit={(event) => {
+                event.preventDefault();
+                enterWorkspace(true);
+              }}
+            >
+              <Search size={18} />
+              <input
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder="Tempel klaim saham..."
+                aria-label="Klaim saham"
+              />
+              <button type="submit" disabled={!input.trim()}>
+                Periksa <ArrowRight size={17} />
+              </button>
+            </form>
+            <div className="hero-examples">
+              <span>COBA</span>
+              {examples.map((example) => (
+                <button
+                  key={example.id}
+                  onClick={() => {
+                    chooseExample(example.id);
+                    enterWorkspace(false);
+                  }}
+                >
+                  {example.ticker} · {example.category.split(" ")[0]}
+                </button>
+              ))}
+            </div>
+            <div className="hero-footnote"><LockKeyhole size={13} /> Frontend demo · tidak ada order broker · tidak ada rekomendasi transaksi</div>
+          </div>
+
+          <div className="landing-visual landing-intro-visual">
+            <LandingMachine />
+          </div>
+
+          <div className="hero-bottom-readout landing-intro-readout">
+            <span>CLAIM → EVIDENCE → CONTEXT → VERDICT</span>
+            <span>01 / SIGNAL INTELLIGENCE</span>
+          </div>
+        </section>}
+
+        {landingView === "product" && <section className="product-showcase landing-reveal">
+          <div className="showcase-heading">
+            <div>
+              <span className="section-number">02 / PRODUCT SURFACE</span>
+              <h2>Satu ruang untuk membedah klaim, bukan menambah noise.</h2>
+            </div>
+            <p>Dense seperti instrument panel, tetapi hierarchy tetap berpusat pada apa yang diklaim, apa yang ditemukan, dan konteks yang hilang.</p>
+          </div>
+          <ProductPreview />
+        </section>}
+
+        {landingView === "how" && <section className="how-section landing-reveal" ref={howRef}>
+          <div className="how-heading">
+            <div>
+              <span className="section-number">03 / HOW IT WORKS</span>
+              <h2>Empat tahap. Satu jejak yang bisa diikuti.</h2>
+            </div>
+            <p>Setiap klaim bergerak lewat alur yang transparan—dari teks mentah sampai verdict yang punya dasar.</p>
+          </div>
+          <div className="pipeline">
+            {[
+              ["01", "INPUT", "Tempel klaim", "Teks sumber tetap terlihat sepanjang proses."],
+              ["02", "VERIFY", "Cari evidence", "Angka klaim dibandingkan dengan data yang tersedia."],
+              ["03", "CONTEXT", "Uji konteks", "Context Hunter mencari cerita yang hilang di balik angka."],
+              ["04", "VERDICT", "Susun rapor", "Status, pembanding, konteks, dan sumber tampil dalam satu layar."],
+            ].map(([number, tag, title, copy], index) => (
+              <div className="pipeline-node" key={number}>
+                <div className="pipeline-node-top">
+                  <span>{number}</span>
+                  <i>{tag}</i>
+                </div>
+                <div className="pipeline-icon">
+                  {index === 0 ? <Search size={20} /> : index === 1 ? <Database size={20} /> : index === 2 ? <Layers3 size={20} /> : <ShieldCheck size={20} />}
+                </div>
+                <h3>{title}</h3>
+                <p>{copy}</p>
+                <div className="pipeline-signal" aria-hidden="true">
+                  <span /><span /><span /><span /><span />
+                  <b>{index === 0 ? "CAPTURE" : index === 1 ? "MATCH" : index === 2 ? "HUNT" : "REPORT"}</b>
+                </div>
+                {index < 3 && <div className="pipeline-connector"><span /></div>}
+              </div>
+            ))}
+          </div>
+        </section>}
+
+        {landingView === "data" && <section className="landing-data-page landing-reveal" aria-label="Data dan evidence">
+          <div className="data-page-heading">
+            <div>
+              <span className="section-number">04 / DATA &amp; EVIDENCE</span>
+              <h2>Data yang dipakai untuk memeriksa klaim.</h2>
+            </div>
+            <p>Cek Dulu mengubah data menjadi evidence yang dapat ditelusuri. Setiap angka pada report harus terkait dengan sumber dan konteks pemeriksaannya.</p>
+          </div>
+
+          <div className="data-source-grid">
+            {[
+              ["01", "VALUATION", "Laporan perusahaan", "Metrik valuasi seperti PER dan PBV untuk membandingkan angka dalam klaim.", "Company report"],
+              ["02", "DIVIDEND", "Riwayat dividen", "Yield, pembayaran, dan konteks historis untuk membedakan pola rutin dari kejadian khusus.", "Dividend data"],
+              ["03", "PRICE MOVE", "Harga dan volume", "Data transaksi harian untuk menghitung perubahan harga pada jendela yang disebutkan.", "Daily transaction"],
+            ].map(([number, tag, title, copy, source], index) => (
+              <article key={number} style={{ "--data-index": index } as CSSProperties}>
+                <div className="data-card-top"><span>{number}</span><i>{tag}</i></div>
+                <div className="data-card-icon">{index === 0 ? <Activity size={21} /> : index === 1 ? <Database size={21} /> : <Waypoints size={21} />}</div>
+                <h3>{title}</h3>
+                <p>{copy}</p>
+                <footer><span>SECTORS MODULE</span><b>{source}</b></footer>
+              </article>
+            ))}
+          </div>
+
+          <div className="data-grounding-panel">
+            <div><ShieldCheck size={22} /><span>GROUNDING RULE</span></div>
+            <h3>Tidak ada angka tanpa evidence.</h3>
+            <p>Penjelasan hanya boleh memakai angka yang tersedia pada evidence. Status klaim ditentukan oleh aturan pemeriksaan, bukan opini model.</p>
+            <aside><span>STATUS DATA</span><b><i /> FRONTEND DEMO / FIXTURE LOKAL</b><small>Belum memakai data pasar live atau request backend.</small></aside>
+          </div>
+        </section>}
+
+        {landingView !== "home" && <section className="landing-final-cta landing-reveal">
+          <div className="final-cta-grid" />
+          <div className="final-cta-visual" aria-hidden="true">
+            <span className="cta-ring cta-ring-a" />
+            <span className="cta-ring cta-ring-b" />
+            <span className="cta-ring cta-ring-c" />
+            <span className="cta-scan" />
+            <span className="cta-core"><Fingerprint size={23} /></span>
+            <b>04</b>
+          </div>
+          <div className="final-cta-copy">
+            <span className="eyebrow"><span className="pulse-dot" /> READY FOR A NEW CHECK</span>
+            <h2>Ada klaim saham yang bikin ragu?</h2>
+            <p>Periksa datanya sebelum ikut narasi.</p>
+            <div className="final-cta-tags" aria-label="Hasil pemeriksaan">
+              <span>CLAIM</span><i />
+              <span>EVIDENCE</span><i />
+              <span>CONTEXT</span><i />
+              <span>VERDICT</span>
+            </div>
+            <div className="final-cta-readout">
+              <span><i /> DATA TRACEABLE</span>
+              <span><i /> CONTEXT CHECKED</span>
+              <span><i /> VERDICT READY</span>
+            </div>
+          </div>
+          <div className="final-cta-action">
+            <small>01 / MULAI PEMERIKSAAN</small>
+            <button onClick={() => enterWorkspace(false)}>
+              Buka workspace <ArrowRight size={18} />
+            </button>
+            <em>Tanpa rekomendasi transaksi</em>
+          </div>
+        </section>}
+      </main>
+      <LegalStrip />
+    </div>
+  );
+}
+
+function AppSidebar({
+  page,
+  setPage,
+  historyCount,
+  savedCount,
+  goLanding,
+}: {
+  page: Page;
+  setPage: (page: Page) => void;
+  historyCount: number;
+  savedCount: number;
+  goLanding: () => void;
+}) {
+  return (
+    <aside className="app-sidebar">
+      <button className="sidebar-logo" onClick={goLanding}><Brand compact /></button>
+      <div className="sidebar-subbrand">CLAIM INTELLIGENCE</div>
+      <nav className="sidebar-nav" aria-label="Workspace">
+        <button className={page === "check" ? "active" : ""} onClick={() => setPage("check")}>
+          <Search size={17} /><span>Cek klaim</span><i>01</i>
+        </button>
+        <button className={page === "history" ? "active" : ""} onClick={() => setPage("history")}>
+          <History size={17} /><span>Riwayat</span><i>{String(historyCount).padStart(2, "0")}</i>
+        </button>
+        <button className={page === "saved" ? "active" : ""} onClick={() => setPage("saved")}>
+          <Bookmark size={17} /><span>Tersimpan</span><i>{String(savedCount).padStart(2, "0")}</i>
+        </button>
+      </nav>
+      <div className="sidebar-separator" />
+      <button className="sidebar-help" onClick={goLanding}>
+        <CircleHelp size={17} /><span>Cara kerja</span><ArrowUpRight size={14} />
+      </button>
+      <div className="sidebar-signal">
+        <div className="sidebar-scope-head">
+          <Layers3 size={15} />
+          <div><span>CAKUPAN CEK</span><b>3 tipe siap dicoba</b></div>
+        </div>
+        <div className="sidebar-scope-list">
+          <span><i />Valuasi<small>PER / PBV</small></span>
+          <span><i />Dividen<small>Yield / TTM</small></span>
+          <span><i />Harga<small>Pergerakan</small></span>
+        </div>
+        <button onClick={() => setPage("check")}>Mulai pemeriksaan <ArrowRight size={13} /></button>
+      </div>
+      <div className="sidebar-bottom">
+        <LockKeyhole size={14} />
+        <div><b>PRIVASI</b><small>Diproses lokal</small></div>
+      </div>
+    </aside>
+  );
+}
+
+function AppTopbar({ phase }: { phase: Phase }) {
+  return (
+    <header className="app-topbar">
+      <div className="instrument-breadcrumb">
+        <span>CEK DULU</span><i>/</i><span>CHECK</span><i>/</i><b>{phase === "idle" ? "NEW ANALYSIS" : phase === "analyzing" ? "LIVE INVESTIGATION" : "REPORT"}</b>
+      </div>
+      <div className="instrument-status">
+        <span><i className="status-light" /> FIXTURE READY</span>
+        <em />
+        <span>DATA MODE: STATIC</span>
+        <em />
+        <span>DESKTOP / 01</span>
+      </div>
+    </header>
+  );
+}
+
+function IntelligencePreview({ chooseExample }: { chooseExample: (id: DemoId) => void }) {
+  const fixture = examples[0];
+  return (
+    <aside className="intel-preview">
+      <div className="intel-grid" />
+      <div className="intel-top">
         <div>
-          <b>Katanya cuan terus?</b>
-          <span>Terlalu bagus untuk langsung percaya.</span>
+          <span className="panel-kicker">CASE PREVIEW</span>
+          <strong>{fixture.ticker} / {fixture.category}</strong>
         </div>
-        <MessageSquareQuote size={18} />
+        <div className="mini-core-wrap"><VerificationCore small /></div>
       </div>
-      <div className="signal-card">
-        <div className="signal-card-top">
-          <span>
-            <span className="status-dot" /> CONTEXT FOUND
-          </span>
-          <ArrowUpRight size={18} />
+      <blockquote>“Yield 25,5% setahun”</blockquote>
+      <div className="preview-verdict-chip amber"><AlertTriangle size={14} /> BENAR, TAPI MENYESATKAN</div>
+      <div className="intel-metric-flow">
+        <div><span>CLAIMED</span><b>25.5%</b></div>
+        <div className="metric-path"><span /></div>
+        <div><span>VERIFIED / TTM</span><b>5.56%</b></div>
+      </div>
+      <div className="intel-context">
+        <Layers3 size={17} />
+        <div><span>CONTEXT DETECTED</span><p>One-off payment dominates the historical average.</p></div>
+      </div>
+      <div className="intel-source-row">
+        <span><Database size={13} /> SECTORS FIXTURE</span>
+        <span>04 EVIDENCE</span>
+      </div>
+      <button className="text-link" onClick={() => chooseExample("dividend")}>Gunakan contoh ini <ArrowRight size={15} /></button>
+    </aside>
+  );
+}
+
+function IdleCheck({
+  input,
+  setInput,
+  running,
+  chooseExample,
+  startCheck,
+}: {
+  input: string;
+  setInput: (value: string) => void;
+  running: boolean;
+  chooseExample: (id: DemoId) => void;
+  startCheck: () => void;
+}) {
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [mode, setMode] = useState<InputMode>("text");
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [reading, setReading] = useState(false);
+  const [mediaMessage, setMediaMessage] = useState("");
+  const [previewUrl, setPreviewUrl] = useState("");
+  const readTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!mediaFile) {
+      setPreviewUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(mediaFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [mediaFile]);
+
+  useEffect(() => () => {
+    if (readTimer.current) clearTimeout(readTimer.current);
+  }, []);
+
+  const modes: { id: InputMode; label: string; meta: string; icon: typeof FileText }[] = [
+    { id: "text", label: "Teks", meta: "PASTE", icon: FileText },
+    { id: "screenshot", label: "Screenshot", meta: "IMAGE", icon: ImageIcon },
+    { id: "link", label: "Link video", meta: "URL", icon: Link2 },
+    { id: "video", label: "Unggah video", meta: "FILE", icon: Video },
+  ];
+
+  function changeMode(next: InputMode) {
+    if (reading || next === mode) return;
+    setMode(next);
+    setInput("");
+    setMediaFile(null);
+    setVideoUrl("");
+    setMediaMessage("");
+  }
+
+  function prepareMedia() {
+    if (reading) return;
+    if (mode === "link" && !videoUrl.trim()) return;
+    if ((mode === "screenshot" || mode === "video") && !mediaFile) return;
+    setReading(true);
+    setMediaMessage("");
+    if (readTimer.current) clearTimeout(readTimer.current);
+    readTimer.current = setTimeout(() => {
+      const demo = mode === "screenshot" ? examples[0] : mode === "link" ? examples[2] : examples[1];
+      setInput(demo.text);
+      setReading(false);
+      setMediaMessage(
+        mode === "screenshot"
+          ? "Simulasi OCR frontend selesai. Tinjau teks sebelum memulai cek."
+          : "Simulasi pembacaan video frontend selesai. Tinjau teks sebelum memulai cek.",
+      );
+    }, 720);
+  }
+
+  const mediaReady = mode === "link" ? Boolean(videoUrl.trim()) : Boolean(mediaFile);
+
+  return (
+    <div className="workspace-page check-idle">
+      <div className="page-title-row">
+        <div>
+          <span className="page-index">01 / NEW CHECK</span>
+          <h1>Periksa klaim saham</h1>
+          <p>Tempel teks, baca screenshot, atau siapkan konten video untuk diperiksa.</p>
         </div>
-        <div className="signal-number">
-          25<span>%</span>
-          <span className="number-asterisk">*</span>
+        <div className="page-readout"><Fingerprint size={15} /> INPUT → CLAIM → EVIDENCE → CONTEXT → VERDICT</div>
+      </div>
+
+      <div className="check-grid">
+        <section className="input-chamber">
+          <div className="chamber-topstrip">
+            <span>CLAIM INPUT / MULTI-SOURCE</span>
+            <span className="ready-indicator"><i /> FRONTEND DEMO</span>
+          </div>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              startCheck();
+            }}
+          >
+            <div className="input-mode-tabs" role="tablist" aria-label="Sumber input klaim">
+              {modes.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === item.id}
+                    className={`input-mode-tab ${mode === item.id ? "active" : ""}`}
+                    onClick={() => changeMode(item.id)}
+                    disabled={running || reading}
+                  >
+                    <Icon size={17} />
+                    <span><b>{item.label}</b><small>{item.meta}</small></span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {mode === "text" && (
+              <div className="textarea-surface source-panel">
+                <div className="scan-line" />
+                <label htmlFor="claim-input">KLAIM SAHAM / RAW TEXT</label>
+                <textarea
+                  id="claim-input"
+                  ref={inputRef}
+                  value={input}
+                  maxLength={5000}
+                  onChange={(event) => setInput(event.target.value)}
+                  placeholder={'Tempel klaim saham di sini…\ncontoh: “ADRO yield dividennya 25% setahun.”'}
+                  disabled={running}
+                />
+                <div className="textarea-coordinates"><span>INPUT / RAW TEXT</span><span>UTF-8</span></div>
+              </div>
+            )}
+
+            {mode === "screenshot" && (
+              <div className="media-surface source-panel">
+                <div className="media-surface-head"><span>SCREENSHOT READER</span><small>PNG · JPEG · WEBP / MAX 3 MB</small></div>
+                <label className={`drop-zone ${mediaFile ? "has-file" : ""}`} htmlFor="claim-screenshot">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Pratinjau screenshot" />
+                  ) : (
+                    <div className="drop-zone-empty"><ImageIcon size={28} /><b>Tarik screenshot ke sini</b><span>atau pilih file dari perangkat</span></div>
+                  )}
+                  <input
+                    id="claim-screenshot"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      setMediaFile(file);
+                      setInput("");
+                      setMediaMessage("");
+                    }}
+                  />
+                  {mediaFile && <div className="file-readout"><span>{mediaFile.name}</span><b>{(mediaFile.size / 1024 / 1024).toFixed(2)} MB</b></div>}
+                </label>
+                <div className="media-action-row">
+                  <span><FileSearch size={14} /> UI akan menampilkan hasil OCR sebagai teks yang bisa diedit.</span>
+                  <button type="button" onClick={prepareMedia} disabled={!mediaReady || reading}>{reading ? "MEMBACA…" : input ? "BACA ULANG" : "BACA TEKS SCREENSHOT"}</button>
+                </div>
+              </div>
+            )}
+
+            {mode === "link" && (
+              <div className="media-surface source-panel link-source-panel">
+                <div className="media-surface-head"><span>PUBLIC VIDEO LINK</span><small>HTTPS / PUBLIC URL</small></div>
+                <div className="video-link-field">
+                  <Link2 size={18} />
+                  <input
+                    type="url"
+                    value={videoUrl}
+                    onChange={(event) => {
+                      setVideoUrl(event.target.value);
+                      setInput("");
+                      setMediaMessage("");
+                    }}
+                    placeholder="https://www.tiktok.com/... atau https://www.youtube.com/..."
+                    aria-label="Tautan video publik"
+                  />
+                  <span>URL</span>
+                </div>
+                <div className="link-visualizer" aria-hidden="true">
+                  <div className="link-node"><Video size={19} /><span>VIDEO</span></div>
+                  <span className="link-wire"><i /></span>
+                  <div className="link-node"><FileText size={19} /><span>TRANSCRIPT</span></div>
+                  <span className="link-wire"><i /></span>
+                  <div className="link-node accent"><Fingerprint size={19} /><span>CLAIMS</span></div>
+                </div>
+                <div className="media-action-row">
+                  <span><FileSearch size={14} /> Audio dan tulisan video disimulasikan sebagai input teks pada demo ini.</span>
+                  <button type="button" onClick={prepareMedia} disabled={!mediaReady || reading}>{reading ? "MEMBACA…" : input ? "BACA ULANG" : "BACA ISI VIDEO"}</button>
+                </div>
+              </div>
+            )}
+
+            {mode === "video" && (
+              <div className="media-surface source-panel">
+                <div className="media-surface-head"><span>VIDEO UPLOAD</span><small>MP4 · WEBM / MAX 4 MB</small></div>
+                <label className={`drop-zone video-drop-zone ${mediaFile ? "has-file" : ""}`} htmlFor="claim-video">
+                  {previewUrl && mediaFile ? (
+                    <video src={previewUrl} muted controls={false} preload="metadata" />
+                  ) : (
+                    <div className="drop-zone-empty"><UploadCloud size={29} /><b>Unggah video pendek</b><span>MP4 atau WebM untuk dibaca sebelum pemeriksaan</span></div>
+                  )}
+                  <input
+                    id="claim-video"
+                    type="file"
+                    accept="video/mp4,video/webm"
+                    aria-label="Unggah video dari perangkat"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      setMediaFile(file);
+                      setInput("");
+                      setMediaMessage("");
+                    }}
+                  />
+                  {mediaFile && <div className="file-readout"><span>{mediaFile.name}</span><b>{(mediaFile.size / 1024 / 1024).toFixed(2)} MB</b></div>}
+                </label>
+                <div className="media-action-row">
+                  <span><FileSearch size={14} /> Berkas hanya dipreview lokal; tidak diunggah ke backend.</span>
+                  <button type="button" onClick={prepareMedia} disabled={!mediaReady || reading}>{reading ? "MEMBACA…" : input ? "BACA ULANG" : "BACA ISI VIDEO"}</button>
+                </div>
+              </div>
+            )}
+
+            {mode !== "text" && input && (
+              <div className="prepared-text-panel">
+                <div className="prepared-text-head"><span>TEKS HASIL PEMBACAAN / EDITABLE</span><span><CheckCircle2 size={13} /> READY</span></div>
+                <textarea value={input} maxLength={5000} onChange={(event) => setInput(event.target.value)} aria-label="Teks klaim saham" />
+                <div className="prepared-status"><span>{mediaMessage}</span><small>SIMULASI FRONTEND · TANPA OCR / VIDEO API</small></div>
+              </div>
+            )}
+
+            <div className="chamber-tools">
+              <div className="example-tools">
+                <span>CONTOH</span>
+                {examples.map((example) => (
+                  <button type="button" key={example.id} onClick={() => { changeMode("text"); chooseExample(example.id); }}>
+                    <b>{example.ticker}</b> / {example.category.split(" ")[0]}
+                  </button>
+                ))}
+              </div>
+              <span className="char-count">{input.length.toLocaleString("id-ID")} / 5.000</span>
+            </div>
+
+            <div className="chamber-dock">
+              <div><Database size={15} /><span>Semua mode input di halaman ini hanya simulasi frontend; tidak ada request ke backend.</span></div>
+              <button type="submit" className="primary-action" disabled={!input.trim() || running || reading}>
+                Periksa klaim <ArrowRight size={17} />
+              </button>
+            </div>
+          </form>
+        </section>
+        <IntelligencePreview chooseExample={(id) => { changeMode("text"); chooseExample(id); }} />
+      </div>
+
+    </div>
+  );
+}
+
+function AnalyzingView({
+  input,
+  activeStep,
+  fixture,
+}: {
+  input: string;
+  activeStep: number;
+  fixture: DemoFixture | undefined;
+}) {
+  return (
+    <div className="workspace-page analyzing-view">
+      <div className="analysis-source-bar">
+        <div><span>SOURCE CLAIM</span><p>“{input}”</p></div>
+        <div className="source-meta"><span>{fixture?.ticker || "UNRESOLVED"}</span><span>{fixture?.category || "CUSTOM CLAIM"}</span></div>
+      </div>
+
+      <div className="analysis-heading-row">
+        <div>
+          <span className="page-index">LIVE / INVESTIGATION</span>
+          <h1>Membuka cerita di balik angka.</h1>
         </div>
-        <svg viewBox="0 0 260 58" className="art-chart">
-          <path d="M0 48H260M0 24H260" stroke="currentColor" opacity=".08" />
-          <path
-            d="M0 49 23 43 44 47 62 28 83 35 103 20 124 29 148 3 169 31 191 37 215 41 236 37 260 40"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-          />
-          <circle
-            cx="148"
-            cy="3"
-            r="4"
-            fill="var(--accent)"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-        </svg>
-        <div className="signal-foot">
-          <span>* Ada konteks yang hilang.</span>
-          <Search size={16} />
+        <div className="analysis-progress-readout"><span>STAGE</span><b>0{activeStep + 1}</b><em>/ 05</em></div>
+      </div>
+
+      <div className="analysis-grid">
+        <section className="trace-console">
+          <div className="trace-console-head"><span><Activity size={15} /> LIVE INVESTIGATION</span><span>STREAM / UI SIMULATION</span></div>
+          <div className="trace-timeline">
+            {investigationSteps.map((stage, index) => {
+              const state = index < activeStep ? "complete" : index === activeStep ? "active" : "pending";
+              return (
+                <div className={`trace-stage ${state}`} key={stage.id}>
+                  <div className="trace-node-wrap">
+                    <span className="trace-node">{state === "complete" ? <Check size={12} /> : ""}</span>
+                    {index < investigationSteps.length - 1 && <span className="trace-connector" />}
+                  </div>
+                  <div className="trace-stage-copy">
+                    <span>{stage.meta}</span>
+                    <h3>{stage.title}</h3>
+                    <p>{stage.subtitle}</p>
+                    {stage.id === "evidence" && activeStep >= index && (
+                      <div className="trace-event-card"><Database size={14} /><div><b>FETCH COMPANY REPORT</b><span>{fixture?.ticker || "CLAIM"} · {fixture?.category || "GENERAL"}</span></div><em>{fixture ? fixture.evidenceCount : 0} records</em></div>
+                    )}
+                    {stage.id === "context" && activeStep >= index && (
+                      <div className="hypothesis-cloud">
+                        {(fixture?.hypotheses || [
+                          { code: "CONTEXT_A", status: "CHECKING" },
+                          { code: "CONTEXT_B", status: "CHECKING" },
+                          { code: "CONTEXT_C", status: "WAIT" },
+                        ]).map((hypothesis) => (
+                          <span className={hypothesis.status === "TRIGGERED" ? "triggered" : ""} key={hypothesis.code}><b>{hypothesis.code}</b><i>{hypothesis.status}</i></span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="trace-scan"><span /></div>
+        </section>
+
+        <aside className="claim-summary-panel">
+          <div className="summary-orbit"><VerificationCore small /></div>
+          <span className="panel-kicker">CLAIM SUMMARY</span>
+          <div className="summary-ticker">${fixture?.ticker || "—"}</div>
+          <h3>{fixture?.category || "Custom claim"}</h3>
+          <div className="summary-stat"><span>CLAIMED</span><b>{fixture?.claimed || "—"}</b></div>
+          <div className="summary-status"><span>CURRENT STATUS</span><b><i className="pulse-dot" /> CHECKING CONTEXT</b></div>
+          <div className="summary-module"><Database size={15} /><span>Evidence layer</span><b>{fixture ? `${fixture.evidenceCount} modules` : "waiting"}</b></div>
+          <div className="summary-module"><Layers3 size={15} /><span>Hypothesis library</span><b>{activeStep >= 3 ? "running" : "queued"}</b></div>
+          <div className="summary-module"><ShieldCheck size={15} /><span>Verdict engine</span><b>{activeStep >= 4 ? "running" : "queued"}</b></div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function VerdictSeal({ fixture }: { fixture?: DemoFixture }) {
+  const tone = fixture?.tone || "violet";
+  return (
+    <div className={`verdict-seal ${tone}`}>
+      <span className="seal-ring" />
+      <VerdictIcon tone={tone} size={26} />
+      <span>{fixture?.shortStatus || "UNVERIFIABLE"}</span>
+    </div>
+  );
+}
+
+function ResultView({
+  active,
+  fixture,
+  onSave,
+  onEvidence,
+  traceOpen,
+  setTraceOpen,
+  reset,
+}: {
+  active: HistoryItem;
+  fixture?: DemoFixture;
+  onSave: () => void;
+  onEvidence: () => void;
+  traceOpen: boolean;
+  setTraceOpen: (open: boolean) => void;
+  reset: () => void;
+}) {
+  const tone = fixture?.tone || "violet";
+  return (
+    <div className="workspace-page result-view">
+      <div className="result-meta-line">
+        <span>CHECK #{active.id.slice(0, 8).toUpperCase()}</span>
+        <span>{fixture ? `${fixture.ticker} · ${fixture.category}` : "CUSTOM CLAIM"}</span>
+        <span>{fixture?.duration || "—"}</span>
+        <span>{fixture?.evidenceCount || 0} EVIDENCE</span>
+        <div className="result-meta-actions">
+          <button className={active.saved ? "saved" : ""} onClick={onSave}><Bookmark size={14} fill={active.saved ? "currentColor" : "none"} /> {active.saved ? "TERSIMPAN" : "SIMPAN"}</button>
+          <button onClick={reset}>CEK BARU <ArrowRight size={14} /></button>
         </div>
       </div>
-      <div className="verified-stamp">
-        <ShieldCheck size={23} />
-        <span>
-          Fakta dulu.
-          <br />
-          <b>Baru percaya.</b>
-        </span>
+
+      <div className="result-heading">
+        <div>
+          <span className="page-index">INVESTIGATION REPORT</span>
+          <h1>{fixture?.headline || "Klaim ini belum dapat diverifikasi tanpa evidence."}</h1>
+        </div>
+        <VerdictSeal fixture={fixture} />
       </div>
-      <span className="art-caption">LOOK BEYOND THE NUMBERS ↗</span>
+
+      <section className={`verdict-hero ${tone}`}>
+        <div className="verdict-rings" />
+        <div className="verdict-hero-top">
+          <div><span>VERDICT</span><b><VerdictIcon tone={tone} size={17} /> {fixture?.status || "Tidak bisa diverifikasi"}</b></div>
+          <span>{fixture ? "GROUNDED IN STATIC FRONTEND FIXTURE" : "NO EVIDENCE AVAILABLE"}</span>
+        </div>
+        <div className="verdict-metrics">
+          <div className="hero-metric"><span>CLAIMED</span><strong>{fixture?.claimed || "—"}</strong></div>
+          <div className="metric-transfer"><span /><i /></div>
+          <div className="hero-metric verified"><span>VERIFIED / COMPARISON</span><strong>{fixture?.verified || "—"}</strong></div>
+          <div className="hero-metric delta"><span>DELTA</span><strong>{fixture?.delta || "—"}</strong></div>
+        </div>
+        <div className="verdict-context-line"><Waypoints size={17} /><span>CONTEXT HUNTER</span><p>{fixture?.context || "Evidence numerik belum tersedia untuk klaim ini."}</p></div>
+      </section>
+
+      <div className="report-grid">
+        <section className="claim-report-module">
+          <div className="claim-module-head">
+            <div><span>CLAIM 01 / {fixture?.category || "UNRESOLVED"}</span><blockquote>“{active.text}”</blockquote></div>
+            <div className={`status-flag ${tone}`}><VerdictIcon tone={tone} size={14} /> {fixture?.shortStatus || "UNVERIFIABLE"}</div>
+          </div>
+          <div className="claim-module-body">
+            <div className="evidence-table">
+              <div className="module-title"><Database size={16} /><span>EVIDENCE COMPARISON</span></div>
+              {fixture ? fixture.evidence.map((row) => (
+                <div className="evidence-row" key={row.label}>
+                  <span>{row.label}</span><b>{row.value}</b><em className={row.flag.toLowerCase()}>{row.flag}</em>
+                </div>
+              )) : (
+                <div className="empty-evidence"><CircleDashed size={22} /><p>Tidak ada angka yang ditampilkan tanpa evidence.</p></div>
+              )}
+            </div>
+            <div className={`missing-context-card ${tone}`}>
+              <div className="module-title"><Layers3 size={16} /><span>CONTEXT YANG HILANG</span></div>
+              <h3>{fixture?.context || "Evidence belum cukup untuk menyusun konteks."}</h3>
+              <p>{fixture?.detail || "Frontend demo tidak mengirim teks ini ke backend. Pilih salah satu fixture untuk melihat report lengkap."}</p>
+              {fixture && <button className="text-link" onClick={onEvidence}>Buka evidence inspector <ArrowRight size={14} /></button>}
+            </div>
+          </div>
+        </section>
+
+        <aside className="evidence-inspector">
+          <div className="inspector-head"><span>EVIDENCE / {String(fixture?.evidenceCount || 0).padStart(2, "0")}</span><FileSearch size={16} /></div>
+          {fixture ? (
+            <>
+              <div className="inspector-source"><span>SOURCE MODULE</span><b>{fixture.source}</b></div>
+              {fixture.evidence.map((row, index) => (
+                <button className="inspector-row" key={row.label} onClick={onEvidence}>
+                  <span>0{index + 1}</span><div><b>{row.label}</b><small>{row.flag}</small></div><strong>{row.value}</strong><ChevronRight size={14} />
+                </button>
+              ))}
+            </>
+          ) : (
+            <div className="inspector-empty"><CircleDashed size={28} /><p>Menunggu integrasi backend untuk evidence sungguhan.</p></div>
+          )}
+        </aside>
+      </div>
+
+      <section className={`collapsed-trace ${traceOpen ? "open" : ""}`}>
+        <button onClick={() => setTraceOpen(!traceOpen)}>
+          <span><CheckCircle2 size={16} /> 5 tahapan simulasi selesai {fixture ? `dalam ${fixture.duration}` : ""}</span>
+          <span>Lihat jejak kerja <ChevronDown size={15} /></span>
+        </button>
+        {traceOpen && (
+          <div className="trace-summary-grid">
+            {investigationSteps.map((stage, index) => (
+              <div key={stage.id}><span>0{index + 1}</span><Check size={13} /><b>{stage.title}</b><small>{stage.meta}</small></div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function HistoryPage({
+  title,
+  subtitle,
+  items,
+  openReport,
+}: {
+  title: string;
+  subtitle: string;
+  items: HistoryItem[];
+  openReport: (item: HistoryItem) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const filtered = items.filter((item) => item.text.toLowerCase().includes(query.toLowerCase()));
+  return (
+    <div className="workspace-page history-page">
+      <div className="history-head">
+        <div><span className="page-index">ARCHIVE / REPORTS</span><h1>{title}</h1><p>{subtitle}</p></div>
+        <label className="history-search"><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari klaim..." /></label>
+      </div>
+      <div className="history-table-head"><span>WAKTU</span><span>TICKER</span><span>TIPE</span><span>KLAIM</span><span>STATUS</span><span /></div>
+      <div className="history-list">
+        {filtered.length ? filtered.map((item) => {
+          const fixture = examples.find((example) => example.id === item.demoId);
+          return (
+            <button className="history-row" key={item.id} onClick={() => openReport(item)}>
+              <span className="history-time"><b>{new Date(item.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }).toUpperCase()}</b><small>{new Date(item.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</small></span>
+              <strong>{fixture?.ticker || "—"}</strong>
+              <span>{fixture?.category || "CUSTOM"}</span>
+              <p>“{item.text}”</p>
+              <span className={`history-status ${fixture?.tone || "violet"}`}><VerdictIcon tone={fixture?.tone || "violet"} size={13} /> {fixture?.shortStatus || "UNVERIFIABLE"}</span>
+              <ArrowRight size={16} />
+            </button>
+          );
+        }) : (
+          <div className="history-empty">
+            <VerificationCore small />
+            <h3>Belum ada report di sini.</h3>
+            <p>Report frontend yang kamu jalankan akan muncul sebagai baris investigasi.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function App() {
-  const [page, setPage] = useState<Page>("check");
+  const [page, setPage] = useState<Page>("landing");
+  const [phase, setPhase] = useState<Phase>("idle");
   const [input, setInput] = useState("");
+  const [activeStep, setActiveStep] = useState(0);
   const [history, setHistory] = useState<HistoryItem[]>(readHistory);
   const [active, setActive] = useState<HistoryItem | null>(null);
-  const [running, setRunning] = useState(false);
-  const [step, setStep] = useState(0);
-  const [mobileMenu, setMobileMenu] = useState(false);
-  const [modal, setModal] = useState<"about" | "evidence" | null>(null);
+  const [traceOpen, setTraceOpen] = useState(false);
+  const [modal, setModal] = useState<"evidence" | null>(null);
   const [toast, setToast] = useState("");
-  const [query, setQuery] = useState("");
-  const [filter, setFilter] = useState("Semua");
-  const [storageError, setStorageError] = useState(false);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const resultRef = useRef<HTMLElement>(null);
+  const [viewRevision, setViewRevision] = useState(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const activeFixture = examples.find(
-    (example) => example.id === active?.demoId,
+
+  const activeFixture = useMemo(
+    () => examples.find((example) => example.id === active?.demoId),
+    [active],
+  );
+  const inputFixture = useMemo(
+    () => examples.find((example) => example.text === input.trim()),
+    [input],
   );
 
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify(history));
-      setStorageError(false);
     } catch {
-      setStorageError(true);
+      // Frontend demo still works when storage is unavailable.
     }
   }, [history]);
+
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   useEffect(() => {
     if (!toast) return;
-    const timer = setTimeout(() => setToast(""), 3200);
+    const timer = setTimeout(() => setToast(""), 2600);
     return () => clearTimeout(timer);
   }, [toast]);
 
-  function navigate(next: Page) {
-    setPage(next);
-    setMobileMenu(false);
-    setQuery("");
-    setFilter("Semua");
-  }
-  function chooseExample(id: DemoId) {
-    const example = examples.find((item) => item.id === id)!;
-    setInput(example.text);
-    inputRef.current?.focus();
-  }
-  function startCheck() {
-    if (!input.trim() || running) return;
+  function clearTimers() {
     timers.current.forEach(clearTimeout);
-    setRunning(true);
+    timers.current = [];
+  }
+
+  function chooseExample(id: DemoId) {
+    const fixture = examples.find((example) => example.id === id);
+    if (!fixture) return;
+    setInput(fixture.text);
     setActive(null);
-    setStep(0);
-    const text = input.trim();
-    const demoId =
-      examples.find((example) => example.text === text)?.id || "custom";
-    steps
-      .slice(1)
-      .forEach((_, index) =>
-        timers.current.push(
-          setTimeout(() => setStep(index + 1), (index + 1) * 650),
-        ),
-      );
+    setPhase("idle");
+  }
+
+  function enterWorkspace(run = false) {
+    setPage("check");
+    setActive(null);
+    setPhase("idle");
+    setViewRevision((current) => current + 1);
+    window.scrollTo({ top: 0 });
+    if (run && input.trim()) {
+      setTimeout(startCheck, 40);
+    }
+  }
+
+  function startCheck() {
+    if (!input.trim()) return;
+    clearTimers();
+    setPage("check");
+    setPhase("analyzing");
+    setActive(null);
+    setActiveStep(0);
+    setTraceOpen(false);
+    setViewRevision((current) => current + 1);
+
+    for (let index = 1; index < investigationSteps.length; index += 1) {
+      timers.current.push(setTimeout(() => setActiveStep(index), index * 760));
+    }
+
     timers.current.push(
       setTimeout(() => {
-        const result: HistoryItem = {
-          id: crypto.randomUUID(),
-          demoId,
-          text,
+        const fixture = examples.find((example) => example.text === input.trim());
+        const item: HistoryItem = {
+          id: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `demo-${Date.now()}`,
+          demoId: fixture?.id || "custom",
+          text: input.trim(),
           createdAt: new Date().toISOString(),
           saved: false,
         };
-        setHistory((items) => [result, ...items].slice(0, 50));
-        setActive(result);
-        setRunning(false);
-        timers.current.push(
-          setTimeout(
-            () =>
-              resultRef.current?.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-              }),
-            80,
-          ),
-        );
-      }, 2800),
+        setActive(item);
+        setHistory((current) => [item, ...current].slice(0, 50));
+        setPhase("result");
+      }, investigationSteps.length * 760 + 240),
     );
   }
-  function toggleSave(item: HistoryItem) {
-    const saved = !history.find((entry) => entry.id === item.id)?.saved;
-    setHistory((items) =>
-      items.map((entry) =>
-        entry.id === item.id ? { ...entry, saved } : entry,
-      ),
-    );
-    setActive((current) =>
-      current?.id === item.id ? { ...current, saved } : current,
-    );
-    setToast(
-      saved
-        ? "Rapor ditambahkan ke koleksi tersimpan."
-        : "Rapor dihapus dari koleksi tersimpan.",
-    );
-  }
+
   function openReport(item: HistoryItem) {
+    clearTimers();
     setActive(item);
     setInput(item.text);
-    navigate("check");
-    timers.current.push(
-      setTimeout(
-        () => resultRef.current?.scrollIntoView({ behavior: "smooth" }),
-        80,
-      ),
+    setPhase("result");
+    setPage("check");
+    setTraceOpen(false);
+    setViewRevision((current) => current + 1);
+  }
+
+  function toggleSave() {
+    if (!active) return;
+    const current = history.find((item) => item.id === active.id);
+    const nextSaved = !(current?.saved ?? active.saved);
+    setHistory((items) => items.map((item) => item.id === active.id ? { ...item, saved: nextSaved } : item));
+    setActive((item) => item ? { ...item, saved: nextSaved } : item);
+    setToast(nextSaved ? "Report disimpan." : "Report dihapus dari tersimpan.");
+  }
+
+  function resetCheck() {
+    clearTimers();
+    setActive(null);
+    setPhase("idle");
+    setInput("");
+    setActiveStep(0);
+    setTraceOpen(false);
+    setViewRevision((current) => current + 1);
+  }
+
+  if (page === "landing") {
+    return (
+      <LandingPage
+        input={input}
+        setInput={setInput}
+        chooseExample={chooseExample}
+        enterWorkspace={enterWorkspace}
+      />
     );
   }
 
-  const nav = [
-    { id: "check" as const, label: "Cek klaim", icon: Search },
-    { id: "history" as const, label: "Riwayat cek", icon: History },
-    { id: "saved" as const, label: "Tersimpan", icon: Bookmark },
-  ];
-  const filteredHistory = history.filter(
-    (item) =>
-      (page !== "saved" || item.saved) &&
-      item.text.toLowerCase().includes(query.toLowerCase()) &&
-      (filter === "Semua" ||
-        examples.find((example) => example.id === item.demoId)?.status ===
-          filter),
-  );
+  const savedItems = history.filter((item) => item.saved);
 
   return (
-    <div className="app-shell">
-      {mobileMenu && (
-        <button
-          className="sidebar-backdrop"
-          aria-label="Tutup menu"
-          onClick={() => setMobileMenu(false)}
-        />
-      )}
-      <aside className={`sidebar ${mobileMenu ? "is-open" : ""}`}>
-        <a
-          href="#"
-          className="brand"
-          onClick={(event) => {
-            event.preventDefault();
-            navigate("check");
-          }}
-        >
-          <span className="brand-mark">
-            <CheckCheck size={26} strokeWidth={3} />
-          </span>
-          <span>
-            cek<span className="brand-light">dulu</span>
-            <span className="brand-period">.</span>
-          </span>
-        </a>
-        <div className="workspace-label">
-          <span className="status-dot" /> RUANG INVESTOR RASIONAL
-        </div>
-        <div className="nav-label">WORKSPACE</div>
-        <nav aria-label="Navigasi utama">
-          {nav.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              className={`nav-item ${page === id ? "active" : ""}`}
-              onClick={() => navigate(id)}
-              aria-current={page === id ? "page" : undefined}
-            >
-              <Icon size={19} />
-              <span>{label}</span>
-              {id === "check" ? (
-                <span className="nav-shortcut">↗</span>
-              ) : (
-                <span className="nav-count">
-                  {id === "history"
-                    ? history.length
-                    : history.filter((item) => item.saved).length}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
-        <div className="nav-divider" />
-        <button
-          className={`nav-item ${page === "guide" ? "active" : ""}`}
-          onClick={() => navigate("guide")}
-        >
-          <CircleHelp size={19} />
-          <span>Cara kerja</span>
-          <ArrowUpRight size={15} />
-        </button>
-        <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <div className="note-icon">
-              <Lightbulb size={21} />
-            </div>
-            <h3>
-              Jangan buru-buru
-              <br />
-              percaya.
-            </h3>
-            <p>Klaim yang viral belum tentu cerita yang utuh.</p>
-            <button onClick={() => navigate("guide")}>
-              Kenali cara kami bekerja <ArrowUpRight size={15} />
-            </button>
+    <div className="workspace-shell">
+      <AppSidebar
+        page={page}
+        setPage={(next) => {
+          clearTimers();
+          setPage(next);
+          setViewRevision((current) => current + 1);
+          if (next === "check" && phase === "analyzing") {
+            setPhase("idle");
+            setActive(null);
+          }
+        }}
+        historyCount={history.length}
+        savedCount={savedItems.length}
+        goLanding={() => {
+          clearTimers();
+          setPage("landing");
+          setPhase("idle");
+          setViewRevision((current) => current + 1);
+          window.scrollTo({ top: 0 });
+        }}
+      />
+      <div className="workspace-main">
+        <AppTopbar phase={phase} />
+        <main className="workspace-canvas">
+          <div className="canvas-grid" />
+          <div className="canvas-glow canvas-glow-a" />
+          <div className="canvas-glow canvas-glow-b" />
+
+          <div
+            key={`${page}-${phase}-${viewRevision}`}
+            className="workspace-view-transition"
+          >
+            {page === "check" && phase === "idle" && (
+              <IdleCheck
+                input={input}
+                setInput={setInput}
+                running={false}
+                chooseExample={chooseExample}
+                startCheck={startCheck}
+              />
+            )}
+            {page === "check" && phase === "analyzing" && (
+              <AnalyzingView input={input} activeStep={activeStep} fixture={inputFixture} />
+            )}
+            {page === "check" && phase === "result" && active && (
+              <ResultView
+                active={active}
+                fixture={activeFixture}
+                onSave={toggleSave}
+                onEvidence={() => setModal("evidence")}
+                traceOpen={traceOpen}
+                setTraceOpen={setTraceOpen}
+                reset={resetCheck}
+              />
+            )}
+            {page === "history" && (
+              <HistoryPage
+                title="Riwayat pemeriksaan"
+                subtitle="Semua klaim yang pernah kamu jalankan pada demo frontend ini."
+                items={history}
+                openReport={openReport}
+              />
+            )}
+            {page === "saved" && (
+              <HistoryPage
+                title="Report tersimpan"
+                subtitle="Koleksi report yang kamu tandai untuk dibuka kembali."
+                items={savedItems}
+                openReport={openReport}
+              />
+            )}
           </div>
-          <button className="profile" onClick={() => setModal("about")}>
-            <span className="profile-avatar">R</span>
-            <span>
-              <b>Ruang eksplorasi</b>
-              <small>Akses demo frontend</small>
-            </span>
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </aside>
-
-      <div className="main-shell">
-        <header className="topbar">
-          <div className="breadcrumb">
-            <button
-              className="mobile-menu icon-button"
-              aria-label="Buka menu"
-              aria-expanded={mobileMenu}
-              onClick={() => setMobileMenu(!mobileMenu)}
-            >
-              <Menu size={22} />
-            </button>
-            <span>Workspace</span>
-            <ChevronRight size={13} />
-            <b>
-              {page === "check"
-                ? "Cek klaim"
-                : page === "history"
-                  ? "Riwayat cek"
-                  : page === "saved"
-                    ? "Tersimpan"
-                    : "Cara kerja"}
-            </b>
-          </div>
-          <div className="topbar-right">
-            <span className="demo-pill">
-              <span className="status-dot" /> Mode demo
-            </span>
-            <span className="topbar-divider" />
-            <button className="about-button" onClick={() => setModal("about")}>
-              Tentang Cek Dulu <ArrowUpRight size={14} />
-            </button>
-          </div>
-        </header>
-        <main>
-          {page === "check" && (
-            <>
-              <section className="hero">
-                <div className="hero-copy">
-                  <div className="eyebrow hero-eyebrow">
-                    <span className="tiny-line" /> LESS NOISE. MORE CONTEXT.
-                  </div>
-                  <h1>
-                    Katanya cuan.
-                    <br />
-                    <span>Cek dulu faktanya.</span>
-                    <span className="heading-spark">✳</span>
-                  </h1>
-                  <p>
-                    Di balik klaim saham yang ramai, ada fakta yang perlu
-                    dipahami.
-                    <br className="desktop-break" /> Periksa angkanya. Temukan
-                    konteksnya. Putuskan sendiri.
-                  </p>
-                  <div className="hero-benefits">
-                    <span>
-                      <Check size={13} /> Berbasis bukti
-                    </span>
-                    <span>
-                      <Check size={13} /> Transparan
-                    </span>
-                    <span>
-                      <Check size={13} /> Bebas hype
-                    </span>
-                  </div>
-                </div>
-                <SignalArt />
-              </section>
-              <div className="section-heading">
-                <div>
-                  <span className="section-index">01 /</span>
-                  <h2>Mulai dari sebuah klaim</h2>
-                </div>
-                <span className="quiet-label">
-                  <Fingerprint size={14} /> Pikiran kritis, keputusan mandiri.
-                </span>
-              </div>
-              <div className="check-layout">
-                <section className="input-card">
-                  <div className="input-card-heading">
-                    <span>
-                      <MessageSquareQuote size={19} /> Apa yang kamu dengar?
-                    </span>
-                    <span className="text-label">TEKS KLAIM</span>
-                  </div>
-                  <form
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      startCheck();
-                    }}
-                  >
-                    <label className="sr-only" htmlFor="claim">
-                      Teks klaim saham
-                    </label>
-                    <textarea
-                      id="claim"
-                      ref={inputRef}
-                      value={input}
-                      maxLength={2000}
-                      disabled={running}
-                      onChange={(event) => setInput(event.target.value)}
-                      placeholder={
-                        "“Katanya yield dividen ADRO 25% setahun.\nBeneran segampang itu?”"
-                      }
-                    />
-                    <div className="input-meta">
-                      <span>
-                        Tempel klaim dari X, TikTok, atau grup obrolan.
-                      </span>
-                      <span>
-                        {input.length.toLocaleString("id-ID")} / 2.000
-                      </span>
-                    </div>
-                    <div className="example-row">
-                      <span>Coba contoh</span>
-                      {examples.map((example) => (
-                        <button
-                          key={example.id}
-                          type="button"
-                          disabled={running}
-                          onClick={() => chooseExample(example.id)}
-                          className={`example-chip ${input === example.text ? "selected" : ""}`}
-                        >
-                          {example.ticker}
-                          <span>{example.category}</span>
-                          <ArrowUpRight size={12} />
-                        </button>
-                      ))}
-                    </div>
-                    <div className="input-card-footer">
-                      <span>
-                        <ShieldCheck size={15} /> Tanpa login. Mulai dari rasa
-                        penasaran.
-                      </span>
-                      <button
-                        className="primary-button"
-                        type="submit"
-                        disabled={!input.trim() || running}
-                      >
-                        {running ? (
-                          <>
-                            <LoaderCircle className="spin" size={17} />{" "}
-                            Memeriksa...
-                          </>
-                        ) : (
-                          <>
-                            Cek klaim ini <ArrowRight size={17} />
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                </section>
-                <aside className="context-card">
-                  <div className="context-card-top">
-                    <span className="context-icon">
-                      <Layers3 size={22} />
-                    </span>
-                    <span className="small-tag">THE CONTEXT HUNTER</span>
-                  </div>
-                  <h3>
-                    Benar angkanya.
-                    <br />
-                    Belum tentu
-                    <br />
-                    <em>utuh ceritanya.</em>
-                  </h3>
-                  <p>
-                    Kami mencari konteks yang terlewat, bukan sekadar
-                    mencocokkan angka.
-                  </p>
-                  <button onClick={() => navigate("guide")}>
-                    Kenapa konteks penting? <ArrowUpRight size={17} />
-                  </button>
-                  <div className="context-decoration" aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                </aside>
-              </div>
-              <div className="demo-notice">
-                <span className="status-dot" />
-                <span>
-                  Ini ruang demo. Pilih contoh untuk menjelajahi rapor
-                  ilustratif; teks lain belum dapat diverifikasi.
-                </span>
-                <span className="notice-label">NO LIVE DATA</span>
-              </div>
-
-              {running && (
-                <section
-                  className="progress-card"
-                  aria-live="polite"
-                  aria-busy="true"
-                >
-                  <div className="progress-title">
-                    <span className="scanner-icon">
-                      <Search size={22} />
-                    </span>
-                    <div>
-                      <span className="eyebrow">SIMULASI PEMERIKSAAN</span>
-                      <h3>Mencari cerita di balik angka...</h3>
-                    </div>
-                    <span className="progress-fraction">
-                      0{step + 1}
-                      <span> / 04</span>
-                    </span>
-                  </div>
-                  <div className="steps">
-                    {steps.map((label, index) => (
-                      <div
-                        className={`step ${index <= step ? "done" : ""}`}
-                        key={label}
-                      >
-                        <span>
-                          {index < step ? <Check size={13} /> : index + 1}
-                        </span>
-                        <p>{label}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="progress-track">
-                    <span style={{ width: `${(step + 1) * 25}%` }} />
-                  </div>
-                </section>
-              )}
-
-              {active && !running && (
-                <section
-                  className="report-section"
-                  ref={resultRef}
-                  tabIndex={-1}
-                >
-                  <div className="section-heading">
-                    <div>
-                      <span className="section-index">02 /</span>
-                      <h2>Di balik klaim</h2>
-                      <span className="small-tag">RAPOR DEMO</span>
-                    </div>
-                    <button
-                      className={`text-button ${active.saved ? "is-saved" : ""}`}
-                      onClick={() => toggleSave(active)}
-                    >
-                      <Bookmark
-                        size={16}
-                        fill={active.saved ? "currentColor" : "none"}
-                      />
-                      {active.saved ? "Tersimpan" : "Simpan rapor"}
-                    </button>
-                  </div>
-                  <div className="report-card">
-                    <div className="report-main">
-                      <div
-                        className={`verdict ${activeFixture?.tone || "neutral"}`}
-                      >
-                        <span className="status-dot" />
-                        {activeFixture?.status || "Tidak bisa diverifikasi"}
-                      </div>
-                      <h2>
-                        {activeFixture?.title ||
-                          "Klaim baru, perlu data sungguhan."}
-                      </h2>
-                      <blockquote>“{active.text}”</blockquote>
-                      <p>
-                        {activeFixture?.summary ||
-                          "Frontend ini belum terhubung ke backend. Teks kamu tersimpan sebagai percobaan, tetapi kami belum dapat memeriksa kebenarannya. Gunakan salah satu contoh untuk melihat tampilan hasil pemeriksaan."}
-                      </p>
-                      {activeFixture && (
-                        <div className="context-finding">
-                          <Sparkles size={19} />
-                          <div>
-                            <span>CONTEXT HUNTER</span>
-                            <h4>{activeFixture.context}</h4>
-                            <p>{activeFixture.detail}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="report-evidence">
-                      <div className="evidence-heading">
-                        <ChartNoAxesCombined size={18} />
-                        <h3>
-                          {activeFixture
-                            ? "Biar angka bicara."
-                            : "Belum ada evidence."}
-                        </h3>
-                      </div>
-                      <span className="eyebrow">
-                        {activeFixture
-                          ? `${activeFixture.ticker} / ${activeFixture.category} / ILUSTRASI`
-                          : "MENUNGGU INTEGRASI BACKEND"}
-                      </span>
-                      {activeFixture ? (
-                        <>
-                          <div className="metric-list">
-                            {activeFixture.metrics.map((metric, index) => (
-                              <div className="metric" key={metric.label}>
-                                <div>
-                                  <span>{metric.label}</span>
-                                  <b>{metric.value}</b>
-                                </div>
-                                <div className="metric-track">
-                                  <span
-                                    className={index === 0 ? "claimed" : ""}
-                                    style={{ width: `${metric.width}%` }}
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          <button
-                            className="evidence-button"
-                            onClick={() => setModal("evidence")}
-                          >
-                            <FileText size={16} /> Lihat catatan bukti{" "}
-                            <ArrowUpRight size={15} />
-                          </button>
-                          <p className="evidence-disclaimer">
-                            Data ilustrasi, bukan data pasar terkini.
-                          </p>
-                        </>
-                      ) : (
-                        <div className="no-evidence">
-                          <Search size={32} />
-                          <p>
-                            Tidak ada angka yang ditampilkan tanpa data
-                            pembanding.
-                          </p>
-                          <button
-                            className="text-button"
-                            onClick={() => {
-                              chooseExample("dividend");
-                              inputRef.current?.scrollIntoView({
-                                behavior: "smooth",
-                                block: "center",
-                              });
-                            }}
-                          >
-                            Pakai contoh ADRO <ArrowRight size={16} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              <section className="explore-section">
-                <div className="section-heading">
-                  <div>
-                    <span className="section-index">
-                      {active ? "03" : "02"} /
-                    </span>
-                    <h2>Klaim populer, kita bedah.</h2>
-                  </div>
-                  <span className="quiet-label">
-                    Kenali polanya sebelum percaya <ArrowDownLeft size={15} />
-                  </span>
-                </div>
-                <div className="example-grid">
-                  {examples.map((example) => (
-                    <button
-                      disabled={running}
-                      className="explore-card"
-                      key={example.id}
-                      onClick={() => {
-                        chooseExample(example.id);
-                        inputRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "center",
-                        });
-                      }}
-                    >
-                      <div className="explore-top">
-                        <span className={`ticker-icon ticker-${example.id}`}>
-                          {example.ticker.slice(0, 1)}
-                        </span>
-                        <span>
-                          <b>{example.ticker}</b>
-                          <small>{example.category}</small>
-                        </span>
-                        <ArrowUpRight size={20} />
-                      </div>
-                      <h3>
-                        {example.id === "dividend"
-                          ? "“Dividen 25% setahun. Tinggal duduk manis?”"
-                          : example.id === "valuation"
-                            ? "“PER cuma 3x. Sudah pasti murah?”"
-                            : "“Sebulan naik 10%. Sesuai datanya?”"}
-                      </h3>
-                      <div className="explore-bottom">
-                        <span>
-                          {example.id === "dividend"
-                            ? "Ada rata-rata yang menyembunyikan cerita."
-                            : example.id === "valuation"
-                              ? "Cek rasionya, bukan hanya narasinya."
-                              : "Samakan periode, baru bandingkan."}
-                        </span>
-                        <span className="round-arrow">
-                          <ArrowRight size={14} />
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </section>
-              <div className="how-strip">
-                <div>
-                  <span className="strip-icon">
-                    <Fingerprint size={25} />
-                  </span>
-                  <span>
-                    <b>Dari “katanya” jadi “ini faktanya”.</b>
-                    <small>
-                      Setiap klaim punya proses. Setiap hasil punya alasan.
-                    </small>
-                  </span>
-                </div>
-                <button
-                  className="text-button"
-                  onClick={() => navigate("guide")}
-                >
-                  Intip cara kerjanya <ArrowRight size={16} />
-                </button>
-              </div>
-            </>
-          )}
-
-          {(page === "history" || page === "saved") && (
-            <section className="collection-page">
-              <div className="eyebrow hero-eyebrow">
-                <span className="tiny-line" /> JEJAK RASA PENASARAN
-              </div>
-              <div className="collection-heading">
-                <div>
-                  <h1>
-                    {page === "saved"
-                      ? "Layak disimpan."
-                      : "Sudah pernah dicek."}
-                  </h1>
-                  <p>
-                    {page === "saved"
-                      ? "Kumpulan rapor pilihanmu, siap dibaca lagi."
-                      : "Kembali ke klaim, bukti, dan konteks yang kamu telusuri."}
-                  </p>
-                </div>
-                <button
-                  className="primary-button"
-                  onClick={() => navigate("check")}
-                >
-                  <Plus size={17} /> Cek klaim baru
-                </button>
-              </div>
-              <div className="history-toolbar">
-                <label className="search-field">
-                  <Search size={18} />
-                  <input
-                    placeholder="Cari isi klaim..."
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    aria-label="Cari riwayat"
-                  />
-                </label>
-                <label className="filter-field">
-                  <span>Status</span>
-                  <select
-                    value={filter}
-                    onChange={(event) => setFilter(event.target.value)}
-                  >
-                    <option>Semua</option>
-                    <option>Didukung</option>
-                    <option>Dibantah</option>
-                    <option>Benar tapi menyesatkan</option>
-                  </select>
-                </label>
-              </div>
-              <div className="history-count">
-                {filteredHistory.length} RAPOR{" "}
-                {page === "saved" ? "TERSIMPAN" : "DI PERANGKAT INI"}
-              </div>
-              {filteredHistory.length ? (
-                <div className="history-list">
-                  {filteredHistory.map((item) => {
-                    const example = examples.find(
-                      (entry) => entry.id === item.demoId,
-                    );
-                    return (
-                      <article className="history-item" key={item.id}>
-                        <span className="history-item-icon">
-                          <FileText size={22} />
-                        </span>
-                        <button
-                          className="history-open"
-                          onClick={() => openReport(item)}
-                        >
-                          <span className="history-item-meta">
-                            {example?.ticker || "KLAIM BEBAS"}
-                            <span>·</span>
-                            {new Date(item.createdAt).toLocaleString("id-ID", {
-                              day: "numeric",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                            <span>· DEMO</span>
-                          </span>
-                          <h3>{item.text}</h3>
-                          <span
-                            className={`verdict ${example?.tone || "neutral"}`}
-                          >
-                            <span className="status-dot" />
-                            {example?.status || "Tidak bisa diverifikasi"}
-                          </span>
-                        </button>
-                        <button
-                          className="icon-button"
-                          aria-label={
-                            item.saved ? "Hapus dari tersimpan" : "Simpan rapor"
-                          }
-                          onClick={() => toggleSave(item)}
-                        >
-                          <Bookmark
-                            size={19}
-                            fill={item.saved ? "currentColor" : "none"}
-                          />
-                        </button>
-                        <button
-                          className="icon-button"
-                          aria-label="Buka rapor"
-                          onClick={() => openReport(item)}
-                        >
-                          <ArrowUpRight size={20} />
-                        </button>
-                      </article>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="empty-state">
-                  <div className="empty-icon">
-                    {page === "saved" ? (
-                      <Bookmark size={30} />
-                    ) : (
-                      <History size={30} />
-                    )}
-                  </div>
-                  <h2>
-                    {query || filter !== "Semua"
-                      ? "Belum ada yang cocok."
-                      : page === "saved"
-                        ? "Tempat untuk temuan berhargamu."
-                        : "Rasa penasaran dimulai di sini."}
-                  </h2>
-                  <p>
-                    {query || filter !== "Semua"
-                      ? "Coba kata pencarian atau status lain."
-                      : "Coba periksa satu contoh klaim. Rapor demo akan muncul di riwayat dan bisa kamu simpan."}
-                  </p>
-                  <button
-                    className="primary-button"
-                    onClick={() => {
-                      if (query || filter !== "Semua") {
-                        setQuery("");
-                        setFilter("Semua");
-                      } else navigate("check");
-                    }}
-                  >
-                    {query || filter !== "Semua"
-                      ? "Reset pencarian"
-                      : "Mulai cek klaim"}
-                    <ArrowRight size={16} />
-                  </button>
-                </div>
-              )}
-              <p className="local-note">
-                <ShieldCheck size={15} /> Riwayat disimpan di browser ini,
-                maksimal 50 rapor terbaru.
-              </p>
-            </section>
-          )}
-
-          {page === "guide" && (
-            <section className="guide-page">
-              <div className="eyebrow hero-eyebrow">
-                <span className="tiny-line" /> DI BALIK LAYAR
-              </div>
-              <h1>
-                Bukan sekadar benar.
-                <br />
-                <span>Harus utuh ceritanya.</span>
-              </h1>
-              <p className="guide-intro">
-                Informasi yang baik memberi kamu alasan untuk memahami, bukan
-                tekanan untuk mengikuti.
-              </p>
-              <div className="guide-grid">
-                {[
-                  {
-                    icon: MessageSquareQuote,
-                    title: "Pisahkan klaim dari opini.",
-                    text: "Teks diurai menjadi pernyataan yang bisa diperiksa. “PER 3x” adalah klaim angka. “Pasti cuan” adalah prediksi.",
-                  },
-                  {
-                    icon: ChartNoAxesCombined,
-                    title: "Periksa angka dengan bukti.",
-                    text: "Pada produk terintegrasi, data Sectors menjadi pembanding. Perhitungan dilakukan oleh kode, dengan periode yang sesuai.",
-                  },
-                  {
-                    icon: Layers3,
-                    title: "Buru konteks yang hilang.",
-                    text: "Context Hunter menelusuri kemungkinan pembayaran satu kali, basis pembanding rendah, atau periode yang dipilih-pilih.",
-                  },
-                  {
-                    icon: ShieldCheck,
-                    title: "Baca hasil, pahami alasannya.",
-                    text: "Rapor menunjukkan status, data pembanding, dan konteksnya. Jika data tidak cukup, hasil menyatakannya secara terbuka.",
-                  },
-                ].map(({ icon: Icon, title, text }, index) => (
-                  <article className="guide-card" key={title}>
-                    <div>
-                      <Icon size={25} />
-                      <span>0{index + 1}</span>
-                    </div>
-                    <h2>{title}</h2>
-                    <p>{text}</p>
-                  </article>
-                ))}
-              </div>
-              <div className="verdict-guide">
-                <h2>Satu klaim, beberapa kemungkinan.</h2>
-                <div>
-                  {[
-                    {
-                      tone: "green",
-                      title: "Didukung",
-                      text: "Klaim sesuai dengan data pembanding.",
-                    },
-                    {
-                      tone: "red",
-                      title: "Dibantah",
-                      text: "Klaim tidak sesuai dengan data pembanding.",
-                    },
-                    {
-                      tone: "amber",
-                      title: "Benar tapi menyesatkan",
-                      text: "Angka sesuai, tetapi konteks penting hilang.",
-                    },
-                    {
-                      tone: "neutral",
-                      title: "Tidak bisa diverifikasi",
-                      text: "Data belum cukup atau klaim terlalu kabur.",
-                    },
-                    {
-                      tone: "neutral",
-                      title: "Di luar cakupan",
-                      text: "Prediksi atau opini, bukan klaim faktual.",
-                    },
-                  ].map((item) => (
-                    <div key={item.title}>
-                      <span className={`verdict ${item.tone}`}>
-                        <span className="status-dot" />
-                        {item.title}
-                      </span>
-                      <p>{item.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <button
-                className="primary-button"
-                onClick={() => navigate("check")}
-              >
-                Oke, coba satu klaim <ArrowRight size={17} />
-              </button>
-            </section>
-          )}
-
-          {storageError && (
-            <p className="storage-error" role="status">
-              Browser tidak mengizinkan penyimpanan lokal. Riwayat hanya
-              tersedia selama halaman ini terbuka.
-            </p>
-          )}
-          <footer>
-            <div>
-              <span className="footer-brand">
-                <CheckCheck size={17} /> cekdulu.
-              </span>
-              <span>Jernih melihat. Bijak menyikapi.</span>
-            </div>
-            <p>Alat informasi & analisis. Bukan nasihat investasi.</p>
-            <button onClick={() => setModal("about")}>
-              Built for Sectors Hackathon <ArrowUpRight size={12} />
-            </button>
-          </footer>
         </main>
+        <LegalStrip />
       </div>
-      {toast && (
-        <div className="toast" role="status">
-          <Check size={17} />
-          {toast}
-        </div>
-      )}
-      {modal === "about" && (
-        <Modal
-          title="Rasa penasaran yang sehat."
-          onClose={() => setModal(null)}
-        >
-          <p>
-            Cek Dulu membantu investor ritel memahami klaim saham melalui bukti
-            dan konteks. Dibuat untuk Sectors Hackathon 2026.
-          </p>
-          <div className="modal-callout">
-            <Sparkles size={22} />
-            <div>
-              <b>Kamu sedang menjelajahi frontend demo.</b>
-              <p>
-                Seluruh pemeriksaan memakai fixture lokal. Belum ada koneksi ke
-                Sectors, LLM, akun pengguna, maupun backend. Riwayat hanya
-                disimpan di browser kamu.
-              </p>
-            </div>
-          </div>
-          <p>
-            Hasil ilustrasi bukan data pasar terkini dan bukan rekomendasi
-            membeli atau menjual saham.
-          </p>
-        </Modal>
-      )}
+
       {modal === "evidence" && activeFixture && (
-        <Modal
-          title="Buktinya harus bisa ditelusuri."
-          onClose={() => setModal(null)}
-        >
-          <span className="small-tag">FIXTURE LOKAL · BUKAN DATA LIVE</span>
-          <p>{activeFixture.evidence}.</p>
-          <div className="evidence-table">
-            {activeFixture.metrics.map((metric) => (
-              <div key={metric.label}>
-                <span>{metric.label}</span>
-                <b>{metric.value}</b>
-              </div>
+        <Modal title="Evidence inspector" onClose={() => setModal(null)}>
+          <div className="modal-evidence-meta">
+            <span>{activeFixture.ticker}</span><span>{activeFixture.category}</span><span>{activeFixture.source}</span>
+          </div>
+          <div className="modal-evidence-list">
+            {activeFixture.evidence.map((row, index) => (
+              <div key={row.label}><span>0{index + 1}</span><div><b>{row.label}</b><small>{row.flag}</small></div><strong>{row.value}</strong></div>
             ))}
           </div>
-          <p>{activeFixture.detail}</p>
-          <p className="muted">
-            Angka ini dipakai untuk mendemonstrasikan tampilan rapor. Verifikasi
-            sumber dan tanggal data akan tersedia setelah integrasi backend.
-          </p>
+          <p className="modal-note">Semua angka pada layar ini berasal dari fixture frontend untuk demonstrasi visual. Tidak ada request ke backend atau data pasar live.</p>
         </Modal>
       )}
+
+      {toast && <div className="toast"><Check size={15} /> {toast}</div>}
     </div>
   );
 }
