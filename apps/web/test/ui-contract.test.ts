@@ -4,11 +4,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { checkFixtures } from '../../../packages/shared/fixtures/index.js';
-import { formatEvidence, readHistory, historyMatches, HistoryItemSchema, examples, type HistoryItem } from '../lib/check-view';
+import { formatEvidence, readableSourceText, readHistory, historyMatches, HistoryItemSchema, examples, type HistoryItem } from '../lib/check-view';
 import { restoreStoredCheck, storedTimestamp } from '../lib/stored-check';
 import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders } from '../lib/history-client';
 import CheckReport from '../components/check-report';
 import Workspace from '../components/workspace';
+import Home from '../app/page';
+import CheckPage from '../app/check/page';
+import About from '../app/about/page';
+import TraceTimeline from '../components/trace-timeline';
+import { explanationParts } from '../lib/report-presentation';
 
 const fixture = checkFixtures[0]!;
 const item: HistoryItem = { id: fixture.result.checkId, text: fixture.input.rawText, createdAt: fixture.input.createdAt,
@@ -26,15 +31,88 @@ function sqlFixture() {
   };
 }
 describe('rapor dan riwayat UI memakai hasil shared', () => {
+  it('beranda memakai landing dengan satu CTA relatif dan disclaimer lengkap', async () => {
+    const html = renderToStaticMarkup(await Home({ searchParams: Promise.resolve({}) }));
+    expect(html).toContain('Klaim saham.');
+    expect(html).toContain('href="/check"');
+    expect(html.match(/Periksa klaim/g)).toHaveLength(1);
+    expect(html).not.toContain('localhost');
+    expect(html).not.toContain('Preview desain');
+    expect(html).toContain('bukan nasihat investasi');
+    expect(html).not.toContain('<textarea');
+  });
+  it.each(['history', 'saved', 'guide'])('deep link lama %s dialihkan ke checker', async view => {
+    await expect(Home({ searchParams: Promise.resolve({ view }) })).rejects.toMatchObject({ digest: expect.stringContaining(`/check?view=${view}`) });
+  });
+  it.each(['check', 'about'] as const)('footer %s mempertahankan seluruh disclaimer dengan landmark dan sumber yang jelas', initialPage => {
+    const html = renderToStaticMarkup(createElement(Workspace, { fixtureDemo: true, initialPage }));
+    expect(html).toContain('</main><footer class="site-footer" aria-label="Informasi Cek Dulu">');
+    const footer = html.slice(html.indexOf('<footer'), html.indexOf('</footer>'));
+    const text = footer.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    expect(text).toContain('Cek Dulu adalah alat informasi dan analisis, bukan nasihat investasi. Status klaim menilai kesesuaian klaim dengan data yang tersedia, bukan kelayakan membeli atau menjual saham. Data bersumber dari Sectors dan dapat tertinggal dari kondisi terkini. Lakukan riset sendiri sebelum mengambil keputusan.');
+    expect(footer).toContain('href="https://docs.sectors.app" target="_blank" rel="noreferrer"');
+    expect(footer).not.toContain('Tentang Cek Dulu');
+    expect(footer).not.toContain('<details');
+  });
+  it('Tentang memakai halaman nyata dengan satu akses navigasi dan tanpa popup atau status penyimpanan', () => {
+    const home = renderToStaticMarkup(createElement(Workspace, { fixtureDemo: true }));
+    expect(home.match(/Tentang Cek Dulu/g)).toHaveLength(1);
+    expect(home).toContain('href="/about"');
+    expect(home).not.toContain('Data tersimpan');
+    const about = renderToStaticMarkup(createElement(About));
+    expect(about).toContain('<h1>Tentang Cek Dulu</h1>');
+    expect(about).toContain('href="/about" aria-current="page"');
+    expect(about).toContain('aria-label="Alur pemeriksaan"');
+    expect(about).toContain('Hal yang perlu diketahui');
+    expect(about).toContain('Revisi sumber saat build');
+    expect(about).not.toContain('<dialog');
+    expect(about).not.toContain('<textarea');
+    expect(about).toContain('bukan nasihat investasi');
+  });
+  it.each([['history', 'Riwayat pemeriksaan'], ['saved', 'Rapor tersimpan'], ['guide', 'Cara kerja']])('tautan kembali dari Tentang membuka tampilan %s', async (view, heading) => {
+    const html = renderToStaticMarkup(await CheckPage({ searchParams: Promise.resolve({ view }) }));
+    expect(html).toContain(heading);
+    expect(html).not.toContain('id="claim"');
+  });
+  it.each(['about', 'invalid', ['history', 'saved']])('query tampilan tidak valid kembali ke pemeriksaan: %s', async view => {
+    const html = renderToStaticMarkup(await CheckPage({ searchParams: Promise.resolve({ view }) }));
+    expect(html).toContain('<h1>Periksa klaim saham</h1>');
+  });
   it.each(checkFixtures)('menampilkan verdict backend $input.checkId tanpa fixture UI sendiri', fixture => {
     const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, id: fixture.result.checkId, text: fixture.input.rawText, result: fixture.result, traces: fixture.traces } }));
-    expect(html).toContain(fixture.result.verdicts[0]!.explanation);
+    explanationParts(fixture.result.verdicts[0]!.explanation).forEach(part => expect(html).toContain(part));
     expect(html).toContain('Demo fixture offline');
   });
   it('menampilkan semua klaim, bukan hanya hasil pertama', () => {
     const result = { ...item.result, claims: [...item.result.claims, ...checkFixtures[1]!.result.claims], verdicts: [...item.result.verdicts, ...checkFixtures[1]!.result.verdicts] };
     const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, result } }));
     expect(html).toContain('Benar tapi menyesatkan'); expect(html).toContain('Didukung');
+  });
+  it('memisahkan kutipan berdasarkan span teks bersih dan menormalisasi persen hanya sekali', () => {
+    const second = checkFixtures[1]!;
+    const text = `${item.text}\n${second.input.rawText}`;
+    const offset = item.text.length + 1;
+    const result = { ...item.result, claims: [...item.result.claims, { ...second.result.claims[0]!, span: [offset, text.length] as [number, number] }],
+      verdicts: [...item.result.verdicts, ...second.result.verdicts], evidence: [...item.result.evidence, ...second.result.evidence] };
+    const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, text: `  ${text.replace(' ', '\t\u200b')}  `, result } }));
+    expect(html).toContain('<blockquote>“ADRO yield 25,5% setahun”</blockquote>');
+    expect(html).toContain('<blockquote>“BBCA PER cuma 3x”</blockquote>');
+    expect(html).toContain('<strong>25,5%</strong>'); expect(html).not.toContain('2.550%');
+  });
+  it('prediksi tanpa evidence tidak menawarkan pembanding atau tombol sumber aktif', () => {
+    const prediction = checkFixtures[2]!;
+    const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, text: prediction.input.rawText, result: prediction.result } }));
+    expect(html).toContain('Di luar cakupan'); expect(html).toContain('<strong>Belum tersedia</strong>');
+    expect(html).toContain('class="evidence-button" disabled=""');
+  });
+  it('jejak hanya memuat event aktual, error dan kredit yang diterima', () => {
+    const html = renderToStaticMarkup(createElement(TraceTimeline, { events: [
+      { checkId: 'c', ts: fixture.input.createdAt, stage: 'verify', message: 'Data ditemukan', credits: 2 },
+      { checkId: 'c', ts: fixture.input.createdAt, stage: 'error', message: 'Data kedua kosong', credits: 0 },
+    ] }));
+    expect(html).toContain('Memeriksa angka'); expect(html).toContain('Ada kendala');
+    expect(html).toContain('2 kredit data'); expect(html).not.toContain('Memisahkan klaim');
+    expect(html).not.toContain('trace-active');
   });
   it('ekstraksi gagal tidak ditampilkan sebagai "konten tanpa klaim"', () => {
     const result = { ...item.result, claims: [], verdicts: [], evidence: [], hypothesisRuns: [] };
@@ -44,8 +122,13 @@ describe('rapor dan riwayat UI memakai hasil shared', () => {
     const html = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, result, traces } }));
     expect(html).toContain('Kuota layanan LLM sedang habis');
     expect(html).not.toContain('Konten sudah dibaca');
+    expect(html).toContain('Klaim belum dapat diperiksa.');
+    expect(html).toContain('tidak ada kesimpulan tentang isi konten');
+    expect(html).not.toContain('Sertakan pernyataan saham');
     const empty = renderToStaticMarkup(createElement(CheckReport, { item: { ...item, result, traces: [] } }));
-    expect(empty).toContain('Konten sudah dibaca');
+    expect(empty).toContain('Belum ada klaim yang bisa diperiksa.');
+    expect(empty).toContain('Sertakan pernyataan saham');
+    expect(empty).not.toContain('Kuota layanan LLM sedang habis');
   });
   it('contoh UI sama dengan input fixture pipeline dan SSR tanpa localStorage', () => {
     expect(examples.map(example => example.text)).toEqual(checkFixtures.map(fixture => fixture.input.rawText));
@@ -71,6 +154,17 @@ describe('rapor dan riwayat UI memakai hasil shared', () => {
 });
 it('data kosong diberi label eksplisit', () => {
   expect(formatEvidence({value: 'empty'})).toBe('Data belum tersedia');
+});
+it('nama field dan rumus fixture menjadi teks terbaca tanpa mengubah angka atau label lain', () => {
+  expect(readableSourceText('Angka Sectors dividend_yield_avg.avg_yield')).toBe('Rata-rata yield dividen yang dilaporkan');
+  expect(readableSourceText('sum(total_yield per tahun) / jumlah tahun')).toBe('Jumlah yield tahunan dibagi jumlah tahun');
+  expect(readableSourceText('PER sintetis untuk pengujian')).toBe('PER sintetis untuk pengujian');
+  expect(readableSourceText('2021–2025')).toBe('2021–2025');
+  expect(readableSourceText('dividend.cash_payout_ratio ADRO')).toBe('Rasio pembayaran dividen terhadap kas ADRO');
+  expect(readableSourceText('dividend.year_coverage ADRO 2026')).toBe('Ketersediaan data dividen ADRO 2026');
+  expect(readableSourceText('valuation.pe BBCA 2025')).toBe('PER BBCA 2025');
+  expect(formatEvidence({ value: 'unknown' })).toBe('Belum diketahui');
+  expect(formatEvidence({ value: 'available' })).toBe('Data tersedia');
 });
 describe('rekonstruksi riwayat SQL', () => {
   it('timestamp Postgres dengan offset dinormalisasi ke UTC shared', () => {

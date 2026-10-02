@@ -64,6 +64,25 @@ describe('end-to-end tiga fixture shared', () => {
     expect(result.hypothesisRuns[0]?.hypId).toBe('DIV_CASH_PAYOUT');
     expect(fetchImpl).not.toHaveBeenCalled();
   });
+  it('nominal dividen melewati verifier asli tanpa diberi hipotesis yield', async () => {
+    const text = 'UNVR dividen interim Rp87 per saham tahun buku 2025';
+    const test = setup(text, [{ ...candidate(text, 'UNVR'), type: 'dividend',
+      asserted: { metric: 'dividen interim per saham', value: 87, unit: 'IDR', window: null, period: 'tahun buku 2025' } }]);
+    const cache = new MemoryCacheStore(), fetchImpl = vi.fn();
+    // Fixture minimal sintetis; rasio kas tinggi sengaja menguji bahwa hipotesis yield tidak diterapkan.
+    await cache.set({ key: cacheKey('fetchCompanyReport', { symbol: 'UNVR', sections: ['dividend'] }), endpoint: 'fetchCompanyReport',
+      params: {}, fetchedAt: new Date().toISOString(), ttlSeconds: 86400, response: { symbol: 'UNVR', company_name: 'Unilever Indonesia',
+        dividend: { historical_dividends: { '2025': { breakdown: [{ date: '2025-12-15', total: 87, yield: 0.0483 }],
+          total_dividend: 87, total_yield: 0.0483 } }, yield_ttm: 0.1233, cash_payout_ratio: 2.26 } } });
+    test.deps.client = new SectorsClient({ config: { mode: 'cache_only' }, cache, fetchImpl });
+    test.deps.verifiers = undefined;
+    const result = await test.run();
+    expect(result.verdicts[0]).toMatchObject({ verdict: 'supported', computed: { value: 87, unit: 'IDR' }, missingContext: [] });
+    expect(result.evidence.every(record => record.unit === 'IDR')).toBe(true);
+    expect(result.hypothesisRuns).toEqual([]);
+    expect(test.requests.some(request => request.format.name === 'context_hypotheses')).toBe(false);
+    expect(result.creditsUsed).toBe(0); expect(fetchImpl).not.toHaveBeenCalled();
+  });
 });
 
 describe('konkurensi dan isolasi error', () => {
