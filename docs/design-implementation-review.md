@@ -14,9 +14,10 @@ Rapor kini membaca status → kutipan → perbandingan angka → sumber/konteks 
 
 - pnpm test: 775 test dalam 27 berkas lulus.
 - pnpm -r typecheck: lulus.
+- pnpm --filter @cek-dulu/web build: lulus, termasuk kompilasi, pemeriksaan tipe, dan pembuatan halaman produksi.
 - Browser desktop 1440 px; mobile 390 dan 360 px: halaman hasil, sumber, dan riwayat tidak overflow horizontal.
 - Cek ADRO melalui UI dalam fixture offline: satu klaim, verdict misleading, delapan event trace. Panel sumber terbuka dan grafik tersedia; tombol tutup bekerja. Tidak menggunakan kredit API live.
-- Tampilan link video memakai alur adapter yang sudah ada; test media menguji baca, retry, error, review, dan validasi berkas dengan mock. Pembacaan video asli tidak diuji di sesi desain.
+- Tampilan link video diverifikasi di browser: memasukkan URL mengaktifkan tombol Baca isi video dengan gradien biru; tidak menekan tombol pemrosesan. Test media menguji baca, retry, error, review, dan validasi berkas dengan mock. Pembacaan video asli tidak diuji di sesi desain.
 
 Gambar implementasi disimpan di docs/design-mockups/exports dengan awalan implemented-. Gambar tersebut berasal dari aplikasi, berbeda dari mockup statis yang tetap tersedia pada port 3012.
 
