@@ -3,7 +3,7 @@ import { ClaimVerdictSchema, CheckResultSchema, TraceEventSchema, type Claim, ty
 import { MemoryCacheStore, SectorsClient, cacheKey } from '@cek-dulu/sectors';
 import { runCheck, displayEvidenceValues, normalizeVerifierEvidence, type PipelineDeps } from '../src/pipeline.js';
 import { isOutputAllowed } from '../src/output-policy.js';
-import { LlmAdapter, type LlmProvider, type LlmRequest } from '../src/llm.js';
+import { LlmAdapter, type LlmProvider, type LlmRequest, LlmError } from '../src/llm.js';
 import { validateGrounding, withGrounding } from '../src/grounding.js';
 import type { ExtractedClaim } from '../src/extractor.js';
 import { checkFixtures } from '../../shared/fixtures/index.js';
@@ -64,6 +64,25 @@ describe('end-to-end tiga fixture shared', () => {
     expect(result.hypothesisRuns[0]?.hypId).toBe('DIV_CASH_PAYOUT');
     expect(fetchImpl).not.toHaveBeenCalled();
   });
+  it('nominal dividen melewati verifier asli tanpa diberi hipotesis yield', async () => {
+    const text = 'UNVR dividen interim Rp87 per saham tahun buku 2025';
+    const test = setup(text, [{ ...candidate(text, 'UNVR'), type: 'dividend',
+      asserted: { metric: 'dividen interim per saham', value: 87, unit: 'IDR', window: null, period: 'tahun buku 2025' } }]);
+    const cache = new MemoryCacheStore(), fetchImpl = vi.fn();
+    // Fixture minimal sintetis; rasio kas tinggi sengaja menguji bahwa hipotesis yield tidak diterapkan.
+    await cache.set({ key: cacheKey('fetchCompanyReport', { symbol: 'UNVR', sections: ['dividend'] }), endpoint: 'fetchCompanyReport',
+      params: {}, fetchedAt: new Date().toISOString(), ttlSeconds: 86400, response: { symbol: 'UNVR', company_name: 'Unilever Indonesia',
+        dividend: { historical_dividends: { '2025': { breakdown: [{ date: '2025-12-15', total: 87, yield: 0.0483 }],
+          total_dividend: 87, total_yield: 0.0483 } }, yield_ttm: 0.1233, cash_payout_ratio: 2.26 } } });
+    test.deps.client = new SectorsClient({ config: { mode: 'cache_only' }, cache, fetchImpl });
+    test.deps.verifiers = undefined;
+    const result = await test.run();
+    expect(result.verdicts[0]).toMatchObject({ verdict: 'supported', computed: { value: 87, unit: 'IDR' }, missingContext: [] });
+    expect(result.evidence.every(record => record.unit === 'IDR')).toBe(true);
+    expect(result.hypothesisRuns).toEqual([]);
+    expect(test.requests.some(request => request.format.name === 'context_hypotheses')).toBe(false);
+    expect(result.creditsUsed).toBe(0); expect(fetchImpl).not.toHaveBeenCalled();
+  });
 });
 
 describe('konkurensi dan isolasi error', () => {
@@ -109,6 +128,15 @@ describe('konkurensi dan isolasi error', () => {
     test.deps.llm = new LlmAdapter({ env: { LLM_PROVIDER: 'mock', LLM_MODEL: 'uji' }, mockOutputs: [null, null] });
     expect((await test.run()).verdicts).toEqual([]);
     expect(test.traces.map((t) => t.stage)).toEqual(['normalize', 'error', 'done']);
+  });
+  it('kuota LLM habis dijelaskan di trace error tanpa pesan mentah provider', async () => {
+    const test = setup('ADRO PER 3x');
+    test.deps.llm = new LlmAdapter({ env: { LLM_PROVIDER: 'mock', LLM_MODEL: 'uji' }, provider: {
+      name: 'mock', complete: async () => { throw new LlmError('QUOTA', 1); } } });
+    await test.run();
+    const error = test.traces.find((t) => t.stage === 'error')!;
+    expect(error.message).toContain('Kuota layanan LLM sedang habis');
+    expect(error.data).toMatchObject({ code: 'EXTRACTION_FAILED', llmCode: 'QUOTA' });
   });
 });
 

@@ -41,7 +41,7 @@ export function formatEvidence(evidence: Pick<Evidence, 'value' | 'unit'>, maxim
 /** Present documented fixture field names as prose without changing evidence or values. */
 export function readableSourceText(text: string): string {
   const labels: Record<string, string> = {
-    'Angka Sectors dividend_yield_avg.avg_yield': 'Rata-rata yield dividen menurut Sectors',
+    'Angka Sectors dividend_yield_avg.avg_yield': 'Rata-rata yield dividen yang dilaporkan',
     'sum(total_yield per tahun) / jumlah tahun': 'Jumlah yield tahunan dibagi jumlah tahun',
     'Cash payout ratio': 'Rasio pembayaran dividen terhadap kas',
     'Rata-rata mandiri sekitar 23,6%; ringkasan AGENTS.md, bukan dihitung ulang dari data tahunan di fixture':

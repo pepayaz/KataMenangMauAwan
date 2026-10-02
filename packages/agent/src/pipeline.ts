@@ -13,7 +13,7 @@ import { isOutputAllowed } from './output-policy.js';
 import { createHypothesisRegistry, createSectorsHunterGateway, huntContext,
   type HunterToolGateway, type HypothesisRegistry } from './hunter/index.js';
 import { HunterToolError } from './hunter/index.js';
-import type { LlmAdapter } from './llm.js';
+import { LlmError, type LlmAdapter } from './llm.js';
 
 export type PipelineDeps = {
   client: SectorsClient; llm: Pick<LlmAdapter, 'generate'>; verifiers?: Partial<VerifierRegistry>;
@@ -117,7 +117,9 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
     output.claims = extracted.claims;
     await trace('extract', 'Ekstraksi klaim selesai.', { claimIds: output.claims.map((c) => c.claimId), rejected: extracted.rejected });
   } catch (error) {
-    await trace('error', error instanceof UserTickerSelectionError ? error.message : 'Input atau ekstraksi tidak dapat diselesaikan.', { code: error instanceof UserTickerSelectionError ? 'INVALID_USER_SELECTION' : 'EXTRACTION_FAILED' });
+    await trace('error', error instanceof UserTickerSelectionError ? error.message : extractionFailureMessage(error), {
+      code: error instanceof UserTickerSelectionError ? 'INVALID_USER_SELECTION' : 'EXTRACTION_FAILED',
+      ...(error instanceof LlmError ? { llmCode: error.code } : {}) });
     await trace('done', 'Pemeriksaan berhenti sebelum verifikasi.', { status: 'error' });
     output.finishedAt = now().toISOString(); return CheckResultSchema.parse(output);
   }
@@ -210,4 +212,13 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
   output.finishedAt = now().toISOString();
   await trace('done', 'Pemeriksaan selesai.', { claimCount: output.claims.length, creditsUsed: output.creditsUsed });
   return CheckResultSchema.parse(output);
+}
+
+/** Pesan kegagalan ekstraksi per penyebab LLM; pesan mentah provider tidak pernah dibawa. */
+export function extractionFailureMessage(error: unknown): string {
+  if (error instanceof LlmError && error.code === 'QUOTA')
+    return 'Kuota layanan LLM sedang habis, jadi klaim belum dapat diekstrak. Coba lagi nanti.';
+  if (error instanceof LlmError && error.code === 'UNAVAILABLE')
+    return 'Layanan LLM sedang sibuk, jadi klaim belum dapat diekstrak. Coba lagi sebentar lagi.';
+  return 'Input atau ekstraksi tidak dapat diselesaikan.';
 }

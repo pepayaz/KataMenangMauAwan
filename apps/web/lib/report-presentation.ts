@@ -31,11 +31,11 @@ export type SourceChart = { key: string; title: string; note: string; rows: Char
 export function sourceCharts(evidence: Evidence[], claim?: Claim, verdict?: ClaimVerdict): SourceChart[] {
   const charts: SourceChart[] = [];
   const yieldLabels: Record<string, string> = {
-    'Angka Sectors dividend_yield_avg.avg_yield': 'Rata-rata Sectors', 'Yield TTM': '12 bulan terakhir',
+    'Angka Sectors dividend_yield_avg.avg_yield': 'Rata-rata tercatat', 'Yield TTM': '12 bulan terakhir',
     'Yield pembayaran khusus': 'Pembayaran khusus',
-    'Rata-rata mandiri sekitar 23,6%; ringkasan AGENTS.md, bukan dihitung ulang dari data tahunan di fixture': 'Rata-rata mandiri',
+    'Rata-rata mandiri sekitar 23,6%; ringkasan AGENTS.md, bukan dihitung ulang dari data tahunan di fixture': 'Rata-rata hitung ulang',
   };
-  const yieldMetrics: Record<string, string> = { 'dividend.avg_yield': 'Rata-rata Sectors', 'dividend.yield_ttm': '12 bulan terakhir' };
+  const yieldMetrics: Record<string, string> = { 'dividend.avg_yield': 'Rata-rata tercatat', 'dividend.yield_ttm': '12 bulan terakhir' };
   const yields = evidence.flatMap(record => {
     const meta = record.params.hunter;
     const metric = meta && typeof meta === 'object' && !Array.isArray(meta) ? (meta as Record<string, unknown>).metric : undefined;

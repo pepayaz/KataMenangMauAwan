@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -20,7 +20,6 @@ import {
   Search,
   ScanText,
   ShieldCheck,
-  X,
 } from "lucide-react";
 import {
   examples,
@@ -38,6 +37,8 @@ import CheckReport from "./check-report";
 import InputAdapter, { type InputMode } from "./input-adapter";
 import InputNumbers from './input-numbers';
 import InvestigationPreview from "./investigation-preview";
+import AboutContent from "./about-content";
+import SiteFooter from "./site-footer";
 import TraceTimeline from "./trace-timeline";
 import VerdictBadge from "./verdict-badge";
 import { InputAdaptationSchema, type CheckSource, type InputAdaptation } from "@cek-dulu/shared/schemas";
@@ -46,56 +47,10 @@ import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders, type RemoteCheck
 /** Nilai select untuk sebutan yang pengguna nyatakan bukan saham; dikirim sebagai ticker null. */
 const NOT_A_STOCK = "__bukan_saham__";
 
-type Page = "check" | "history" | "saved" | "guide";
+export type WorkspacePage = "check" | "history" | "saved" | "guide" | "about";
 
-
-function Modal({
-  title,
-  children,
-  onClose,
-}: {
-  title: string;
-  children: ReactNode;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const dialog = ref.current;
-    dialog?.showModal();
-    return () => { if (dialog?.open) dialog.close(); trigger?.focus({ preventScroll: true }); };
-  }, []);
-  return (
-    <dialog
-      ref={ref}
-      className="modal"
-      aria-labelledby="workspace-dialog-title"
-      onCancel={onClose}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div className="modal-head">
-        <span>Cek Dulu</span>
-        <button
-          className="icon-button"
-          onClick={onClose}
-          aria-label="Tutup dialog"
-        >
-          <X size={20} />
-        </button>
-      </div>
-      <h2 id="workspace-dialog-title">{title}</h2>
-      {children}
-      <button className="primary-button" onClick={onClose}>
-        Mengerti <Check size={17} />
-      </button>
-    </dialog>
-  );
-}
-
-export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
-  const [page, setPage] = useState<Page>("check");
+export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixtureDemo: boolean; initialPage?: WorkspacePage }) {
+  const [page, setPage] = useState<WorkspacePage>(initialPage);
   const [input, setInput] = useState("");
   const [inputSource, setInputSource] = useState<CheckSource>('paste');
   const [inputUrl, setInputUrl] = useState<string | undefined>();
@@ -109,7 +64,6 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
   const [running, setRunning] = useState(false);
   const [inputBusy, setInputBusy] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [modal, setModal] = useState<"about" | "evidence" | null>(null);
   const [toast, setToast] = useState("");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("Semua");
@@ -130,7 +84,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
     resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     resultRef.current?.focus({ preventScroll: true });
   }, [activeCheckId, running]);
-  useEffect(() => { void fetch('/api/check').then(response => response.json()).then(body => setLlmReady(body.llmConfigured === true)).catch(() => setLlmReady(false)); }, []);
+  useEffect(() => { if (initialPage === 'about') return; void fetch('/api/check').then(response => response.json()).then(body => setLlmReady(body.llmConfigured === true)).catch(() => setLlmReady(false)); }, [initialPage]);
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => { setHistory(readHistory()); setStorageReady(true); }, []);
   useEffect(() => {
@@ -157,13 +111,19 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  function navigate(next: Page) {
+  function navigate(next: WorkspacePage) {
+    if (initialPage === 'about') {
+      window.location.assign(next === 'check' ? '/check' : `/check?view=${next}`);
+      return;
+    }
     if (next === 'history') void loadRemote();
+    window.history.replaceState(window.history.state, '', next === 'check' ? '/check' : `/check?view=${next}`);
     setPage(next);
     setMobileMenu(false);
     setQuery("");
     setFilter("Semua");
   }
+  useEffect(() => { if (initialPage === 'history') void loadRemote(); }, [initialPage]);
   function acceptInput(prepared: InputAdaptation) {
     setMediaReady(true);
     setMediaNeedsText(prepared.status === 'needs_text');
@@ -172,6 +132,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
     timers.current.push(setTimeout(() => inputRef.current?.focus(), 0));
   }
   useEffect(() => {
+    if (initialPage === 'about') return;
     try {
       const shared = sessionStorage.getItem('cek-dulu-share-input');
       if (!shared) return;
@@ -179,7 +140,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
       const parsed = InputAdaptationSchema.safeParse(JSON.parse(shared));
       if (parsed.success) acceptInput(parsed.data);
     } catch { setError('Input berbagi belum dapat dibuka. Tempel teks atau unggah screenshot.'); }
-  }, []);
+  }, [initialPage]);
   function chooseExample(id: DemoId) {
     setInputMode('text'); setMediaReady(false);
     const example = examples.find((item) => item.id === id)!;
@@ -270,12 +231,8 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
       )}
       <aside id="workspace-navigation" className={`sidebar ${mobileMenu ? "is-open" : ""}`}>
         <a
-          href="#"
+          href="/"
           className="brand"
-          onClick={(event) => {
-            event.preventDefault();
-            navigate("check");
-          }}
         >
           <span className="brand-mark">
             <CheckCheck size={26} strokeWidth={3} />
@@ -314,12 +271,16 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
           <span>Cara kerja</span>
         </button>
         <div className="sidebar-bottom">
-          <button className="nav-item" onClick={() => setModal("about")}><CircleHelp size={19} /><span>Tentang Cek Dulu</span></button>
+          <a className={`nav-item ${page === 'about' ? 'active' : ''}`} href="/about" aria-current={page === 'about' ? 'page' : undefined}><CircleHelp size={19} /><span>Tentang Cek Dulu</span></a>
         </div>
       </aside>
 
       <div className="main-shell">
         <header className="topbar">
+          <a href="/" className="brand mobile-brand">
+            <span className="brand-mark"><CheckCheck size={26} strokeWidth={3} /></span>
+            <span>cek<span className="brand-light">dulu</span><span className="brand-period">.</span></span>
+          </a>
           <div className="breadcrumb">
             <button
               className="mobile-menu icon-button"
@@ -339,17 +300,8 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                   ? "Riwayat cek"
                   : page === "saved"
                     ? "Tersimpan"
-                    : "Cara kerja"}
+                    : page === "about" ? "Tentang" : "Cara kerja"}
             </b>
-          </div>
-          <div className="topbar-right">
-            <span className="demo-pill">
-              <span className="status-dot" /> {demo ? "Demo offline" : "Data tersimpan"}
-            </span>
-            <span className="topbar-divider" />
-            <button className="about-button" onClick={() => setModal("about")}>
-              Tentang Cek Dulu
-            </button>
           </div>
         </header>
         <main>
@@ -455,6 +407,11 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                 </section>
                 <InvestigationPreview disabled={running || inputBusy} onExplore={() => chooseExample('dividend')} />
               </div>
+              {!active && !running && !inputBusy && history[0] && <button type="button" className="recent-report" onClick={() => openReport(history[0]!)}>
+                <History size={20} aria-hidden="true" />
+                <span><small>Rapor terakhir{history[0].demo ? ' · contoh historis' : ''}</small><strong>{history[0].text}</strong></span>
+                <span className="recent-report-action">Buka rapor <ArrowRight size={17} aria-hidden="true" /></span>
+              </button>}
               {demo && <p className="demo-notice">Demo memakai data contoh historis, bukan data pasar terkini.</p>}
 
               {running && (
@@ -501,7 +458,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                 </section>
               )}
 
-              {llmReady === false && !demo && <p className="integration-error" role="status">Konfigurasi LLM belum tersedia. Pemeriksaan normal memerlukan konfigurasi server dan cache Sectors. Demo fixture dapat dipakai untuk menguji alur.</p>}
+              {llmReady === false && !demo && <p className="integration-error" role="status">Pemeriksaan belum tersedia. Konfigurasi AI dan data tersimpan perlu disiapkan di server. Contoh offline dapat dipakai untuk mencoba alur.</p>}
               {error && <p className="integration-error" role="alert">{error}</p>}
               {traces.length > 0 && !running && <details className="trace-panel">
                 <summary>Jejak pemeriksaan · {traces.length} event</summary>
@@ -671,7 +628,7 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
                   {
                     icon: ChartNoAxesCombined,
                     title: "Perbandingan data",
-                    text: "Pada produk terintegrasi, data Sectors menjadi pembanding. Perhitungan dilakukan oleh kode, dengan periode yang sesuai.",
+                    text: "Data saham menjadi pembanding. Angka diperiksa melalui perhitungan, dengan periode yang sesuai.",
                   },
                   {
                     icon: Layers3,
@@ -740,44 +697,21 @@ export default function Workspace({ fixtureDemo }: { fixtureDemo: boolean }) {
             </section>
           )}
 
+          {page === 'about' && <AboutContent />}
           {storageError && (
             <p className="storage-error" role="status">
               Browser tidak mengizinkan penyimpanan lokal. Riwayat hanya
               tersedia selama halaman ini terbuka.
             </p>
           )}
-          <footer>
-            <div>
-              <span className="footer-brand">
-                <CheckCheck size={17} /> cekdulu.
-              </span>
-            </div>
-            <p>Cek Dulu adalah alat informasi dan analisis, bukan nasihat investasi. Status klaim menilai kesesuaian klaim dengan data yang tersedia, bukan kelayakan membeli atau menjual saham. Data bersumber dari Sectors dan dapat tertinggal dari kondisi terkini. Lakukan riset sendiri sebelum mengambil keputusan.</p>
-            <button onClick={() => setModal("about")}>
-              Tentang Cek Dulu
-            </button>
-          </footer>
         </main>
+        <SiteFooter />
       </div>
       {toast && (
         <div className="toast" role="status">
           <Check size={17} />
           {toast}
         </div>
-      )}
-      {modal === "about" && (
-        <Modal
-          title="Tentang Cek Dulu"
-          onClose={() => setModal(null)}
-        >
-          <p>
-            Cek Dulu membantu investor ritel memahami klaim saham melalui bukti
-            dan konteks. Dibuat untuk Sectors Hackathon 2026.
-          </p>
-          <p>
-            Mode demo berisi ilustrasi offline. Pemeriksaan normal memerlukan konfigurasi server dan data cache yang tersedia.
-          </p>
-        </Modal>
       )}
 
     </div>

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { barScale, type SourceChart as ChartData } from '../lib/report-presentation';
 
 /** SVG plot plus visible values: keyboard, touch and hover select the same actual observation. */
-export default function SourceChart({ chart }: { chart: ChartData }) {
+export default function SourceChart({ chart, onSelectEvidence }: { chart: ChartData; onSelectEvidence?: (id: string) => void }) {
   const [selected, setSelected] = useState<number | null>(null);
   const scale = barScale(chart.rows.map(row => row.value));
   const height = chart.rows.length * 64 + 16;
@@ -17,11 +17,11 @@ export default function SourceChart({ chart }: { chart: ChartData }) {
           className={`chart-column chart-color-${index % 4} ${row.value < 0 ? 'is-negative' : ''} ${selected === index ? 'is-selected' : ''}`} />)}
       </svg>
       <div className="source-chart-rows">{chart.rows.map((row, index) => <button type="button" className="chart-observation" key={`${row.label}-${index}`}
-        aria-pressed={selected === index} onClick={() => setSelected(index)}
+        aria-pressed={selected === index} onClick={() => { setSelected(index); if (row.evidenceId) onSelectEvidence?.(row.evidenceId); }}
         onFocus={() => setSelected(index)} onMouseEnter={() => setSelected(index)} onMouseLeave={event => { if (!event.currentTarget.matches(':focus')) setSelected(null); }}>
         <span>{row.label}</span><strong>{row.display}</strong>
       </button>)}</div>
     </div></div>
-    <div className="chart-detail" role="status">{selected !== null ? chart.rows[selected]?.detail : 'Sentuh batang untuk melihat nilai lengkap'}</div>
+    <div className="chart-detail" role="status">{selected !== null ? chart.rows[selected]?.detail : onSelectEvidence ? 'Pilih angka untuk membuka buktinya' : 'Pilih batang untuk melihat nilai lengkap'}</div>
   </figure>;
 }

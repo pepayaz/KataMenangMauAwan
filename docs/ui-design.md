@@ -61,7 +61,7 @@ Referensi memberi prinsip, bukan salinan layout atau klaim pemasaran.
   Grafik membandingkan satuan yang sama dan memakai sumbu nol, termasuk nilai
   negatif. Data kosong tidak ditampilkan sebagai nol.
 - Panel sumber langsung membuka grafik SVG interaktif, termasuk ADRO tanpa
-  metadata riwayat: yield rata-rata Sectors, rata-rata mandiri, pembayaran khusus,
+  metadata riwayat: yield rata-rata tercatat, rata-rata hitung ulang, pembayaran khusus,
   dan TTM dibandingkan sebagai definisi berbeda, bukan timeline buatan. Jika
   hanya pembanding tersedia, grafik klaim vs data tetap ditampilkan. Batang bisa
   disentuh/difokuskan untuk nilai lengkap. Status dan tombol tutup tetap terlihat
@@ -92,8 +92,8 @@ memiliki bentuk berbeda sesuai fungsi.
   memakai jaringan mock, termasuk teks lama, fallback, error, dan batas unggahan.
 
 Viewport 1280 × 900 dan 390 × 844 diperiksa tanpa overflow horizontal.
-Pilihan input mobile memiliki tinggi 48px, CTA baca 54px. Kontras teks utama
-terhadap panel 14,90:1, teks bantuan 7,10:1, dan teks CTA 10,62:1.
+Pilihan input mobile memiliki tinggi 48px, CTA baca 54px. Pada palet dasar,
+kontras teks utama terhadap panel 14,90:1 dan teks bantuan 7,10:1.
 ADRO menghasilkan misleading, BBCA supported (fixture sintetis), dan BBRI
 out_of_scope melalui UI offline. Sumber, Escape/pengembalian fokus, simpan rapor,
 serta pencarian riwayat diperiksa langsung.
@@ -111,6 +111,46 @@ akurasi transkripsi langsung, dan kelengkapan cache pasar tidak dibuktikan oleh
 revisi tampilan. Belum ada uji usability bersama pengguna atau audit screen reader
 menyeluruh; penilaian estetika perlu tetap ditinjau tim.
 
+## Konsistensi dan aksen warna
+
+Judul Periksa klaim saham, Riwayat pemeriksaan, Rapor tersimpan, dan panduan
+memakai aturan tipografi yang sama: 28–36px sesuai lebar viewport, bobot 600,
+line-height 1,25. Logo kembali memakai simbol mint bergradien dengan sedikit
+kemiringan. Gradien putih–mint–lavender pada judul, mint–biru pada CTA, dan warna
+transparan pada latar/kartu menambah kedalaman tanpa mengurangi keterbacaan.
+Mode forced-colors kembali memakai warna sistem; reduced-motion tetap berlaku.
+Ukuran ketiga judul diverifikasi di browser: 32px / line-height 40px pada
+viewport 1280px, dan 28px / 35px pada viewport 390px, seluruhnya bobot 600.
+Kontras endpoint gradien CTA terhadap teks gelap minimal 9,75:1; endpoint
+gradien judul terhadap permukaan paling terang minimal 9,94:1.
+
+Label grafik menyebut Rata-rata tercatat dan Rata-rata hitung ulang; identitas
+Sectors tetap di bagian asal data, dokumentasi sumber, dan disclaimer. Bukti
+asli dan perhitungan tidak diubah. Gradien hanya presentasi, bukan indikator status.
+
+## Jika hasil pull masih menampilkan UI lama
+
+UI ini diimpor langsung oleh halaman utama, tanpa feature flag. CHECK_UI_PREVIEW
+hanya memilih direktori build, bukan desain. Service worker saat ini tidak
+menyimpan HTML, CSS, atau respons API, sehingga bukan cache offline desain baru.
+
+1. Pastikan checkout dan remote yang ditarik adalah feat/ui-investigation-console,
+   lalu cocokkan commit terbaru dengan GitHub. Pull branch lain tidak memindahkan
+   checkout secara otomatis.
+2. Hentikan proses server lama pada mesin tersebut. Build ulang tidak mengganti
+   proses next start yang sudah berjalan; proses itu perlu dijalankan ulang.
+3. Jalankan instalasi dan build dari root repo. Build dan start harus memakai
+   CHECK_UI_PREVIEW yang sama: default .next, atau preview .next-ui-preview.
+4. Buka port yang tertulis di terminal server baru. Port 3000 dapat masih dilayani
+   proses lama ketika proses baru berjalan pada 3001. Muat ulang penuh browser.
+5. Halaman Tentang Cek Dulu (/about), bagian Informasi versi, menampilkan revisi Git yang dimasukkan saat build.
+   Bandingkan nilai ini dengan commit lokal/remote. Nilainya adalah identitas sumber
+   saat kompilasi, bukan klaim bahwa deployment selalu mengikuti branch terbaru.
+
+Tanpa melihat checkout, revisi build, dan proses di mesin teman, penyebab spesifik
+belum dapat disimpulkan. Repo dan preview lokal saja tidak membuktikan keadaan
+mesin lain.
+
 ## Preview
 
 - [Input desktop](ui-preview-desktop.jpg)
@@ -118,3 +158,101 @@ menyeluruh; penilaian estetika perlu tetap ditinjau tim.
 - [Rapor ADRO offline](ui-preview-report.jpg)
 - [Panel sumber mobile](ui-preview-mobile.jpg)
 - [Ringkasan sumber desktop](ui-preview-sources.jpg)
+
+## Halaman Tentang dan akses rapor terakhir
+
+Tentang Cek Dulu menjadi route `/about` yang dapat dibuka langsung, dimuat ulang,
+dan dibagikan. Satu tautan berada di sidebar (menu pada mobile); akses berulang
+di header dan footer, status “Data tersimpan”, serta popup lama dihapus.
+Disclaimer footer tetap ada. Navigasi dari halaman Tentang kembali ke cek,
+riwayat, tersimpan, atau panduan melalui URL yang sesuai. Query tampilan tidak
+valid kembali ke cek klaim; perubahan tampilan internal juga memperbarui URL
+agar reload membuka tampilan yang sedang dilihat.
+
+Halaman menggunakan alur visual tiga tahap, penjelasan singkat peran AI,
+asal data, batas pemeriksaan, dan FAQ dengan disclosure native. Rincian versi
+build tetap dapat dibuka untuk membandingkan hasil pull/build di mesin lain.
+Halaman ini tidak meminta pemeriksaan AI dan tidak menghabiskan input Web Share
+Target yang masih menunggu ditinjau.
+
+Ruang kosong pada halaman cek diisi akses cepat ke rapor terakhir **hanya bila
+riwayat lokal tersedia**. Teks berasal dari rapor yang ada; label contoh historis
+dipertahankan. Membukanya tidak menjalankan cek baru. Tidak ada statistik,
+aktivitas pasar, atau hasil pemeriksaan yang dibuat untuk dekorasi.
+
+Ikon dan ilustrasi alur memakai dependensi Lucide yang sudah ada. Lisensi
+[Lucide](https://lucide.dev/license) adalah ISC, dengan ikon turunan Feather
+berlisensi MIT; pemberitahuan lisensi disertakan oleh paket. Asset raster baru
+dan dependensi tambahan tidak diperlukan. Gradien lembut, logo mint, kontras,
+aturan ukuran judul, reduced-motion, dan forced-colors yang ada dipertahankan.
+
+Verifikasi: 770 test di 27 file dan typecheck lulus. Preview desktop 1280 × 900
+serta mobile 390 × 844 diperiksa tanpa overflow horizontal. FAQ dapat dibuka
+melalui keyboard, menu mobile memuat satu akses Tentang, dan rapor terakhir
+membuka hasil historis yang sudah tersimpan. Pengujian ini tidak memakai API
+Sectors live atau membuktikan kesiapan layanan eksternal di mesin lain.
+
+## Footer
+
+Footer memakai identitas produk yang sama dengan sidebar, copyright tahun
+berjalan, serta atribusi Sectors yang mengarah ke dokumentasi sumber data.
+Tidak ada akses Tentang tambahan, tautan kebijakan yang belum dibuat, atau
+badge kepercayaan tanpa dasar. Garis pemisah beraksen mint dan jarak konsisten
+menutup halaman tanpa bersaing dengan tombol pemeriksaan.
+
+Seluruh kalimat disclaimer bagian 14 AGENTS.md tetap tampil permanen.
+Pesan bukan nasihat investasi diberi bobot lebih kuat; kalimat tentang
+kesesuaian klaim berada di kolom kiri dan keterbatasan data di kanan.
+Pada ponsel, semuanya mengikuti satu kolom dengan pemisahan antarbagian.
+Footer berada di luar main sebagai landmark contentinfo yang diberi nama;
+ikon dekoratif tidak dibaca screen reader. Tautan sumber memiliki area sentuh
+44px dan label aksesibel yang menyebut tab baru. Tidak ada teks disclaimer
+yang disembunyikan dalam disclosure.
+
+Verifikasi footer: 772 test / 27 file dan typecheck lulus, termasuk penjagaan
+teks disclaimer lengkap serta satu akses Tentang pada halaman cek dan About.
+Tampilan desktop 1280px dan ponsel 390px diperiksa tanpa overflow horizontal.
+
+## Arah visual solid dengan aksen lebih berani
+
+Revisi ini mengikuti pilihan pengguna: seluruh aplikasi tetap gelap, dengan
+warna lebih menonjol dan tanpa glassmorphism. Panel input memakai permukaan
+cobalt solid; tindakan utama memakai mint; konteks dan status menyesatkan memakai
+amber. Riwayat, tersimpan, panduan, Tentang, rapor, dan sumber mengikuti palet
+yang sama. Ukuran judul halaman tetap menggunakan satu token, dengan bobot lebih
+tegas. Logo mint dipertahankan. Gradien hanya menjadi aksen kecil pada identitas
+dan tipografi; kartu tidak memakai blur atau permukaan kaca transparan.
+
+Contoh ADRO menjadi tumpukan dokumen dengan pilihan Klaim, Data, dan Konteks.
+Perpindahan lapisan menggunakan animasi CSS singkat dan bisa dilakukan lewat
+keyboard. Angka berasal dari fixture yang sudah ada, termasuk pembayaran khusus
+terkait pemisahan AADI; tanggal dan label historis tetap terlihat. Perpindahan
+lapisan tidak menjalankan pemeriksaan atau meminta layanan eksternal. Tidak ada
+angka dekoratif, progres palsu, atau animasi count-up. Reduced-motion menonaktifkan
+animasi dan memiringkan kembali lembar depan menjadi posisi datar.
+
+Memilih batang grafik sumber membuka nilai lengkap, waktu pengambilan, asal,
+serta periode atau rumus bila tersedia di evidence. Hover hanya menunjukkan
+ringkasan; bukti dibuka melalui klik atau aktivasi keyboard. Tombol Bukti konteks
+membuka evidence yang dirujuk hipotesis langsung di bagian atas panel. Panel
+tetap memuat kesimpulan, seluruh sumber, pencarian, dan akses dokumentasi. Saat
+ditutup, fokus kembali ke tombol asal. Format angka, perhitungan, adjudicator,
+kontrak shared, dan integrasi backend tidak berubah.
+
+Referensi: [anti-slop](https://github.com/miqdadbadjuber/anti-slop) digunakan
+sebagai filter untuk menghindari copy pengisi dan UI tanpa tujuan; repo tersebut
+sendiri membedakan filter kualitas dari arah desain. [Linear](https://linear.app/)
+menjadi referensi hierarki produk dan interaksi, sedangkan
+[Koyfin](https://www.koyfin.com/features/custom-dashboards/) menjadi referensi
+visualisasi data finansial. Tidak menyalin layout atau memasukkan widget pasar
+tanpa data. Komponen memakai React, CSS, SVG, dan Lucide yang sudah tersedia;
+tidak menambahkan dependensi WebGL atau asset eksternal yang menghalangi input.
+
+Verifikasi: 775 test di 27 file dan typecheck lulus. Interaksi lapisan, pilihan
+grafik-ke-bukti, pemulihan fokus, asal fixture, periode, dan rumus memiliki test.
+Desktop 1280px serta ponsel 390px dan 320px diperiksa tanpa overflow horizontal.
+Pasangan warna utama memiliki kontras 5,58:1 (teks putih pada cobalt), 13,30:1
+(tombol mint), 9,88:1 (status amber), serta 10,50:1 (teks sekunder pada canvas).
+Ini pemeriksaan komponen utama, bukan sertifikasi aksesibilitas seluruh produk.
+Pemeriksaan UI memakai rapor historis lokal dan test mock; tidak memakai kredit
+Sectors live atau melakukan pembacaan video berbayar.
