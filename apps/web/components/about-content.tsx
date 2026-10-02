@@ -12,7 +12,7 @@ export default function AboutContent() {
           <li><span className="about-flow-icon"><ChartNoAxesCombined size={27} aria-hidden="true" /></span><div><strong>Angka & konteks</strong><span>Dibandingkan dengan data yang tersedia</span></div></li>
           <li><span className="about-flow-icon"><ShieldCheck size={27} aria-hidden="true" /></span><div><strong>Rapor klaim</strong><span>Status, pembanding, dan sumber</span></div></li>
         </ol>
-        <a href="/?view=guide" className="about-detail-link">Pelajari arti setiap status <ArrowRight size={17} aria-hidden="true" /></a>
+        <a href="/check?view=guide" className="about-detail-link">Pelajari arti setiap status <ArrowRight size={17} aria-hidden="true" /></a>
       </article>
       <div className="about-boundaries">
         <article><Workflow size={22} aria-hidden="true" /><div><h2>Peran AI</h2><p>Membaca konten dan menulis penjelasan. Perhitungan angka dan status ditentukan oleh aturan program.</p></div></article>
@@ -27,6 +27,6 @@ export default function AboutContent() {
       <details><summary>Bagaimana dengan screenshot dan video?<ChevronDown size={18} aria-hidden="true" /></summary><p>Hasil pembacaan perlu ditinjau sebelum diperiksa. Koreksi ticker, angka, dan teks yang keliru. Jika platform membatasi akses video, gunakan unggah video, screenshot, atau teks.</p></details>
       <details><summary>Apa yang tersimpan di riwayat?<ChevronDown size={18} aria-hidden="true" /></summary><p>Riwayat browser menyimpan teks dan hasil pemeriksaan. Jika penyimpanan server tersedia, rapor juga dapat tersimpan di server. Media diproses sementara; berkas screenshot dan video tidak disimpan sebagai riwayat.</p></details>
     </section>
-    <div className="about-bottom"><a className="primary-button" href="/">Periksa klaim <ArrowRight size={18} aria-hidden="true" /></a><details className="about-version"><summary>Informasi versi</summary><p className="build-revision">Revisi sumber saat build: {process.env.NEXT_PUBLIC_SOURCE_REVISION ?? 'tidak tersedia'}</p></details></div>
+    <div className="about-bottom"><a className="primary-button" href="/check">Periksa klaim <ArrowRight size={18} aria-hidden="true" /></a><details className="about-version"><summary>Informasi versi</summary><p className="build-revision">Revisi sumber saat build: {process.env.NEXT_PUBLIC_SOURCE_REVISION ?? 'tidak tersedia'}</p></details></div>
   </section>;
 }

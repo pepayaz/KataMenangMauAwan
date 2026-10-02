@@ -10,6 +10,7 @@ import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders } from '../lib/hi
 import CheckReport from '../components/check-report';
 import Workspace from '../components/workspace';
 import Home from '../app/page';
+import CheckPage from '../app/check/page';
 import About from '../app/about/page';
 import TraceTimeline from '../components/trace-timeline';
 import { explanationParts } from '../lib/report-presentation';
@@ -30,6 +31,19 @@ function sqlFixture() {
   };
 }
 describe('rapor dan riwayat UI memakai hasil shared', () => {
+  it('beranda memakai landing dengan satu CTA relatif dan disclaimer lengkap', async () => {
+    const html = renderToStaticMarkup(await Home({ searchParams: Promise.resolve({}) }));
+    expect(html).toContain('Klaim saham.');
+    expect(html).toContain('href="/check"');
+    expect(html.match(/Periksa klaim/g)).toHaveLength(1);
+    expect(html).not.toContain('localhost');
+    expect(html).not.toContain('Preview desain');
+    expect(html).toContain('bukan nasihat investasi');
+    expect(html).not.toContain('<textarea');
+  });
+  it.each(['history', 'saved', 'guide'])('deep link lama %s dialihkan ke checker', async view => {
+    await expect(Home({ searchParams: Promise.resolve({ view }) })).rejects.toMatchObject({ digest: expect.stringContaining(`/check?view=${view}`) });
+  });
   it.each(['check', 'about'] as const)('footer %s mempertahankan seluruh disclaimer dengan landmark dan sumber yang jelas', initialPage => {
     const html = renderToStaticMarkup(createElement(Workspace, { fixtureDemo: true, initialPage }));
     expect(html).toContain('</main><footer class="site-footer" aria-label="Informasi Cek Dulu">');
@@ -56,12 +70,12 @@ describe('rapor dan riwayat UI memakai hasil shared', () => {
     expect(about).toContain('bukan nasihat investasi');
   });
   it.each([['history', 'Riwayat pemeriksaan'], ['saved', 'Rapor tersimpan'], ['guide', 'Cara kerja']])('tautan kembali dari Tentang membuka tampilan %s', async (view, heading) => {
-    const html = renderToStaticMarkup(await Home({ searchParams: Promise.resolve({ view }) }));
+    const html = renderToStaticMarkup(await CheckPage({ searchParams: Promise.resolve({ view }) }));
     expect(html).toContain(heading);
     expect(html).not.toContain('id="claim"');
   });
   it.each(['about', 'invalid', ['history', 'saved']])('query tampilan tidak valid kembali ke pemeriksaan: %s', async view => {
-    const html = renderToStaticMarkup(await Home({ searchParams: Promise.resolve({ view }) }));
+    const html = renderToStaticMarkup(await CheckPage({ searchParams: Promise.resolve({ view }) }));
     expect(html).toContain('<h1>Periksa klaim saham</h1>');
   });
   it.each(checkFixtures)('menampilkan verdict backend $input.checkId tanpa fixture UI sendiri', fixture => {

@@ -1,6 +1,6 @@
 # Usulan landing Cek Dulu
 
-Status: preview interaktif untuk persetujuan; belum mengganti halaman utama.
+Status: disetujui dan diintegrasikan ke aplikasi Next.js; halaman utama sekarang memakai landing.
 
 ## Arah yang disarankan
 
@@ -10,15 +10,15 @@ Visual utama berupa tiga lembar bukti dalam ruang 3D: Klaim, Data, Konteks. Poin
 
 CTA bagian akhir “Punya klaim untuk diperiksa?”/“Buka pemeriksaan” dan shortcut pemeriksaan di navigasi atas dihapus karena tujuannya sama dengan CTA hero. Satu tombol Periksa klaim di hero menjadi pintu masuk pemeriksaan. Navigasi atas hanya memuat Tentang. Footer hanya memuat atribusi sumber dan disclaimer lengkap. Tidak membuat grid fitur atau paragraf pemasaran panjang.
 
-## Routing saat diterapkan
+## Routing yang diterapkan
 
 - `/`: landing baru.
 - `/check`: pemeriksaan saat ini, termasuk query view riwayat/tersimpan/panduan.
 - `/about`: tetap halaman tentang.
-- Tautan lama `/?view=history|saved|guide` perlu diarahkan ke tampilan setara pada `/check`, bukan kehilangan riwayat.
-- Audit tautan logo, footer, share target, halaman detail dan manifest sebelum memindahkan checker. Tidak mengubah pipeline atau penyimpanan riwayat.
+- Tautan lama `/?view=history|saved|guide` dialihkan ke tampilan setara pada `/check`.
+- Logo workspace kembali ke landing. Tentang, navigasi pemeriksaan dan handoff share target menuju `/check`. Manifest tetap mulai di `/` dengan scope `/`, sehingga `/check` termasuk aplikasi PWA. Tidak mengubah pipeline atau penyimpanan riwayat.
 
-Preview HTML sengaja memakai shortcut localhost:3001 yang masih menuju checker saat ini. Preview bukan route produk final.
+Preview HTML tetap menjadi arsip desain. Produk memakai komponen React Landing, aset/font lokal dan stylesheet tersendiri yang dibatasi pada `.landing`. Tidak ada ketergantungan pada port preview 3013 atau tautan localhost di komponen produk. Angka contoh memakai evidence fixture shared. Footer produk memakai SiteFooter yang sama dengan checker.
 
 ## Gerak, aksesibilitas, performa
 

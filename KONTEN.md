@@ -189,3 +189,7 @@ Logo, tahun hak cipta aktual, “Sumber data saham”, dan tautan “Sectors” 
 `design.md` milik pengguna sudah ada dan tidak ditimpa. Pada Windows, `DESIGN.md` dan `design.md` menunjuk nama file yang sama. Arahan lama tentang glass/glow dan tiga keluarga font perlu diganti melalui persetujuan fase desain, bukan diterapkan otomatis. `docs/ui-design.md` menjadi catatan implementasi terdahulu, bukan persetujuan desain baru.
 
 Sumber inventaris: AGENTS.md proyek; `apps/web/components/workspace.tsx`, `input-adapter.tsx`, `check-report.tsx`, `about-content.tsx`, `site-footer.tsx`; `apps/web/lib/check-view.ts`; `packages/shared/fixtures/index.ts`; serta panduan yang diberikan pengguna di direktori Kakas.
+
+## Landing yang disetujui
+
+Beranda `/` memakai judul “Klaim saham. Lihat buktinya.”, satu kalimat pengantar, satu CTA Periksa klaim ke `/check`, contoh historis ADRO berlapis dengan panah samping, akses Tentang dan footer disclaimer lengkap. Daftar format input, CTA duplikat serta kontrol berteks di bawah kartu tidak ditampilkan. Pemeriksaan, riwayat, rapor tersimpan dan panduan tersedia pada `/check`.

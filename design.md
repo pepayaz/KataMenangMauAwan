@@ -158,3 +158,7 @@ Teknologi awal: React state, HTML/CSS transforms dan SVG grafik. Tidak memerluka
 Implementasi dan hasil validasi terbaru dicatat di docs/design-implementation-review.md. Catatan “belum diterapkan” pada bagian fase awal merupakan riwayat pengambilan keputusan; token slate–biru dan font lokal kini sudah dipakai aplikasi.
 
 Tidak ada perubahan kode produk, dependency, atau konfigurasi pada Fase 3. Nama file tetap `design.md` mengikuti file yang sudah ada; pada Windows ini adalah file yang sama dengan `DESIGN.md`.
+
+## Landing terintegrasi
+
+Landing yang disetujui memakai latar slate dengan warna biru, teal dan ungu; lembar solid dalam CSS perspective, bukan glassmorphism atau model WebGL. Navigasi manual berupa panah pada sisi kartu, tanpa caption, indikator dan tombol pause di bawah. Gerak otomatis dijeda saat hover/fokus, tab tidak aktif atau visual keluar layar; reduced-motion dihormati. Semua aturan landing dibatasi pada `.landing`, font lokal dan footer digunakan bersama aplikasi.

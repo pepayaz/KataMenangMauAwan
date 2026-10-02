@@ -9,4 +9,4 @@ export async function POST(request: Request): Promise<Response> {
   try { return shareHandoff(await readSharedInput(request)); }
   catch (cause) { return inputFailure(cause); }
 }
-export function GET(): Response { return new Response(null, { status: 303, headers: { Location: '/' } }); }
+export function GET(): Response { return new Response(null, { status: 303, headers: { Location: '/check' } }); }

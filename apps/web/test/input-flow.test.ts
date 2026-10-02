@@ -68,7 +68,7 @@ it('navigasi memperbarui URL agar reload tidak kembali ke tampilan sebelumnya', 
   fireEvent.click(screen.getByRole('button', { name: 'Cara kerja' }));
   expect(window.location.search).toBe('?view=guide');
   fireEvent.click(screen.getByRole('button', { name: 'Cek klaim' }));
-  expect(window.location.pathname + window.location.search).toBe('/');
+  expect(window.location.pathname + window.location.search).toBe('/check');
 });
 describe('alur pembacaan media', () => {
   it('menampilkan tindakan baca dan menyembunyikan cek sampai teks dapat ditinjau', async () => {

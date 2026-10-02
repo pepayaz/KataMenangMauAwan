@@ -113,11 +113,11 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
 
   function navigate(next: WorkspacePage) {
     if (initialPage === 'about') {
-      window.location.assign(next === 'check' ? '/' : `/?view=${next}`);
+      window.location.assign(next === 'check' ? '/check' : `/check?view=${next}`);
       return;
     }
     if (next === 'history') void loadRemote();
-    window.history.replaceState(window.history.state, '', next === 'check' ? '/' : `/?view=${next}`);
+    window.history.replaceState(window.history.state, '', next === 'check' ? '/check' : `/check?view=${next}`);
     setPage(next);
     setMobileMenu(false);
     setQuery("");
@@ -233,10 +233,6 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
         <a
           href="/"
           className="brand"
-          onClick={(event) => {
-            event.preventDefault();
-            navigate("check");
-          }}
         >
           <span className="brand-mark">
             <CheckCheck size={26} strokeWidth={3} />
@@ -281,7 +277,7 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
 
       <div className="main-shell">
         <header className="topbar">
-          <a href="/" className="brand mobile-brand" onClick={event => { event.preventDefault(); navigate('check'); }}>
+          <a href="/" className="brand mobile-brand">
             <span className="brand-mark"><CheckCheck size={26} strokeWidth={3} /></span>
             <span>cek<span className="brand-light">dulu</span><span className="brand-period">.</span></span>
           </a>
