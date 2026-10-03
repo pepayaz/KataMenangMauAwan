@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Activity,
@@ -34,18 +36,54 @@ import {
 } from "lucide-react";
 import {
   examples,
-  readHistory,
-  storageKey,
   type DemoId,
-  type HistoryItem,
 } from "./demo";
+import { InputAdaptationSchema, type CheckResult, type CheckSource, type InputAdaptation, type TraceEvent, type Verdict } from "../../packages/shared/src/schemas";
+import { readCheckStream } from "../../apps/web/lib/check-stream";
+import { HistoryItemSchema, formatEvidence, readHistory, storageKey, type HistoryItem } from "../../apps/web/lib/check-view";
+import { readTickerChoices, type UiTickerChoice } from "../../apps/web/lib/ticker-choices";
 
 type Page = "landing" | "check" | "history" | "saved";
 type Phase = "idle" | "analyzing" | "result";
 type InputMode = "text" | "screenshot" | "link" | "video";
 type LandingView = "home" | "product" | "how" | "data";
 
-type DemoFixture = (typeof examples)[number];
+type UiFixture = {
+  ticker: string; category: string; status: string; shortStatus: string; tone: string;
+  headline: string; summary: string; claimed: string; verified: string; delta: string;
+  context: string; detail: string; evidenceCount: number; duration: string;
+  evidence: readonly { label: string; value: string; flag: string }[];
+  hypotheses: readonly { code: string; status: string }[]; source: string;
+};
+type DemoFixture = UiFixture;
+
+const verdictPresentation: Record<Verdict, Pick<UiFixture, "status" | "shortStatus" | "tone" | "headline">> = {
+  supported: { status: "Didukung", shortStatus: "SUPPORTED", tone: "lime", headline: "Klaim ini sesuai dengan data pembanding." },
+  refuted: { status: "Dibantah", shortStatus: "REFUTED", tone: "red", headline: "Angka dalam klaim tidak cocok dengan pembanding." },
+  misleading: { status: "Benar, tapi menyesatkan", shortStatus: "MISLEADING", tone: "amber", headline: "Angkanya cocok. Konteksnya mengubah cerita." },
+  unverifiable: { status: "Tidak bisa diverifikasi", shortStatus: "UNVERIFIABLE", tone: "violet", headline: "Data yang tersedia belum cukup untuk memeriksa klaim ini." },
+  out_of_scope: { status: "Di luar cakupan", shortStatus: "OUT OF SCOPE", tone: "neutral", headline: "Pernyataan ini berupa prediksi atau opini, bukan klaim faktual." },
+};
+
+function resultFixture(result: CheckResult): UiFixture | undefined {
+  const verdict = result.verdicts[0];
+  if (!verdict) return undefined;
+  const claim = result.claims.find(item => item.claimId === verdict.claimId);
+  const evidence = result.evidence.filter(item => verdict.evidenceIds.includes(item.evidenceId));
+  const presentation = verdictPresentation[verdict.verdict]!;
+  const claimed = claim?.asserted.value === undefined ? "—" : formatEvidence({ value: claim.asserted.value, unit: claim.asserted.unit });
+  const computedEvidence = verdict.computed ? result.evidence.find(item => item.evidenceId === verdict.computed?.evidenceId) : undefined;
+  return {
+    ticker: claim?.ticker ?? "—", category: claim?.type.replaceAll("_", " ").toUpperCase() ?? "UNRESOLVED",
+    ...presentation, summary: verdict.explanation, claimed,
+    verified: computedEvidence ? formatEvidence(computedEvidence) : "—", delta: "—",
+    context: verdict.missingContext[0]?.summary ?? "Tidak ada konteks tambahan yang terpicu.",
+    detail: verdict.explanation, evidenceCount: evidence.length, duration: `${result.creditsUsed} kredit`,
+    evidence: evidence.map(item => ({ label: item.label, value: formatEvidence(item), flag: item.cached ? "CACHE" : "EVIDENCE" })),
+    hypotheses: verdict.missingContext.map(item => ({ code: item.hypId, status: "TRIGGERED" })),
+    source: [...new Set(evidence.map(item => item.tool))].join(" · ") || "EVIDENCE BACKEND",
+  };
+}
 
 const investigationSteps = [
   {
@@ -286,7 +324,7 @@ function LegalStrip() {
     <div className="legal-strip">
       <ShieldCheck size={14} />
       <span>
-        Cek Dulu adalah alat informasi dan analisis, bukan nasihat investasi. Status klaim menilai kesesuaian klaim dengan data yang tersedia, bukan kelayakan membeli atau menjual saham.
+        Cek Dulu adalah alat informasi dan analisis, bukan nasihat investasi. Status klaim menilai kesesuaian klaim dengan data yang tersedia, bukan kelayakan membeli atau menjual saham. Data bersumber dari Sectors dan dapat tertinggal dari kondisi terkini. Lakukan riset sendiri sebelum mengambil keputusan.
       </span>
     </div>
   );
@@ -408,9 +446,9 @@ function LandingPage({
         </nav>
         <div className="landing-nav-actions">
           <button className="nav-login" onClick={() => enterWorkspace(false)}>Masuk</button>
-          <button className="nav-cta" onClick={() => enterWorkspace(false)}>
-            Cek klaim <ArrowUpRight size={15} />
-          </button>
+          <a className="nav-cta" href="/check" onClick={(event) => { event.preventDefault(); enterWorkspace(false); }}>
+            Periksa klaim <ArrowUpRight size={15} />
+          </a>
         </div>
       </header>
 
@@ -427,11 +465,11 @@ function LandingPage({
           <div className="landing-copy landing-intro-copy">
             <div className="eyebrow"><span className="pulse-dot" /> AI CLAIM VERIFICATION / SECTORS DATA</div>
             <h1>
-              Sebelum ikut hype,
+              Klaim saham. Sebelum ikut hype,
               <span>cek dulu angkanya.</span>
             </h1>
             <p>
-              Pecah klaim saham menjadi evidence, konteks, dan verdict yang bisa diperiksa — tanpa mengubahnya menjadi rekomendasi beli atau jual.
+              Pecah klaim saham menjadi evidence, konteks, dan verdict yang bisa diperiksa — tanpa memberi rekomendasi transaksi.
             </p>
 
             <form
@@ -466,7 +504,7 @@ function LandingPage({
                 </button>
               ))}
             </div>
-            <div className="hero-footnote"><LockKeyhole size={13} /> Frontend demo · tidak ada order broker · tidak ada rekomendasi transaksi</div>
+            <div className="hero-footnote"><LockKeyhole size={13} /> Terhubung ke backend · tidak ada order broker · tidak ada rekomendasi transaksi</div>
           </div>
 
           <div className="landing-visual landing-intro-visual">
@@ -644,7 +682,7 @@ function AppSidebar({
       </div>
       <div className="sidebar-bottom">
         <LockKeyhole size={14} />
-        <div><b>PRIVASI</b><small>Diproses lokal</small></div>
+        <div><b>PRIVASI</b><small>Media diproses sementara</small></div>
       </div>
     </aside>
   );
@@ -657,9 +695,9 @@ function AppTopbar({ phase }: { phase: Phase }) {
         <span>CEK DULU</span><i>/</i><span>CHECK</span><i>/</i><b>{phase === "idle" ? "NEW ANALYSIS" : phase === "analyzing" ? "LIVE INVESTIGATION" : "REPORT"}</b>
       </div>
       <div className="instrument-status">
-        <span><i className="status-light" /> FIXTURE READY</span>
+        <span><i className="status-light" /> BACKEND READY</span>
         <em />
-        <span>DATA MODE: STATIC</span>
+        <span>DATA MODE: CACHE ONLY</span>
         <em />
         <span>DESKTOP / 01</span>
       </div>
@@ -705,12 +743,14 @@ function IdleCheck({
   running,
   chooseExample,
   startCheck,
+  onPrepared,
 }: {
   input: string;
   setInput: (value: string) => void;
   running: boolean;
   chooseExample: (id: DemoId) => void;
   startCheck: () => void;
+  onPrepared: (input: InputAdaptation) => void;
 }) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [mode, setMode] = useState<InputMode>("text");
@@ -751,23 +791,28 @@ function IdleCheck({
     setMediaMessage("");
   }
 
-  function prepareMedia() {
+  async function prepareMedia() {
     if (reading) return;
     if (mode === "link" && !videoUrl.trim()) return;
     if ((mode === "screenshot" || mode === "video") && !mediaFile) return;
     setReading(true);
     setMediaMessage("");
-    if (readTimer.current) clearTimeout(readTimer.current);
-    readTimer.current = setTimeout(() => {
-      const demo = mode === "screenshot" ? examples[0] : mode === "link" ? examples[2] : examples[1];
-      setInput(demo.text);
-      setReading(false);
-      setMediaMessage(
-        mode === "screenshot"
-          ? "Simulasi OCR frontend selesai. Tinjau teks sebelum memulai cek."
-          : "Simulasi pembacaan video frontend selesai. Tinjau teks sebelum memulai cek.",
-      );
-    }, 720);
+    try {
+      let body: FormData | string;
+      if (mode === "link") body = JSON.stringify({ url: videoUrl.trim() });
+      else {
+        if (!mediaFile) throw new Error("Pilih berkas terlebih dahulu.");
+        body = new FormData(); body.set(mode === "screenshot" ? "image" : "video", mediaFile);
+      }
+      const response = await fetch("/api/input", { method: "POST", body,
+        ...(typeof body === "string" ? { headers: { "Content-Type": "application/json" } } : {}) });
+      const payload: unknown = await response.json();
+      if (!response.ok) throw new Error(payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string" ? payload.error : "Input belum dapat dibaca.");
+      const prepared = InputAdaptationSchema.parse(payload);
+      setInput(prepared.rawText); onPrepared(prepared);
+      setMediaMessage(prepared.warnings.join(" ") || "Pembacaan selesai. Tinjau teks sebelum memulai cek.");
+    } catch (cause) { setMediaMessage(cause instanceof Error ? cause.message : "Input belum dapat dibaca."); }
+    finally { setReading(false); }
   }
 
   const mediaReady = mode === "link" ? Boolean(videoUrl.trim()) : Boolean(mediaFile);
@@ -787,7 +832,7 @@ function IdleCheck({
         <section className="input-chamber">
           <div className="chamber-topstrip">
             <span>CLAIM INPUT / MULTI-SOURCE</span>
-            <span className="ready-indicator"><i /> FRONTEND DEMO</span>
+            <span className="ready-indicator"><i /> BACKEND CONNECTED</span>
           </div>
           <form
             onSubmit={(event) => {
@@ -855,8 +900,8 @@ function IdleCheck({
                   {mediaFile && <div className="file-readout"><span>{mediaFile.name}</span><b>{(mediaFile.size / 1024 / 1024).toFixed(2)} MB</b></div>}
                 </label>
                 <div className="media-action-row">
-                  <span><FileSearch size={14} /> UI akan menampilkan hasil OCR sebagai teks yang bisa diedit.</span>
-                  <button type="button" onClick={prepareMedia} disabled={!mediaReady || reading}>{reading ? "MEMBACA…" : input ? "BACA ULANG" : "BACA TEKS SCREENSHOT"}</button>
+                  <span><FileSearch size={14} /> Hasil OCR backend ditampilkan sebagai teks yang bisa diedit.</span>
+                  <button type="button" onClick={() => void prepareMedia()} disabled={!mediaReady || reading}>{reading ? "MEMBACA…" : input ? "BACA ULANG" : "BACA TEKS SCREENSHOT"}</button>
                 </div>
               </div>
             )}
@@ -887,8 +932,8 @@ function IdleCheck({
                   <div className="link-node accent"><Fingerprint size={19} /><span>CLAIMS</span></div>
                 </div>
                 <div className="media-action-row">
-                  <span><FileSearch size={14} /> Audio dan tulisan video disimulasikan sebagai input teks pada demo ini.</span>
-                  <button type="button" onClick={prepareMedia} disabled={!mediaReady || reading}>{reading ? "MEMBACA…" : input ? "BACA ULANG" : "BACA ISI VIDEO"}</button>
+                  <span><FileSearch size={14} /> Audio dan tulisan video dibaca server lalu ditinjau sebagai teks.</span>
+                  <button type="button" onClick={() => void prepareMedia()} disabled={!mediaReady || reading}>{reading ? "MEMBACA…" : input ? "BACA ULANG" : "BACA ISI VIDEO"}</button>
                 </div>
               </div>
             )}
@@ -917,8 +962,8 @@ function IdleCheck({
                   {mediaFile && <div className="file-readout"><span>{mediaFile.name}</span><b>{(mediaFile.size / 1024 / 1024).toFixed(2)} MB</b></div>}
                 </label>
                 <div className="media-action-row">
-                  <span><FileSearch size={14} /> Berkas hanya dipreview lokal; tidak diunggah ke backend.</span>
-                  <button type="button" onClick={prepareMedia} disabled={!mediaReady || reading}>{reading ? "MEMBACA…" : input ? "BACA ULANG" : "BACA ISI VIDEO"}</button>
+                  <span><FileSearch size={14} /> Berkas diproses sementara dan tidak disimpan dalam riwayat.</span>
+                  <button type="button" onClick={() => void prepareMedia()} disabled={!mediaReady || reading}>{reading ? "MEMBACA…" : input ? "BACA ULANG" : "BACA ISI VIDEO"}</button>
                 </div>
               </div>
             )}
@@ -927,7 +972,7 @@ function IdleCheck({
               <div className="prepared-text-panel">
                 <div className="prepared-text-head"><span>TEKS HASIL PEMBACAAN / EDITABLE</span><span><CheckCircle2 size={13} /> READY</span></div>
                 <textarea value={input} maxLength={5000} onChange={(event) => setInput(event.target.value)} aria-label="Teks klaim saham" />
-                <div className="prepared-status"><span>{mediaMessage}</span><small>SIMULASI FRONTEND · TANPA OCR / VIDEO API</small></div>
+                <div className="prepared-status"><span>{mediaMessage}</span><small>HASIL BACKEND · TINJAU SEBELUM CEK</small></div>
               </div>
             )}
 
@@ -944,7 +989,7 @@ function IdleCheck({
             </div>
 
             <div className="chamber-dock">
-              <div><Database size={15} /><span>Semua mode input di halaman ini hanya simulasi frontend; tidak ada request ke backend.</span></div>
+              <div><Database size={15} /><span>Pemeriksaan memakai backend dan data Sectors dalam mode cache_only.</span></div>
               <button type="submit" className="primary-action" disabled={!input.trim() || running || reading}>
                 Periksa klaim <ArrowRight size={17} />
               </button>
@@ -962,10 +1007,12 @@ function AnalyzingView({
   input,
   activeStep,
   fixture,
+  traces,
 }: {
   input: string;
   activeStep: number;
   fixture: DemoFixture | undefined;
+  traces: TraceEvent[];
 }) {
   return (
     <div className="workspace-page analyzing-view">
@@ -984,7 +1031,7 @@ function AnalyzingView({
 
       <div className="analysis-grid">
         <section className="trace-console">
-          <div className="trace-console-head"><span><Activity size={15} /> LIVE INVESTIGATION</span><span>STREAM / UI SIMULATION</span></div>
+          <div className="trace-console-head"><span><Activity size={15} /> LIVE INVESTIGATION</span><span>STREAM / SERVER EVENTS</span></div>
           <div className="trace-timeline">
             {investigationSteps.map((stage, index) => {
               const state = index < activeStep ? "complete" : index === activeStep ? "active" : "pending";
@@ -997,7 +1044,7 @@ function AnalyzingView({
                   <div className="trace-stage-copy">
                     <span>{stage.meta}</span>
                     <h3>{stage.title}</h3>
-                    <p>{stage.subtitle}</p>
+                    <p>{traces.find(event => event.stage === ({ evidence: "verify", context: "hunt" } as Record<string, string>)[stage.id] || event.stage === stage.id)?.message ?? stage.subtitle}</p>
                     {stage.id === "evidence" && activeStep >= index && (
                       <div className="trace-event-card"><Database size={14} /><div><b>FETCH COMPANY REPORT</b><span>{fixture?.ticker || "CLAIM"} · {fixture?.category || "GENERAL"}</span></div><em>{fixture ? fixture.evidenceCount : 0} records</em></div>
                     )}
@@ -1090,7 +1137,7 @@ function ResultView({
         <div className="verdict-rings" />
         <div className="verdict-hero-top">
           <div><span>VERDICT</span><b><VerdictIcon tone={tone} size={17} /> {fixture?.status || "Tidak bisa diverifikasi"}</b></div>
-          <span>{fixture ? "GROUNDED IN STATIC FRONTEND FIXTURE" : "NO EVIDENCE AVAILABLE"}</span>
+          <span>{fixture ? "GROUNDED IN BACKEND EVIDENCE" : "NO EVIDENCE AVAILABLE"}</span>
         </div>
         <div className="verdict-metrics">
           <div className="hero-metric"><span>CLAIMED</span><strong>{fixture?.claimed || "—"}</strong></div>
@@ -1121,7 +1168,7 @@ function ResultView({
             <div className={`missing-context-card ${tone}`}>
               <div className="module-title"><Layers3 size={16} /><span>CONTEXT YANG HILANG</span></div>
               <h3>{fixture?.context || "Evidence belum cukup untuk menyusun konteks."}</h3>
-              <p>{fixture?.detail || "Frontend demo tidak mengirim teks ini ke backend. Pilih salah satu fixture untuk melihat report lengkap."}</p>
+              <p>{fixture?.detail || "Backend belum mengembalikan evidence yang cukup untuk klaim ini."}</p>
               {fixture && <button className="text-link" onClick={onEvidence}>Buka evidence inspector <ArrowRight size={14} /></button>}
             </div>
           </div>
@@ -1139,14 +1186,14 @@ function ResultView({
               ))}
             </>
           ) : (
-            <div className="inspector-empty"><CircleDashed size={28} /><p>Menunggu integrasi backend untuk evidence sungguhan.</p></div>
+            <div className="inspector-empty"><CircleDashed size={28} /><p>Backend tidak mengembalikan evidence untuk klaim ini.</p></div>
           )}
         </aside>
       </div>
 
       <section className={`collapsed-trace ${traceOpen ? "open" : ""}`}>
         <button onClick={() => setTraceOpen(!traceOpen)}>
-          <span><CheckCircle2 size={16} /> 5 tahapan simulasi selesai {fixture ? `dalam ${fixture.duration}` : ""}</span>
+          <span><CheckCircle2 size={16} /> Jejak backend selesai {fixture ? `· ${fixture.duration}` : ""}</span>
           <span>Lihat jejak kerja <ChevronDown size={15} /></span>
         </button>
         {traceOpen && (
@@ -1183,7 +1230,7 @@ function HistoryPage({
       <div className="history-table-head"><span>WAKTU</span><span>TICKER</span><span>TIPE</span><span>KLAIM</span><span>STATUS</span><span /></div>
       <div className="history-list">
         {filtered.length ? filtered.map((item) => {
-          const fixture = examples.find((example) => example.id === item.demoId);
+          const fixture = resultFixture(item.result);
           return (
             <button className="history-row" key={item.id} onClick={() => openReport(item)}>
               <span className="history-time"><b>{new Date(item.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }).toUpperCase()}</b><small>{new Date(item.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</small></span>
@@ -1198,7 +1245,7 @@ function HistoryPage({
           <div className="history-empty">
             <VerificationCore small />
             <h3>Belum ada report di sini.</h3>
-            <p>Report frontend yang kamu jalankan akan muncul sebagai baris investigasi.</p>
+            <p>Rapor backend yang kamu jalankan akan muncul sebagai baris investigasi.</p>
           </div>
         )}
       </div>
@@ -1206,8 +1253,8 @@ function HistoryPage({
   );
 }
 
-export default function App() {
-  const [page, setPage] = useState<Page>("landing");
+export default function App({ initialPage = "landing" }: { initialPage?: Page }) {
+  const [page, setPage] = useState<Page>(initialPage);
   const [phase, setPhase] = useState<Phase>("idle");
   const [input, setInput] = useState("");
   const [activeStep, setActiveStep] = useState(0);
@@ -1218,9 +1265,16 @@ export default function App() {
   const [toast, setToast] = useState("");
   const [viewRevision, setViewRevision] = useState(0);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
+  const [traces, setTraces] = useState<TraceEvent[]>([]);
+  const [error, setError] = useState("");
+  const [inputSource, setInputSource] = useState<CheckSource>("paste");
+  const [inputUrl, setInputUrl] = useState<string | undefined>();
+  const [choices, setChoices] = useState<UiTickerChoice[]>([]);
+  const [selections, setSelections] = useState<Record<string, string>>({});
 
   const activeFixture = useMemo(
-    () => examples.find((example) => example.id === active?.demoId),
+    () => active ? resultFixture(active.result) : undefined,
     [active],
   );
   const inputFixture = useMemo(
@@ -1236,7 +1290,7 @@ export default function App() {
     }
   }, [history]);
 
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  useEffect(() => () => { timers.current.forEach(clearTimeout); abortRef.current?.abort(); }, []);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(""), 2600);
@@ -1252,6 +1306,7 @@ export default function App() {
     const fixture = examples.find((example) => example.id === id);
     if (!fixture) return;
     setInput(fixture.text);
+    setInputSource("paste"); setInputUrl(undefined);
     setActive(null);
     setPhase("idle");
   }
@@ -1267,35 +1322,53 @@ export default function App() {
     }
   }
 
-  function startCheck() {
+  async function startCheck() {
     if (!input.trim()) return;
     clearTimers();
     setPage("check");
     setPhase("analyzing");
     setActive(null);
     setActiveStep(0);
+    setTraces([]);
+    setChoices([]);
+    setError("");
     setTraceOpen(false);
     setViewRevision((current) => current + 1);
 
-    for (let index = 1; index < investigationSteps.length; index += 1) {
-      timers.current.push(setTimeout(() => setActiveStep(index), index * 760));
-    }
-
-    timers.current.push(
-      setTimeout(() => {
-        const fixture = examples.find((example) => example.text === input.trim());
-        const item: HistoryItem = {
-          id: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `demo-${Date.now()}`,
-          demoId: fixture?.id || "custom",
-          text: input.trim(),
-          createdAt: new Date().toISOString(),
-          saved: false,
-        };
-        setActive(item);
-        setHistory((current) => [item, ...current].slice(0, 50));
-        setPhase("result");
-      }, investigationSteps.length * 760 + 240),
-    );
+    const controller = new AbortController();
+    abortRef.current = controller;
+    const received: TraceEvent[] = [];
+    const stageIndex: Partial<Record<TraceEvent["stage"], number>> = { normalize: 0, extract: 1, route: 2, verify: 2, hunt: 3, adjudicate: 4, done: 4 };
+    try {
+      const response = await fetch("/api/check", {
+        method: "POST", signal: controller.signal, headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: input.trim(), source: inputSource, ...(inputUrl ? { url: inputUrl } : {}),
+          userSelections: Object.entries(selections).filter(([, ticker]) => ticker).map(([surface, ticker]) => ({ surface, ticker })) }),
+      });
+      if (!response.ok) {
+        const payload: unknown = await response.json();
+        throw new Error(payload && typeof payload === "object" && "error" in payload && typeof payload.error === "string" ? payload.error : "Permintaan ditolak.");
+      }
+      await readCheckStream(response, event => {
+        if (event.kind === "trace") {
+          received.push(event.value); setTraces([...received]);
+          setActiveStep(stageIndex[event.value.stage] ?? 0);
+          if (event.value.stage === "normalize") setChoices(readTickerChoices(event.value));
+        } else if (event.kind === "error") { setError(event.value.message); setPhase("idle"); }
+        else {
+          const item = HistoryItemSchema.parse({ id: event.value.checkId, text: input.trim(), createdAt: new Date().toISOString(),
+            saved: false, demo: false, source: inputSource, ...(inputUrl ? { url: inputUrl } : {}), result: event.value, traces: received });
+          if (item.result.verdicts.length) {
+            setActive(item);
+            setHistory(current => [item, ...current.filter(entry => entry.id !== item.id)].slice(0, 50));
+            setPhase("result");
+          } else setPhase("idle");
+        }
+      });
+    } catch (cause) {
+      setError(controller.signal.aborted ? "Pemeriksaan dibatalkan." : cause instanceof Error ? cause.message : "Pemeriksaan gagal.");
+      setPhase("idle");
+    } finally { abortRef.current = null; }
   }
 
   function openReport(item: HistoryItem) {
@@ -1305,6 +1378,7 @@ export default function App() {
     setPhase("result");
     setPage("check");
     setTraceOpen(false);
+    setTraces(item.traces);
     setViewRevision((current) => current + 1);
   }
 
@@ -1322,8 +1396,12 @@ export default function App() {
     setActive(null);
     setPhase("idle");
     setInput("");
+    setInputSource("paste"); setInputUrl(undefined);
     setActiveStep(0);
     setTraceOpen(false);
+    setTraces([]);
+    setChoices([]); setSelections({});
+    setError("");
     setViewRevision((current) => current + 1);
   }
 
@@ -1381,10 +1459,11 @@ export default function App() {
                 running={false}
                 chooseExample={chooseExample}
                 startCheck={startCheck}
+                onPrepared={prepared => { setInputSource(prepared.source); setInputUrl(prepared.url); }}
               />
             )}
             {page === "check" && phase === "analyzing" && (
-              <AnalyzingView input={input} activeStep={activeStep} fixture={inputFixture} />
+              <AnalyzingView input={input} activeStep={activeStep} fixture={inputFixture} traces={traces} />
             )}
             {page === "check" && phase === "result" && active && (
               <ResultView
@@ -1407,13 +1486,24 @@ export default function App() {
             )}
             {page === "saved" && (
               <HistoryPage
-                title="Report tersimpan"
+                title="Rapor tersimpan"
                 subtitle="Koleksi report yang kamu tandai untuk dibuka kembali."
                 items={savedItems}
                 openReport={openReport}
               />
             )}
           </div>
+          {choices.length > 0 && phase === "idle" && <fieldset className="ticker-choice">
+            <legend>Pilih saham yang dimaksud, lalu periksa kembali</legend>
+            {choices.map(choice => <label key={choice.surface}>Sebutan “{choice.surface}”
+              <select value={selections[choice.surface] ?? ""} onChange={event => setSelections(current => ({ ...current, [choice.surface]: event.target.value }))}>
+                <option value="">Pilih saham</option>
+                {choice.candidates.map(candidate => <option key={candidate.ticker} value={candidate.ticker}>{candidate.ticker} — {candidate.label}</option>)}
+              </select>
+            </label>)}
+            <button className="primary-action" disabled={choices.some(choice => !selections[choice.surface])} onClick={() => void startCheck()}>Periksa dengan pilihan ini <ArrowRight size={17} /></button>
+          </fieldset>}
+          {error && <p className="backend-error" role="alert">{error}</p>}
         </main>
         <LegalStrip />
       </div>
@@ -1428,7 +1518,7 @@ export default function App() {
               <div key={row.label}><span>0{index + 1}</span><div><b>{row.label}</b><small>{row.flag}</small></div><strong>{row.value}</strong></div>
             ))}
           </div>
-          <p className="modal-note">Semua angka pada layar ini berasal dari fixture frontend untuk demonstrasi visual. Tidak ada request ke backend atau data pasar live.</p>
+          <p className="modal-note">Semua angka pada layar ini berasal dari objek evidence backend. Pemeriksaan berjalan dalam mode cache_only.</p>
         </Modal>
       )}
 

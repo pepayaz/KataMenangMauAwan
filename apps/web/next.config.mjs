@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
 
 // Public commit identifier only; helps distinguish a stale server from a new build.
 let sourceRevision = 'tidak tersedia';
@@ -26,6 +27,10 @@ const nextConfig = {
   },
 
   webpack(config) {
+    // Desain berasal dari workspace Vite `frontend/`; gunakan React milik
+    // monorepo agar tidak ada dua dispatcher hook di bundle Next.
+    config.resolve.alias['react$'] = resolve(process.cwd(), 'node_modules/react');
+    config.resolve.alias['react-dom$'] = resolve(process.cwd(), 'node_modules/react-dom');
     // Impor relatif ditulis dengan akhiran `.js` sesuai aturan ESM TypeScript
     // (`moduleResolution: Bundler` menerimanya, begitu juga Node dan Vitest).
     // Webpack tidak tahu aturan itu, jadi pemetaannya dinyatakan di sini.

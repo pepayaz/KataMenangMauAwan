@@ -7,6 +7,10 @@ export default defineConfig({
   esbuild: { jsx: 'automatic' },
   resolve: {
     alias: [
+      // `frontend/` masih memiliki instalasi Vite mandiri. Paksa satu salinan
+      // React saat komponen desainnya diuji sebagai bagian aplikasi Next.
+      { find: /^react$/, replacement: r('./apps/web/node_modules/react/index.js') },
+      { find: /^react-dom$/, replacement: r('./apps/web/node_modules/react-dom/index.js') },
       // Bentuk larik dipakai, bukan objek, supaya prefiks `@/` di apps/web
       // benar-benar diganti dan bukan dicocokkan persis.
       { find: /^@\//, replacement: `${r('./apps/web/')}/` },

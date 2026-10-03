@@ -1206,7 +1206,7 @@ textarea:focus-visible {
 .preview-metrics {
   margin-top: 27px;
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   gap: 20px;
 }
 
@@ -6351,7 +6351,7 @@ body::before {
 .data-page-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 380px;
-  align-items: end;
+  align-items: flex-end;
   gap: 60px;
 }
 
