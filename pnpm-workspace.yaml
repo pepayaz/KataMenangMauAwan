@@ -1,0 +1,10 @@
+packages:
+  - 'packages/*'
+  - 'apps/*'
+
+linkWorkspacePackages: true
+preferWorkspacePackages: true
+includeWorkspaceRoot: true
+allowBuilds:
+  esbuild: true
+  youtube-dl-exec: true

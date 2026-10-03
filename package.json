@@ -1,0 +1,34 @@
+{
+  "name": "cek-dulu",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "version": "0.1.0",
+  "description": "Agen pemeriksa klaim saham di media sosial terhadap data resmi Sectors.",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --filter @cek-dulu/web dev",
+    "build": "pnpm --filter @cek-dulu/web build",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "check": "tsx scripts/check.ts",
+    "test:watch": "vitest",
+    "pull:demo": "tsx scripts/pull-demo-data.ts",
+    "seed:aliases": "tsx scripts/seed-aliases.ts",
+    "report:credits": "tsx scripts/credit-report.ts",
+    "dev:demo": "tsx scripts/dev-demo.ts"
+  },
+  "devDependencies": {
+    "@testing-library/react": "16.3.0",
+    "@types/node": "^22.10.2",
+    "jsdom": "26.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}

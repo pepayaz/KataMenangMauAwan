@@ -1,0 +1,49 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wdth,wght@75..100,400..700&display=swap");
+
+:root {
+  color-scheme: dark;
+
+  /* Palette stays intentionally close to the previous system. */
+  --bg-0: #05070b;
+  --bg-1: #090d14;
+  --bg-2: #0e1420;
+  --bg-3: #151d2a;
+  --bg-soft: #101824;
+
+  --line: #202b3a;
+  --line-bright: #30445c;
+  --line-soft: rgba(103, 132, 166, 0.14);
+
+  --text-1: #f4f7fb;
+  --text-2: #aab6c5;
+  --text-3: #6e7c8f;
+
+  --cyan: #37d7ff;
+  --blue: #5b78ff;
+  --lime: #b8ff5c;
+  --amber: #ffb547;
+  --red: #ff5f6d;
+  --violet: #a98bff;
+
+  --gradient-primary: linear-gradient(135deg, #37d7ff 0%, #5b78ff 56%, #a98bff 100%);
+
+  --glass: rgba(11, 17, 26, .74);
+  --glass-strong: rgba(10, 15, 23, .88);
+  --glass-soft: rgba(16, 24, 36, .52);
+  --hairline: rgba(189, 216, 232, .13);
+  --hairline-strong: rgba(201, 228, 241, .2);
+  --shadow-soft: 0 22px 65px rgba(0, 0, 0, .28);
+  --shadow-tactile: 0 10px 0 rgba(0, 0, 0, .12), 0 24px 55px rgba(0, 0, 0, .22);
+
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-spring: cubic-bezier(.2, .9, .25, 1.15);
+
+  --font-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --font-ui: "Instrument Sans", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+
+  font-family: var(--font-ui);
+  color: var(--text-1);
+  background: var(--bg-0);
+  font-synthesis: none;
+}
