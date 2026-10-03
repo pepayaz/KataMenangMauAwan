@@ -37,6 +37,20 @@ const PREDICTION = /\b(?:bakal|akan|pasti|prediksi|target harga|to the moon|auto
 const OPINION = /\b(?:menurut saya|saya rasa|saya yakin|bagus banget|jelek banget)\b/i;
 const VALUELESS_OPINION = /\b(?:murah|mahal|aman|bagus|jelek|cuan)\b/i;
 
+/**
+ * LLM sering meleset beberapa karakter saat menghitung offset pada teks panjang.
+ * Kutipan tetap wajib ada persis di teks; koordinatnya ditetapkan kode, yaitu
+ * kemunculan terdekat dari tebakan LLM. Tanpa kemunculan persis: null.
+ */
+export function anchorQuote(text: string, quote: string, hintStart: number): { start: number; end: number } | null {
+  if (quote.trim() === '') return null;
+  let best = -1;
+  for (let at = text.indexOf(quote); at !== -1; at = text.indexOf(quote, at + 1)) {
+    if (best === -1 || Math.abs(at - hintStart) < Math.abs(best - hintStart)) best = at;
+  }
+  return best === -1 ? null : { start: best, end: best + quote.length };
+}
+
 /** Validasi deterministik sesudah LLM; angka harus ada persis, bukan toleransi. */
 export function validateExtractedClaims(
   text: string, entities: readonly Entity[], candidates: readonly ExtractedClaim[], checkId: string,
@@ -54,12 +68,14 @@ export function validateExtractedClaims(
     const reject = (reason: ExtractionRejection['reason'], ticker?: string) => {
       rejected.push({ candidateIndex, reason, ...(ticker ? { ticker } : {}) });
     };
-    const { start, end } = candidate.span;
-    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end <= start || end > text.length) {
+    const hint = candidate.span;
+    if (!Number.isInteger(hint.start) || !Number.isInteger(hint.end) || hint.start < 0 || hint.end <= hint.start || hint.end > text.length) {
       reject('INVALID_SPAN'); continue;
     }
+    const anchored = anchorQuote(text, candidate.quote, hint.start);
+    if (!anchored) { reject('INVALID_QUOTE'); continue; }
+    const { start, end } = anchored;
     const quote = text.slice(start, end);
-    if (quote !== candidate.quote || quote.trim() === '') { reject('INVALID_QUOTE'); continue; }
     if (candidate.tickers.length === 0) { reject('NO_TICKER'); continue; }
     const asserted = candidate.asserted;
     if ([asserted.window, asserted.period].some((period) => period !== null && (period.trim() === '' || !quote.includes(period)))) {

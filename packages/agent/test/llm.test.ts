@@ -224,6 +224,20 @@ describe('provider gemini', () => {
     } finally { vi.useRealTimers(); }
   });
 
+  it('batas waktu adapter menjadi TIMEOUT tanpa retry', async () => {
+    const fetchImpl = vi.fn(async () => { throw new DOMException('The operation was aborted due to timeout', 'TimeoutError'); });
+    const error = await new LlmAdapter({ env: geminiEnv, fetchImpl }).generate(request).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'TIMEOUT' });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('pembatalan pengguna tidak dilaporkan sebagai TIMEOUT', async () => {
+    const abort = new AbortController(); abort.abort();
+    const fetchImpl = vi.fn(async () => { throw new DOMException('aborted', 'TimeoutError'); });
+    const error = await new LlmAdapter({ env: geminiEnv, fetchImpl }).generate({ ...request, signal: abort.signal }).catch((e: unknown) => e);
+    expect(error).toMatchObject({ code: 'PROVIDER' });
+  });
+
   it('429 kuota habis langsung QUOTA tanpa retry', async () => {
     const fetchImpl = reply({ error: { message: 'You exceeded your current quota' } }, 429);
     const error = await new LlmAdapter({ env: geminiEnv, fetchImpl }).generate(request).catch((e: unknown) => e);

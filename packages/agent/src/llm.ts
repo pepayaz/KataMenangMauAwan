@@ -2,13 +2,15 @@ import OpenAI from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
-export type LlmErrorCode = 'INPUT' | 'CONFIG' | 'SCHEMA' | 'PROVIDER' | 'QUOTA' | 'UNAVAILABLE' | 'REFUSED' | 'INCOMPLETE' | 'INVALID_OUTPUT';
+export type LlmErrorCode = 'INPUT' | 'CONFIG' | 'SCHEMA' | 'PROVIDER' | 'QUOTA' | 'UNAVAILABLE' | 'TIMEOUT' | 'REFUSED' | 'INCOMPLETE' | 'INVALID_OUTPUT';
 export class LlmError extends Error {
   constructor(readonly code: LlmErrorCode, readonly attempts = 0) {
     super(`LLM gagal secara terkontrol: ${code}.`);
     this.name = 'LlmError';
   }
 }
+/** Teks panjang penuh angka bisa memakan hampir 30 detik di Gemini Flash; beri ruang dua kali lipat. */
+export const LLM_TIMEOUT_MS = 60_000;
 export type LlmValidationIssue = { path: string; code: string };
 export type LlmRequest = {
   model: string;
@@ -43,7 +45,7 @@ class OpenAiProvider implements LlmProvider {
   readonly name = 'openai';
   private readonly client: OpenAI;
   constructor(apiKey: string, fetchImpl?: typeof fetch) {
-    this.client = new OpenAI({ apiKey, maxRetries: 0, timeout: 30000,
+    this.client = new OpenAI({ apiKey, maxRetries: 0, timeout: LLM_TIMEOUT_MS,
       ...(fetchImpl ? { fetch: fetchImpl } : {}) });
   }
   async complete(request: LlmRequest): Promise<unknown> {
@@ -60,7 +62,10 @@ class OpenAiProvider implements LlmProvider {
           content: `Keluaran sebelumnya tidak valid. Perbaiki JSON sesuai skema; jangan menambah fakta. Kesalahan: ${JSON.stringify(request.feedback)}` }] : []),
       ],
       text: { format: request.format },
-    }, { signal: request.signal });
+    }, { signal: request.signal }).catch((error: unknown) => {
+      if (error instanceof OpenAI.APIConnectionTimeoutError) throw new LlmError('TIMEOUT', request.attempt);
+      throw error;
+    });
     const refused = response.output.some((item) => item.type === 'message'
       && item.content.some((content) => content.type === 'refusal'));
     if (refused) throw new LlmError('REFUSED', request.attempt);
@@ -112,15 +117,23 @@ class GeminiProvider implements LlmProvider {
         ...(request.videoDataUrl ? { temperature: 0 } : {}) },
     });
     let response: Response | undefined;
+    // Batas waktu adapter dilaporkan sebagai TIMEOUT; pembatalan pengguna tetap diteruskan apa adanya.
+    const timedOut = (error: unknown): never => {
+      if (error instanceof Error && error.name === 'TimeoutError' && !request.signal?.aborted)
+        throw new LlmError('TIMEOUT', request.attempt);
+      throw error;
+    };
     // 429/500/503 dari Gemini umumnya sementara ("high demand"); coba ulang sebentar.
     for (let retry = 0; ; retry += 1) {
-      const timeout = AbortSignal.timeout(30000);
-      response = await this.fetchImpl(`${GEMINI_BASE_URL}/models/${encodeURIComponent(model)}:generateContent`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-goog-api-key': this.apiKey },
-        body,
-        signal: request.signal ? AbortSignal.any([request.signal, timeout]) : timeout,
-      });
+      const timeout = AbortSignal.timeout(LLM_TIMEOUT_MS);
+      try {
+        response = await this.fetchImpl(`${GEMINI_BASE_URL}/models/${encodeURIComponent(model)}:generateContent`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', 'x-goog-api-key': this.apiKey },
+          body,
+          signal: request.signal ? AbortSignal.any([request.signal, timeout]) : timeout,
+        });
+      } catch (error) { return timedOut(error); }
       if (response.ok || !GEMINI_TRANSIENT_STATUS.has(response.status) || retry >= this.retryDelaysMs.length) break;
       await sleep(this.retryDelaysMs[retry]!, request.signal);
     }
@@ -128,7 +141,8 @@ class GeminiProvider implements LlmProvider {
     if (response.status === 429) throw new LlmError('QUOTA', request.attempt);
     if (GEMINI_TRANSIENT_STATUS.has(response.status)) throw new LlmError('UNAVAILABLE', request.attempt);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const result = await response.json() as GeminiResponse;
+    let result: GeminiResponse;
+    try { result = await response.json() as GeminiResponse; } catch (error) { return timedOut(error); }
     if (result.promptFeedback?.blockReason) throw new LlmError('REFUSED', request.attempt);
     const candidate = result.candidates?.[0];
     if (!candidate) throw new LlmError('INCOMPLETE', request.attempt);

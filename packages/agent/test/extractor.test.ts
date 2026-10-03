@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { ClaimSchema, type Entity } from '@cek-dulu/shared';
 import { checkFixtures } from '../../shared/fixtures/index.js';
-import { extractClaims, extractClaimsWithDiagnostics, validateExtractedClaims,
+import { anchorQuote, extractClaims, extractClaimsWithDiagnostics, validateExtractedClaims,
   type ExtractedClaim } from '../src/extractor.js';
 import { LlmAdapter, MockLlmProvider } from '../src/llm.js';
 
@@ -88,6 +88,32 @@ describe('klaim atomik dan literal', () => {
       span: { start: 3, end: text.length },
     })], 'check1');
     expect(result.claims[0]?.span).toEqual([3, text.length]);
+  });
+});
+
+describe('koordinat ditetapkan kode, bukan LLM', () => {
+  const text = 'Rilis BBRI hari ini. Kabar ADRO: ADRO yield 25,5% tahun ini.';
+  const quote = 'ADRO yield 25,5%';
+  const actual = text.indexOf(quote);
+
+  it.each([-3, -1, 1, 2])('offset LLM meleset %i karakter dikoreksi ke kemunculan persis', (shift) => {
+    const item = candidate(quote, { span: { start: actual + shift, end: actual + shift + quote.length } });
+    const result = validateExtractedClaims(text, entities, [item], 'check1');
+    expect(result.rejected).toEqual([]);
+    expect(result.claims[0]?.span).toEqual([actual, actual + quote.length]);
+    expect(result.claims[0]?.asserted.value).toBe(25.5);
+  });
+
+  it('kutipan yang tidak ada persis di teks tetap ditolak', () => {
+    const item = candidate('ADRO yield 25.5%', { span: { start: actual, end: actual + quote.length } });
+    expect(validateExtractedClaims(text, entities, [item], 'check1').rejected[0]?.reason).toBe('INVALID_QUOTE');
+  });
+
+  it('kutipan berulang memakai kemunculan terdekat dari tebakan LLM', () => {
+    const repeated = 'ADRO naik. ADRO naik.';
+    expect(anchorQuote(repeated, 'ADRO naik', 0)).toEqual({ start: 0, end: 9 });
+    expect(anchorQuote(repeated, 'ADRO naik', 10)).toEqual({ start: 11, end: 20 });
+    expect(anchorQuote(repeated, '   ', 0)).toBeNull();
   });
 });
 
