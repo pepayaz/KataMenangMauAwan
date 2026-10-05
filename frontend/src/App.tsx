@@ -16,6 +16,7 @@ import {
   CircleHelp,
   Clock3,
   Database,
+  Download,
   FileSearch,
   FileText,
   Fingerprint,
@@ -23,7 +24,7 @@ import {
   Image as ImageIcon,
   Layers3,
   Link2,
-  LockKeyhole,
+  LoaderCircle,
   MinusCircle,
   Search,
   ShieldCheck,
@@ -42,6 +43,7 @@ import { InputAdaptationSchema, type CheckResult, type CheckSource, type InputAd
 import { readCheckStream } from "../../apps/web/lib/check-stream";
 import { HistoryItemSchema, formatEvidence, readHistory, storageKey, type HistoryItem } from "../../apps/web/lib/check-view";
 import { readTickerChoices, type UiTickerChoice } from "../../apps/web/lib/ticker-choices";
+import { downloadReportPdf } from "../../apps/web/lib/report-pdf";
 
 type Page = "landing" | "check" | "history" | "saved";
 type Phase = "idle" | "analyzing" | "result";
@@ -52,6 +54,7 @@ type UiFixture = {
   ticker: string; category: string; status: string; shortStatus: string; tone: string;
   headline: string; summary: string; claimed: string; verified: string; delta: string;
   context: string; detail: string; evidenceCount: number; duration: string;
+  contextPoints?: readonly string[];
   evidence: readonly { label: string; value: string; flag: string }[];
   hypotheses: readonly { code: string; status: string }[]; source: string;
 };
@@ -78,6 +81,7 @@ function resultFixture(result: CheckResult): UiFixture | undefined {
     ...presentation, summary: verdict.explanation, claimed,
     verified: computedEvidence ? formatEvidence(computedEvidence) : "—", delta: "—",
     context: verdict.missingContext[0]?.summary ?? "Tidak ada konteks tambahan yang terpicu.",
+    contextPoints: verdict.missingContext.map(item => item.summary),
     detail: verdict.explanation, evidenceCount: evidence.length, duration: `${result.creditsUsed} kredit`,
     evidence: evidence.map(item => ({ label: item.label, value: formatEvidence(item), flag: item.cached ? "CACHE" : "EVIDENCE" })),
     hypotheses: verdict.missingContext.map(item => ({ code: item.hypId, status: "TRIGGERED" })),
@@ -398,15 +402,17 @@ function LandingPage({
   setInput,
   chooseExample,
   enterWorkspace,
+  initialView,
 }: {
   input: string;
   setInput: (value: string) => void;
   chooseExample: (id: DemoId) => void;
   enterWorkspace: (run?: boolean) => void;
+  initialView: LandingView;
 }) {
   const howRef = useRef<HTMLElement>(null);
   const landingRef = useRef<HTMLDivElement>(null);
-  const [landingView, setLandingView] = useState<LandingView>("home");
+  const [landingView, setLandingView] = useState<LandingView>(initialView);
 
   useEffect(() => {
     const root = landingRef.current;
@@ -490,21 +496,6 @@ function LandingPage({
                 Periksa <ArrowRight size={17} />
               </button>
             </form>
-            <div className="hero-examples">
-              <span>COBA</span>
-              {examples.map((example) => (
-                <button
-                  key={example.id}
-                  onClick={() => {
-                    chooseExample(example.id);
-                    enterWorkspace(false);
-                  }}
-                >
-                  {example.ticker} · {example.category.split(" ")[0]}
-                </button>
-              ))}
-            </div>
-            <div className="hero-footnote"><LockKeyhole size={13} /> Terhubung ke backend · tidak ada order broker · tidak ada rekomendasi transaksi</div>
           </div>
 
           <div className="landing-visual landing-intro-visual">
@@ -647,11 +638,11 @@ function AppSidebar({
   setPage: (page: Page) => void;
   historyCount: number;
   savedCount: number;
-  goLanding: () => void;
+  goLanding: (view?: LandingView) => void;
 }) {
   return (
     <aside className="app-sidebar">
-      <button className="sidebar-logo" onClick={goLanding}><Brand compact /></button>
+      <button className="sidebar-logo" onClick={() => goLanding()}><Brand compact /></button>
       <div className="sidebar-subbrand">CLAIM INTELLIGENCE</div>
       <nav className="sidebar-nav" aria-label="Workspace">
         <button className={page === "check" ? "active" : ""} onClick={() => setPage("check")}>
@@ -665,25 +656,9 @@ function AppSidebar({
         </button>
       </nav>
       <div className="sidebar-separator" />
-      <button className="sidebar-help" onClick={goLanding}>
+      <button className="sidebar-help" onClick={() => goLanding("how")}>
         <CircleHelp size={17} /><span>Cara kerja</span><ArrowUpRight size={14} />
       </button>
-      <div className="sidebar-signal">
-        <div className="sidebar-scope-head">
-          <Layers3 size={15} />
-          <div><span>CAKUPAN CEK</span><b>3 tipe siap dicoba</b></div>
-        </div>
-        <div className="sidebar-scope-list">
-          <span><i />Valuasi<small>PER / PBV</small></span>
-          <span><i />Dividen<small>Yield / TTM</small></span>
-          <span><i />Harga<small>Pergerakan</small></span>
-        </div>
-        <button onClick={() => setPage("check")}>Mulai pemeriksaan <ArrowRight size={13} /></button>
-      </div>
-      <div className="sidebar-bottom">
-        <LockKeyhole size={14} />
-        <div><b>PRIVASI</b><small>Media diproses sementara</small></div>
-      </div>
     </aside>
   );
 }
@@ -693,13 +668,6 @@ function AppTopbar({ phase }: { phase: Phase }) {
     <header className="app-topbar">
       <div className="instrument-breadcrumb">
         <span>CEK DULU</span><i>/</i><span>CHECK</span><i>/</i><b>{phase === "idle" ? "NEW ANALYSIS" : phase === "analyzing" ? "LIVE INVESTIGATION" : "REPORT"}</b>
-      </div>
-      <div className="instrument-status">
-        <span><i className="status-light" /> BACKEND READY</span>
-        <em />
-        <span>DATA MODE: CACHE ONLY</span>
-        <em />
-        <span>DESKTOP / 01</span>
       </div>
     </header>
   );
@@ -989,7 +957,6 @@ function IdleCheck({
             </div>
 
             <div className="chamber-dock">
-              <div><Database size={15} /><span>Pemeriksaan memakai backend dan data Sectors dalam mode cache_only.</span></div>
               <button type="submit" className="primary-action" disabled={!input.trim() || running || reading}>
                 Periksa klaim <ArrowRight size={17} />
               </button>
@@ -1098,6 +1065,8 @@ function ResultView({
   active,
   fixture,
   onSave,
+  onDownloadPdf,
+  pdfBusy,
   onEvidence,
   traceOpen,
   setTraceOpen,
@@ -1106,12 +1075,18 @@ function ResultView({
   active: HistoryItem;
   fixture?: DemoFixture;
   onSave: () => void;
+  onDownloadPdf: () => void;
+  pdfBusy: boolean;
   onEvidence: () => void;
   traceOpen: boolean;
   setTraceOpen: (open: boolean) => void;
   reset: () => void;
 }) {
   const tone = fixture?.tone || "violet";
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const contextPoints = fixture
+    ? [...new Set((fixture.contextPoints?.length ? fixture.contextPoints : [fixture.context, fixture.detail]).filter(Boolean))]
+    : ["Evidence belum cukup untuk menyusun konteks."];
   return (
     <div className="workspace-page result-view">
       <div className="result-meta-line">
@@ -1121,6 +1096,9 @@ function ResultView({
         <span>{fixture?.evidenceCount || 0} EVIDENCE</span>
         <div className="result-meta-actions">
           <button className={active.saved ? "saved" : ""} onClick={onSave}><Bookmark size={14} fill={active.saved ? "currentColor" : "none"} /> {active.saved ? "TERSIMPAN" : "SIMPAN"}</button>
+          {active.result.verdicts.length > 0 && <button onClick={onDownloadPdf} disabled={pdfBusy} aria-busy={pdfBusy}>
+            {pdfBusy ? <LoaderCircle size={14} className="pdf-spinner" /> : <Download size={14} />} {pdfBusy ? "MENYIAPKAN PDF" : "UNDUH PDF"}
+          </button>}
           <button onClick={reset}>CEK BARU <ArrowRight size={14} /></button>
         </div>
       </div>
@@ -1155,39 +1133,42 @@ function ResultView({
             <div className={`status-flag ${tone}`}><VerdictIcon tone={tone} size={14} /> {fixture?.shortStatus || "UNVERIFIABLE"}</div>
           </div>
           <div className="claim-module-body">
-            <div className="evidence-table">
-              <div className="module-title"><Database size={16} /><span>EVIDENCE COMPARISON</span></div>
-              {fixture ? fixture.evidence.map((row) => (
-                <div className="evidence-row" key={row.label}>
-                  <span>{row.label}</span><b>{row.value}</b><em className={row.flag.toLowerCase()}>{row.flag}</em>
-                </div>
-              )) : (
-                <div className="empty-evidence"><CircleDashed size={22} /><p>Tidak ada angka yang ditampilkan tanpa evidence.</p></div>
-              )}
-            </div>
             <div className={`missing-context-card ${tone}`}>
               <div className="module-title"><Layers3 size={16} /><span>CONTEXT YANG HILANG</span></div>
-              <h3>{fixture?.context || "Evidence belum cukup untuk menyusun konteks."}</h3>
-              <p>{fixture?.detail || "Backend belum mengembalikan evidence yang cukup untuk klaim ini."}</p>
+              <ul className="missing-context-points">
+                {contextPoints.map(point => <li key={point}>{point}</li>)}
+              </ul>
               {fixture && <button className="text-link" onClick={onEvidence}>Buka evidence inspector <ArrowRight size={14} /></button>}
             </div>
           </div>
         </section>
 
-        <aside className="evidence-inspector">
-          <div className="inspector-head"><span>EVIDENCE / {String(fixture?.evidenceCount || 0).padStart(2, "0")}</span><FileSearch size={16} /></div>
-          {fixture ? (
-            <>
-              <div className="inspector-source"><span>SOURCE MODULE</span><b>{fixture.source}</b></div>
-              {fixture.evidence.map((row, index) => (
-                <button className="inspector-row" key={row.label} onClick={onEvidence}>
-                  <span>0{index + 1}</span><div><b>{row.label}</b><small>{row.flag}</small></div><strong>{row.value}</strong><ChevronRight size={14} />
-                </button>
-              ))}
-            </>
-          ) : (
-            <div className="inspector-empty"><CircleDashed size={28} /><p>Backend tidak mengembalikan evidence untuk klaim ini.</p></div>
-          )}
+        <aside className={`evidence-inspector ${evidenceOpen ? "open" : "collapsed"}`}>
+          <button
+            type="button"
+            className="inspector-head"
+            aria-expanded={evidenceOpen}
+            onClick={() => setEvidenceOpen(current => !current)}
+          >
+            <span>EVIDENCE / {String(fixture?.evidenceCount || 0).padStart(2, "0")}</span>
+            <span className="inspector-toggle">{evidenceOpen ? "Tutup" : "Lihat daftar"}<ChevronDown size={16} /></span>
+          </button>
+          <div className="inspector-content" aria-hidden={!evidenceOpen}>
+            <div className="inspector-content-inner">
+              {fixture ? (
+                <>
+                  <div className="inspector-source"><span>SOURCE MODULE</span><b>{fixture.source}</b></div>
+                  {fixture.evidence.map((row, index) => (
+                    <button className="inspector-row" key={row.label} onClick={onEvidence} tabIndex={evidenceOpen ? 0 : -1}>
+                      <span>0{index + 1}</span><div><b>{row.label}</b><small>{row.flag}</small></div><strong>{row.value}</strong><ChevronRight size={14} />
+                    </button>
+                  ))}
+                </>
+              ) : (
+                <div className="inspector-empty"><CircleDashed size={28} /><p>Backend tidak mengembalikan evidence untuk klaim ini.</p></div>
+              )}
+            </div>
+          </div>
         </aside>
       </div>
 
@@ -1263,7 +1244,9 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
   const [traceOpen, setTraceOpen] = useState(false);
   const [modal, setModal] = useState<"evidence" | null>(null);
   const [toast, setToast] = useState("");
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [viewRevision, setViewRevision] = useState(0);
+  const [landingDestination, setLandingDestination] = useState<LandingView>("home");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const [traces, setTraces] = useState<TraceEvent[]>([]);
@@ -1358,11 +1341,9 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
         else {
           const item = HistoryItemSchema.parse({ id: event.value.checkId, text: input.trim(), createdAt: new Date().toISOString(),
             saved: false, demo: false, source: inputSource, ...(inputUrl ? { url: inputUrl } : {}), result: event.value, traces: received });
-          if (item.result.verdicts.length) {
-            setActive(item);
-            setHistory(current => [item, ...current.filter(entry => entry.id !== item.id)].slice(0, 50));
-            setPhase("result");
-          } else setPhase("idle");
+          setActive(item);
+          setHistory(current => [item, ...current.filter(entry => entry.id !== item.id)].slice(0, 50));
+          setPhase("result");
         }
       });
     } catch (cause) {
@@ -1391,6 +1372,14 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
     setToast(nextSaved ? "Report disimpan." : "Report dihapus dari tersimpan.");
   }
 
+  async function downloadPdf() {
+    if (!active || pdfBusy) return;
+    setPdfBusy(true);
+    try { await downloadReportPdf(active); }
+    catch { setToast("Rapor PDF belum dapat dibuat. Coba lagi."); }
+    finally { setPdfBusy(false); }
+  }
+
   function resetCheck() {
     clearTimers();
     setActive(null);
@@ -1412,6 +1401,7 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
         setInput={setInput}
         chooseExample={chooseExample}
         enterWorkspace={enterWorkspace}
+        initialView={landingDestination}
       />
     );
   }
@@ -1433,8 +1423,9 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
         }}
         historyCount={history.length}
         savedCount={savedItems.length}
-        goLanding={() => {
+        goLanding={(view = "home") => {
           clearTimers();
+          setLandingDestination(view);
           setPage("landing");
           setPhase("idle");
           setViewRevision((current) => current + 1);
@@ -1470,6 +1461,8 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
                 active={active}
                 fixture={activeFixture}
                 onSave={toggleSave}
+                onDownloadPdf={downloadPdf}
+                pdfBusy={pdfBusy}
                 onEvidence={() => setModal("evidence")}
                 traceOpen={traceOpen}
                 setTraceOpen={setTraceOpen}

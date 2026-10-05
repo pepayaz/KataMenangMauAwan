@@ -9,6 +9,7 @@ import {
   Check,
   CheckCheck,
   ChevronRight,
+  Download,
   CircleHelp,
   FileText,
   History,
@@ -34,6 +35,7 @@ import { readTickerChoices, type UiTickerChoice } from "../lib/ticker-choices";
 
 import type { TraceEvent } from "@cek-dulu/shared/schemas";
 import CheckReport from "./check-report";
+import { downloadReportPdf } from "../lib/report-pdf";
 import InputAdapter, { type InputMode } from "./input-adapter";
 import InputNumbers from './input-numbers';
 import InvestigationPreview from "./investigation-preview";
@@ -78,6 +80,7 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [remoteChecks, setRemoteChecks] = useState<RemoteCheck[]>([]), [remoteNote, setRemoteNote] = useState('');
   const [llmReady, setLlmReady] = useState<boolean | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const activeCheckId = active?.id;
   useEffect(() => {
     if (!activeCheckId || running) return;
@@ -184,6 +187,13 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
         : cause instanceof Error ? cause.message : 'Pemeriksaan tidak dapat diselesaikan.');
     } finally { setRunning(false); abortRef.current = null; }
   }
+  async function downloadPdf(item: HistoryItem) {
+    setPdfBusy(true);
+    try { await downloadReportPdf(item); }
+    catch { setToast('Rapor PDF belum dapat dibuat. Coba lagi.'); }
+    finally { setPdfBusy(false); }
+  }
+
   function toggleSave(item: HistoryItem) {
     const saved = !history.find((entry) => entry.id === item.id)?.saved;
     setHistory((items) =>
@@ -443,7 +453,14 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
                       <h2>Hasil pemeriksaan</h2>
                       {active.demo && <span className="small-tag">Contoh historis</span>}
                     </div>
-                    {active.result.verdicts.length > 0 && <button
+                    {active.result.verdicts.length > 0 && <div className="report-actions"><button
+                      className="text-button"
+                      onClick={() => downloadPdf(active)}
+                      disabled={pdfBusy}
+                    >
+                      {pdfBusy ? <LoaderCircle size={16} className="spin" /> : <Download size={16} />}
+                      {pdfBusy ? "Menyiapkan PDF" : "Unduh PDF"}
+                    </button><button
                       className={`text-button ${active.saved ? "is-saved" : ""}`}
                       onClick={() => toggleSave(active)}
                     >
@@ -452,7 +469,7 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
                         fill={active.saved ? "currentColor" : "none"}
                       />
                       {active.saved ? "Tersimpan" : "Simpan rapor"}
-                    </button>}
+                    </button></div>}
                   </div>
                   <CheckReport item={active} />
                 </section>

@@ -218,6 +218,8 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
 export function extractionFailureMessage(error: unknown): string {
   if (error instanceof LlmError && error.code === 'QUOTA')
     return 'Kuota layanan LLM sedang habis, jadi klaim belum dapat diekstrak. Coba lagi nanti.';
+  if (error instanceof LlmError && error.code === 'TIMEOUT')
+    return 'Layanan LLM terlalu lama merespons, jadi klaim belum dapat diekstrak. Coba lagi atau persingkat teksnya.';
   if (error instanceof LlmError && error.code === 'UNAVAILABLE')
     return 'Layanan LLM sedang sibuk, jadi klaim belum dapat diekstrak. Coba lagi sebentar lagi.';
   return 'Input atau ekstraksi tidak dapat diselesaikan.';

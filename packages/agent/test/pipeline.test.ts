@@ -138,6 +138,15 @@ describe('konkurensi dan isolasi error', () => {
     expect(error.message).toContain('Kuota layanan LLM sedang habis');
     expect(error.data).toMatchObject({ code: 'EXTRACTION_FAILED', llmCode: 'QUOTA' });
   });
+  it('LLM terlalu lama dijelaskan sebagai timeout, bukan kegagalan umum', async () => {
+    const test = setup('ADRO PER 3x');
+    test.deps.llm = new LlmAdapter({ env: { LLM_PROVIDER: 'mock', LLM_MODEL: 'uji' }, provider: {
+      name: 'mock', complete: async () => { throw new LlmError('TIMEOUT', 1); } } });
+    await test.run();
+    const error = test.traces.find((t) => t.stage === 'error')!;
+    expect(error.message).toContain('terlalu lama merespons');
+    expect(error.data).toMatchObject({ code: 'EXTRACTION_FAILED', llmCode: 'TIMEOUT' });
+  });
 });
 
 describe('grounding dan kebijakan penjelasan', () => {

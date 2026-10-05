@@ -105,6 +105,8 @@ main { max-width: 1480px; margin: 0 auto; padding: 0 38px; }
 .text-button { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); min-height: 44px; padding: 4px 0; font-size: 15px; }
 .text-button:hover { color: var(--ink); }
 .text-button.is-saved { color: var(--success); }
+.text-button:disabled { opacity: .6; cursor: progress; }
+.section-heading > .report-actions { gap: 20px; }
 .progress-card { border: 1px solid var(--line-bright); border-radius: var(--radius); background: var(--surface); padding: 24px; margin: 24px 0; }
 .progress-title { display: flex; align-items: center; gap: 12px; }
 .scanner-icon { color: var(--accent); }
