@@ -16,6 +16,7 @@ import {
   CircleHelp,
   Clock3,
   Database,
+  Download,
   FileSearch,
   FileText,
   Fingerprint,
@@ -23,6 +24,7 @@ import {
   Image as ImageIcon,
   Layers3,
   Link2,
+  LoaderCircle,
   MinusCircle,
   Search,
   ShieldCheck,
@@ -41,6 +43,7 @@ import { InputAdaptationSchema, type CheckResult, type CheckSource, type InputAd
 import { readCheckStream } from "../../apps/web/lib/check-stream";
 import { HistoryItemSchema, formatEvidence, readHistory, storageKey, type HistoryItem } from "../../apps/web/lib/check-view";
 import { readTickerChoices, type UiTickerChoice } from "../../apps/web/lib/ticker-choices";
+import { downloadReportPdf } from "../../apps/web/lib/report-pdf";
 
 type Page = "landing" | "check" | "history" | "saved";
 type Phase = "idle" | "analyzing" | "result";
@@ -1062,6 +1065,8 @@ function ResultView({
   active,
   fixture,
   onSave,
+  onDownloadPdf,
+  pdfBusy,
   onEvidence,
   traceOpen,
   setTraceOpen,
@@ -1070,6 +1075,8 @@ function ResultView({
   active: HistoryItem;
   fixture?: DemoFixture;
   onSave: () => void;
+  onDownloadPdf: () => void;
+  pdfBusy: boolean;
   onEvidence: () => void;
   traceOpen: boolean;
   setTraceOpen: (open: boolean) => void;
@@ -1089,6 +1096,9 @@ function ResultView({
         <span>{fixture?.evidenceCount || 0} EVIDENCE</span>
         <div className="result-meta-actions">
           <button className={active.saved ? "saved" : ""} onClick={onSave}><Bookmark size={14} fill={active.saved ? "currentColor" : "none"} /> {active.saved ? "TERSIMPAN" : "SIMPAN"}</button>
+          {active.result.verdicts.length > 0 && <button onClick={onDownloadPdf} disabled={pdfBusy} aria-busy={pdfBusy}>
+            {pdfBusy ? <LoaderCircle size={14} className="pdf-spinner" /> : <Download size={14} />} {pdfBusy ? "MENYIAPKAN PDF" : "UNDUH PDF"}
+          </button>}
           <button onClick={reset}>CEK BARU <ArrowRight size={14} /></button>
         </div>
       </div>
@@ -1234,6 +1244,7 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
   const [traceOpen, setTraceOpen] = useState(false);
   const [modal, setModal] = useState<"evidence" | null>(null);
   const [toast, setToast] = useState("");
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [viewRevision, setViewRevision] = useState(0);
   const [landingDestination, setLandingDestination] = useState<LandingView>("home");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -1361,6 +1372,14 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
     setToast(nextSaved ? "Report disimpan." : "Report dihapus dari tersimpan.");
   }
 
+  async function downloadPdf() {
+    if (!active || pdfBusy) return;
+    setPdfBusy(true);
+    try { await downloadReportPdf(active); }
+    catch { setToast("Rapor PDF belum dapat dibuat. Coba lagi."); }
+    finally { setPdfBusy(false); }
+  }
+
   function resetCheck() {
     clearTimers();
     setActive(null);
@@ -1442,6 +1461,8 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
                 active={active}
                 fixture={activeFixture}
                 onSave={toggleSave}
+                onDownloadPdf={downloadPdf}
+                pdfBusy={pdfBusy}
                 onEvidence={() => setModal("evidence")}
                 traceOpen={traceOpen}
                 setTraceOpen={setTraceOpen}

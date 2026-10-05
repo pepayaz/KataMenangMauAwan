@@ -3008,6 +3008,9 @@ textarea:focus-visible {
   background: rgba(55,215,255,.035);
 }
 
+.result-meta-actions button:disabled { opacity: .6; cursor: progress; }
+.result-meta-actions .pdf-spinner { animation: spin 1s linear infinite; }
+
 .result-heading {
   min-height: 132px;
   display: grid;
