@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ClaimVerdictSchema, CheckResultSchema, TraceEventSchema, type Claim, type CheckInput, type Evidence, type TraceEvent } from '@cek-dulu/shared';
-import { MemoryCacheStore, SectorsClient, cacheKey } from '@cek-dulu/sectors';
+import { MemoryCacheStore, SectorsClient, cacheKey, sampledWindows } from '@cek-dulu/sectors';
 import { runCheck, displayEvidenceValues, normalizeVerifierEvidence, type PipelineDeps } from '../src/pipeline.js';
 import { isOutputAllowed } from '../src/output-policy.js';
 import { LlmAdapter, type LlmProvider, type LlmRequest, LlmError } from '../src/llm.js';
@@ -38,6 +38,60 @@ function setup(text: string, claims = [candidate(text)], explanations: readonly 
   const traces: TraceEvent[] = [];
   return { deps, traces, requests, run: () => runCheck(input(text), deps, (event) => { traces.push(event); }) };
 }
+
+describe('klaim harga tanpa jangka waktu', () => {
+  it('tidak memanggil Sectors dan alasan router sampai ke penjelasan', async () => {
+    const text = 'ADRO turun 45%';
+    const claim = { ...candidate(text), type: 'price_move' as const,
+      asserted: { metric: 'perubahan harga', value: -45, unit: '%' as const, window: null, period: null } };
+    const test = setup('ADRO turun -45%', [{ ...claim, quote: 'ADRO turun -45%', span: { start: 0, end: 15 } }]);
+    const fetchImpl = vi.fn();
+    test.deps.client = new SectorsClient({ config: { mode: 'cache_only' }, fetchImpl });
+    const result = await test.run();
+    expect(result.verdicts[0]?.verdict).toBe('unverifiable');
+    expect(result.creditsUsed).toBe(0);
+    expect(fetchImpl).not.toHaveBeenCalled();
+    const explainer = test.requests.find((r) => r.format.name === 'claim_explanation')!;
+    expect(JSON.parse(explainer.input).reason).toEqual(['Klaim tidak menyebut jangka waktu; pilih tanggal awal dan akhir.']);
+  });
+  it('jenis klaim yang dimatikan flag menjelaskan alasannya tanpa memanggil Sectors', async () => {
+    const text = 'ADRO laba naik 12% YoY';
+    const claim = { ...candidate(text), type: 'earnings_growth' as const,
+      asserted: { metric: 'pertumbuhan laba', value: 12, unit: '%' as const, window: 'YoY', period: null } };
+    const test = setup(text, [claim]);
+    test.deps.flags = { claim_types_ext: false };
+    const result = await test.run();
+    expect(result.verdicts[0]?.verdict).toBe('unverifiable');
+    const explainer = test.requests.find((r) => r.format.name === 'claim_explanation')!;
+    expect(JSON.parse(explainer.input).reason).toEqual(['Pemeriksaan untuk jenis klaim ini belum diaktifkan.']);
+  });
+  it('verifier harga menerima jendela router, cuplikan yang direncanakan tidak ditimpa', async () => {
+    const text = 'ADRO turun -25% past 5 years';
+    const claim = { ...candidate(text), type: 'price_move' as const,
+      asserted: { metric: 'perubahan harga', value: -25, unit: '%' as const, window: 'past 5 years', period: null } };
+    const test = setup(text, [claim]);
+    const asked: unknown[] = [];
+    test.deps.verifiers = { price_move: async (c, ctx) => {
+      asked.push(ctx.window);
+      for (const probe of sampledWindows(ctx.window!)!) {
+        await ctx.client.fetchDailyPrice(c.ticker, probe).catch(() => undefined);
+      }
+      return { evidence: [], matches: null, tolerance: '-', note: '' };
+    } };
+    const spy = vi.spyOn(test.deps.client, 'fetchDailyPrice');
+    await test.run();
+    expect(asked).toEqual([{ start: '2021-09-28', end: today }]);
+    expect(spy.mock.calls.map((call) => call[1])).toEqual([{ start: '2021-09-28', end: '2021-10-18' }, { start: '2026-09-06', end: today }]);
+    // Permintaan di luar rencana router tetap dipaksa ke jendela router.
+    spy.mockClear();
+    test.deps.verifiers = { price_move: async (c, ctx) => {
+      await ctx.client.fetchDailyPrice(c.ticker, { start: '2026-01-01', end: '2026-01-31' }).catch(() => undefined);
+      return { evidence: [], matches: null, tolerance: '-', note: '' };
+    } };
+    await test.run();
+    expect(spy.mock.calls.map((call) => call[1])).toEqual([{ start: '2021-09-28', end: today }]);
+  });
+});
 
 describe('end-to-end tiga fixture shared', () => {
   it.each(checkFixtures)('$input.checkId', async (fixture) => {

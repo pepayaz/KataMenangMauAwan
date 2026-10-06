@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { ClaimSchema, type Entity } from '@cek-dulu/shared';
 import { checkFixtures } from '../../shared/fixtures/index.js';
-import { anchorQuote, extractClaims, extractClaimsWithDiagnostics, validateExtractedClaims,
+import { anchorQuote, directionSign, sentenceStart, extractClaims, extractClaimsWithDiagnostics, validateExtractedClaims,
   type ExtractedClaim } from '../src/extractor.js';
 import { LlmAdapter, MockLlmProvider } from '../src/llm.js';
 
@@ -114,6 +114,58 @@ describe('koordinat ditetapkan kode, bukan LLM', () => {
     expect(anchorQuote(repeated, 'ADRO naik', 0)).toEqual({ start: 0, end: 9 });
     expect(anchorQuote(repeated, 'ADRO naik', 10)).toEqual({ start: 11, end: 20 });
     expect(anchorQuote(repeated, '   ', 0)).toBeNull();
+  });
+});
+
+describe('periode dari judul kalimat yang sama', () => {
+  const text = 'Rilis tahunan. BEDAH DATA (KUARTAL I - 2026): ADRO laba Rp 15,5 T; PTBA laba Rp 2,4 T.';
+  const quoteOf = (quote: string, period: string) => {
+    const start = text.indexOf(quote);
+    return candidate(quote, { span: { start, end: start + quote.length }, type: 'earnings_growth',
+      asserted: { metric: 'laba bersih', value: quote.includes('15,5') ? 15.5 : 2.4, unit: 'IDR', window: null, period } });
+  };
+
+  it('periode di judul sebelum kutipan diterima dan disimpan apa adanya', () => {
+    const result = validateExtractedClaims(text, entities, [quoteOf('ADRO laba Rp 15,5 T', 'KUARTAL I - 2026')], 'check1');
+    expect(result.rejected).toEqual([]);
+    expect(result.claims[0]?.asserted.period).toBe('KUARTAL I - 2026');
+  });
+
+  it('periode dari kalimat lain atau yang tidak tertulis tetap ditolak', () => {
+    const later = 'Laba naik. ADRO laba Rp 15,5 T. Data KUARTAL I - 2026.';
+    const start = later.indexOf('ADRO laba');
+    const item = candidate('ADRO laba Rp 15,5 T', { span: { start, end: start + 19 }, type: 'earnings_growth',
+      asserted: { metric: 'laba', value: 15.5, unit: 'IDR', window: null, period: 'KUARTAL I - 2026' } });
+    expect(validateExtractedClaims(later, entities, [item], 'check1').rejected[0]?.reason).toBe('PERIOD_NOT_WRITTEN');
+    expect(validateExtractedClaims(text, entities, [quoteOf('PTBA laba Rp 2,4 T', 'Q1 2026')], 'check1').rejected[0]?.reason)
+      .toBe('PERIOD_NOT_WRITTEN');
+  });
+
+  it('awal kalimat tidak terpotong oleh titik desimal', () => {
+    const decimal = 'Yield 15.5 persen. Kuartal I: ADRO naik';
+    expect(sentenceStart(decimal, decimal.indexOf('ADRO'))).toBe(decimal.indexOf(' Kuartal'));
+    expect(sentenceStart('ADRO 15.5 naik', 10)).toBe(0);
+  });
+});
+
+describe('arah perubahan dari kata kerja', () => {
+  const price = (quote: string, value: number) => candidate(quote, { type: 'price_move',
+    asserted: { metric: 'perubahan harga', value, unit: '%', window: 'sebulan', period: null } });
+  it.each([
+    ['ADRO turun 7,4% sebulan', 7.4, -7.4], ['ADRO anjlok 22,4% sebulan', 22.4, -22.4], ['ADRO naik 7,4% sebulan', 7.4, 7.4],
+    ['ADRO down 5% sebulan', 5, -5], ['ADRO -7,4% sebulan', -7.4, -7.4], ['ADRO sebulan 3% turun', 3, -3],
+  ] as const)('%s', (quote, value, expected) => {
+    expect(validateExtractedClaims(quote, entities, [price(quote, value)], 'check1').claims[0]?.asserted.value).toBe(expected);
+  });
+  it('kata arah terdekat yang menentukan', () => {
+    const quote = 'ADRO naik 10% sebulan setelah turun 5%';
+    expect(directionSign(quote, quote.indexOf('10%'), '10%')).toBe(1);
+    expect(directionSign(quote, quote.indexOf('5%'), '5%')).toBe(-1);
+  });
+  it('tipe tanpa arah (yield) tidak diubah tandanya', () => {
+    const quote = 'ADRO yield turun jadi 5%';
+    expect(validateExtractedClaims(quote, entities, [candidate(quote, { asserted: { metric: 'yield', value: 5, unit: '%', window: null, period: null } })],
+      'check1').claims[0]?.asserted.value).toBe(5);
   });
 });
 

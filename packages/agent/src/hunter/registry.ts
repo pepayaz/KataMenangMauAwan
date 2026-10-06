@@ -1,5 +1,5 @@
 import { ClaimSchema, HypothesisSchema, type Claim, type ClaimType, type Hypothesis, type ToolCall } from '@cek-dulu/shared';
-import { addDays, ENDPOINTS, estimateCredits, splitWindow, windowEndingToday,
+import { addDays, ENDPOINTS, estimateCredits, sampledWindows, splitWindow, windowEndingToday,
   type DateWindow, type EndpointName } from '@cek-dulu/sectors';
 import { isDividendAmountClaim } from '@cek-dulu/verifiers';
 import { routeClaim } from '../router.js';
@@ -31,6 +31,9 @@ export function createHypothesisRegistry(input: Claim, options: { today: string;
     if (plan.status !== 'ready') throw new Error('Jendela harga perlu diklarifikasi sebelum hunter.');
     priceWindow = { start: plan.tools[0]!.params.start as string, end: plan.tools.at(-1)!.params.end as string };
   }
+  // Jendela panjang diverifikasi lewat dua cuplikan; hipotesis harga butuh deret penuh
+  // (puluhan kredit), jadi tidak berlaku alih-alih didaftarkan lalu selalu dilewati.
+  const longPriceWindow = priceWindow !== undefined && sampledWindows(priceWindow, ENDPOINTS.fetchDailyPrice.maxWindowDays!) !== null;
   const context: tests.HypothesisContext = { today: options.today, priceWindow,
     comparisonWindow: priceWindow ? windowEndingToday(C.PRICE_COMPARISON_DAYS, priceWindow.end) : undefined };
   const report = (sections: string[]): ToolCall => ({ tool: 'fetchCompanyReport', params: { symbol: claim.ticker, sections } });
@@ -41,7 +44,7 @@ export function createHypothesisRegistry(input: Claim, options: { today: string;
   // per saham ("Rp87 per saham") tidak diubah maknanya oleh konteks itu.
   const dividendAmount = claim.type === 'dividend' && isDividendAmountClaim(claim);
   for (const [id, claimType, description, test] of definitions) {
-    if (claimType !== claim.type || (claimType === 'dividend' && dividendAmount)) continue;
+    if (claimType !== claim.type || (claimType === 'dividend' && dividendAmount) || (claimType === 'price_move' && longPriceWindow)) continue;
     let requiredTools: ToolCall[];
     if (claimType === 'dividend') requiredTools = [report(['dividend']), ...(id === 'DIV_TTM_GAP'
       ? [{ tool: 'fetchCorporateActions', params: { symbol: claim.ticker } }] : [])];

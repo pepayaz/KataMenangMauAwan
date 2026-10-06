@@ -9,7 +9,7 @@ export const makeClaim = (type: Claim['type'], asserted: Partial<Claim['asserted
   claimId: 'c1', checkId: 'check1', ticker: 'ADRO', type, span: [0, 20], inScope: true,
   asserted: { metric: type === 'valuation' ? 'PER' : type === 'dividend' ? 'yield dividen' : 'perubahan harga',
     value: type === 'dividend' ? 25.5 : type === 'valuation' ? 6 : 80,
-    unit: type === 'valuation' ? 'x' : '%', ...asserted },
+    unit: type === 'valuation' ? 'x' : '%', ...(type === 'price_move' ? { window: 'sebulan' } : {}), ...asserted },
 });
 export const toolResult = (data: unknown, endpoint: ToolResult<unknown>['endpoint'] = 'fetchCompanyReport',
   sections = ['dividend']): ToolResult<unknown> => ({ data, endpoint, params: { symbol: 'ADRO', ...(endpoint === 'fetchCompanyReport' ? { sections } : {}) },

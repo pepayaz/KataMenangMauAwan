@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { windowEndingToday } from '@cek-dulu/sectors';
+import { sampledWindows, windowEndingToday } from '@cek-dulu/sectors';
 import { computePriceChange, splitsInWindow, verifyPriceMove } from '../src/price-move.js';
 import { TODAY, ctx, dailySeries, makeClaim, seededClient } from './helpers.js';
 
@@ -162,5 +162,33 @@ describe('verifyPriceMove', () => {
       ctx(partial),
     );
     expect(out.matches).toBe(true);
+  });
+});
+
+describe('verifyPriceMove — jendela dari router dan jendela panjang', () => {
+  const longWindow = { start: '2021-09-25', end: TODAY };
+  const [head, tail] = sampledWindows(longWindow)!;
+  const seeds = (from: number, to: number) => seededClient([
+    { endpoint: 'fetchDailyPrice', params: { symbol: 'BBRI', ...head },
+      response: dailySeries({ symbol: 'BBRI', start: head.start, days: 21, from, to: from }) },
+    { endpoint: 'fetchDailyPrice', params: { symbol: 'BBRI', ...tail },
+      response: dailySeries({ symbol: 'BBRI', start: tail.start, days: 21, from: to, to }) },
+    { endpoint: 'fetchCorporateActions', params: { symbol: 'BBRI' }, response: { symbol: 'BBRI.JK', corporate_actions: {} } },
+  ]);
+  const claim = makeClaim('price_move', 'BBRI', { metric: 'perubahan harga', value: -25.29, unit: '%', window: 'past 5 years' });
+
+  it('lima tahun dihitung dari cuplikan awal dan akhir tanpa memuat seluruh deret', async () => {
+    const out = await verifyPriceMove(claim, { ...ctx(seeds(3815, 2850)), window: longWindow });
+    expect(out.matches).toBe(true);
+    expect(out.computed?.value).toBeCloseTo(-25.3, 1);
+    expect(out.evidence.map((e) => e.label)).not.toContain('Harga terendah BBRI di jendela');
+    expect(out.details).toMatchObject({ sampled: [head, tail] });
+    expect(out.details).not.toHaveProperty('lowClose');
+  });
+
+  it('angka harga tanpa persen tidak dibandingkan', async () => {
+    const out = await verifyPriceMove(makeClaim('price_move', 'BBRI', { metric: 'harga', value: 6400 }),
+      { ...ctx(seeds(1, 1)), window: longWindow });
+    expect(out).toMatchObject({ matches: null, evidence: [] });
   });
 });

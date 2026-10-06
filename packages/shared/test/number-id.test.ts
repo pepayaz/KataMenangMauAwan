@@ -77,7 +77,19 @@ describe('parseNumber — ekspresi lengkap', () => {
     expect(extracted[0]).toMatchObject({ value, unit, raw, span: [3, 3 + raw.length], ambiguous: false });
   });
 
-  it.each(['1.358', '10.950', '1,358', '0.255', '0,255', 'Rp1.358', 'Rp2,4 M', '2 M', '3 M lembar'])
+  it.each([['Rp10.950', 10950], ['Rp 5.925', 5925], ['Rp1.358', 1358], ['Rp1,358', 1358], ['-Rp965', null]] as const)
+  ('Rp tanpa skala membaca kelompok tiga digit %s sebagai ribuan', (raw, value) => {
+    const parsed = parseNumber(raw);
+    if (value === null) return expect(parsed).toBeNull();
+    expect(parsed).toMatchObject({ ambiguous: false, unit: 'IDR', value, normalized: value });
+  });
+  it('desimal rupiah dua digit tidak berubah', () => {
+    expect(parseNumber('Rp1.358,18')).toMatchObject({ value: 1358.18 });
+    expect(parseNumber('Rp2,4 T')).toMatchObject({ value: 2.4, normalized: 2.4e12 });
+    expect(parseNumber('Rp15.5 Triliun')).toMatchObject({ value: 15.5, normalized: 15.5e12 });
+  });
+
+  it.each(['1.358', '10.950', '1,358', '0.255', '0,255', 'Rp1.358 M', 'Rp2,4 M', '2 M', '3 M lembar'])
   ('menandai %s sebagai ambigu tanpa nilai tebakan', (raw) => {
     expect(parseNumber(raw)).toMatchObject({ ambiguous: true, value: undefined, normalized: undefined, raw });
     expect(extractNumbers(raw)[0]?.ambiguous).toBe(true);

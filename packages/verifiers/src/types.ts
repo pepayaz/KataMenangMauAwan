@@ -1,11 +1,13 @@
 import type { Claim, ClaimType, Evidence, TraceEvent } from '@cek-dulu/shared';
-import type { SectorsClient, ToolResult } from '@cek-dulu/sectors';
+import type { DateWindow, SectorsClient, ToolResult } from '@cek-dulu/sectors';
 
 export type VerifierContext = {
   client: SectorsClient;
   checkId: string;
   /** Tanggal acuan ISO (YYYY-MM-DD). Disuntik supaya uji tidak bergantung jam dinding. */
   today: string;
+  /** Jendela hasil router. Bila ada, verifier memakainya alih-alih menafsirkan frasa sendiri. */
+  window?: DateWindow;
   emit?: (event: TraceEvent) => void;
 };
 

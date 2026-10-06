@@ -16,8 +16,12 @@ const SCALES: Record<string, number> = {
   t: 1e12, triliun: 1e12, trilyun: 1e12, tn: 1e12,
 };
 
-/** Pemisah harus konsisten; satu kelompok tiga digit dapat memiliki dua makna. */
-function parseNumeric(raw: string): Numeric | null {
+/**
+ * Pemisah harus konsisten; satu kelompok tiga digit dapat memiliki dua makna.
+ * `thousandsHint`: konteks (mis. awalan Rp tanpa skala) menetapkan kelompok tiga
+ * digit sebagai ribuan, karena rupiah tidak ditulis dengan tiga desimal.
+ */
+function parseNumeric(raw: string, thousandsHint = false): Numeric | null {
   const token = raw.replace(/\u2212/g, '-');
   if (!/^[+-]?\d+(?:[.,]\d+)*$/.test(token)) return null;
   const body = token.replace(/^[+-]/, '');
@@ -35,8 +39,10 @@ function parseNumeric(raw: string): Numeric | null {
       decimal = token.replace(/[.,]/g, '');
     } else if (groups.length === 2) {
       // Tidak memilih ribuan atau desimal hanya berdasarkan bahasa antarmuka.
-      if (groups[0]!.length <= 3 && groups[1]!.length === 3) return { ambiguous: true };
-      decimal = token.replace(',', '.');
+      if (groups[0]!.length <= 3 && groups[1]!.length === 3) {
+        if (!thousandsHint) return { ambiguous: true };
+        decimal = token.replace(/[.,]/g, '');
+      } else decimal = token.replace(',', '.');
     } else decimal = token;
   }
   const value = Number(decimal);
@@ -71,7 +77,7 @@ export function parseNumber(input: string): ParsedNumber | null {
     ? { ambiguous: false, value: 0.5 }
     : words === 'dua kali lipat'
       ? { ambiguous: false, value: 2 }
-      : parseNumeric(numericText);
+      : parseNumeric(numericText, currency && suffix === '');
   if (numeric === null) return null;
   if (words === 'dua kali lipat' && (suffix !== '' || currency)) return null;
 

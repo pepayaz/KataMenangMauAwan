@@ -156,7 +156,7 @@ tetap berlanjut untuk weak atau strong yang tidak triggered. Hasil menyertakan
 evidence, kredit, skipped, dan pendingTools beserta estimasi kredit data yang kurang.
 Hipotesis dengan tool gagal tidak diberi hasil seolah-olah sudah diuji lengkap.
 
-`createSectorsHunterGateway(client, today)` hanya menerima client cache_only/replay.
+`createSectorsHunterGateway(client, today)` menerima semua mode. Offline (cache_only/replay) gratis; live memesan `estimateCredits` di muka lewat `quote`.
 Semua panggilan lewat metode B; tidak ada fetch Sectors di agent. Cache miss tidak
 memicu live dan dilaporkan lewat pendingTools. Mode offline tidak menagih kredit,
 termasuk replay. Gateway live belum disediakan karena client B tidak memiliki

@@ -42,6 +42,11 @@ const BodySchema = z.object({
   userSelections: z.array(UserTickerSelectionSchema).max(10).default([]),
 });
 
+/** Demo fixture selalu cache_only; selain itu mode dibaca dari SECTORS_MODE. */
+function sectorsConfig(): { mode?: 'cache_only' } {
+  return isFixtureDemoEnabled() ? { mode: 'cache_only' } : {};
+}
+
 export async function POST(req: Request): Promise<Response> {
   let body: z.infer<typeof BodySchema>;
   try {
@@ -62,7 +67,8 @@ export async function POST(req: Request): Promise<Response> {
     catch { return Response.json({ error: 'Demo hanya menerima teks fixture yang tersedia.' }, { status: 400 }); }
   }
   const user = body.demo ? null : await getUser(req);
-  const bundle = createSectorsClient({ config: { mode: 'cache_only' }, fileCacheDir: webCacheDirectory() });
+  // Mode Sectors mengikuti SECTORS_MODE; demo fixture memakai client-nya sendiri.
+  const bundle = createSectorsClient({ config: sectorsConfig(), fileCacheDir: webCacheDirectory() });
   const client = demoDeps?.client ?? bundle.client;
   const db = body.demo ? null : bundle.db;
   const [flags, aliases] = await Promise.all([loadFlags(db), loadAliases(db)]);
@@ -131,7 +137,7 @@ export async function POST(req: Request): Promise<Response> {
 
 /** Pemeriksaan kesehatan ringan untuk smoke test integrasi harian pukul 21:00. */
 export async function GET(): Promise<Response> {
-  const { client, db } = createSectorsClient({ config: { mode: 'cache_only' }, fileCacheDir: webCacheDirectory() });
+  const { client, db } = createSectorsClient({ config: sectorsConfig(), fileCacheDir: webCacheDirectory() });
   return Response.json({
     ok: true,
     mode: client.mode,

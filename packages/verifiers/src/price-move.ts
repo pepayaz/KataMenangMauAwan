@@ -1,6 +1,6 @@
 import type { Claim } from '@cek-dulu/shared';
 import type { CorporateActions, DailyDataItem } from '@cek-dulu/sectors';
-import { isMissingData, parseWindowPhrase, windowEndingToday, type DateWindow } from '@cek-dulu/sectors';
+import { isMissingData, parseWindowPhrase, sampledWindows, windowEndingToday, windowLengthDays, type DateWindow } from '@cek-dulu/sectors';
 import { ABS_TOLERANCE_PP, describeAbsolute, withinAbsolute } from './tolerance.js';
 import { makeEvidence, unverifiable, type Verifier, type VerifierOutput } from './types.js';
 
@@ -67,16 +67,23 @@ export function splitsInWindow(
 
 export const verifyPriceMove: Verifier = async (claim: Claim, ctx): Promise<VerifierOutput> => {
   const tol = describeAbsolute(ABS_TOLERANCE_PP.price_move);
-  if (typeof claim.asserted.value !== 'number') {
+  if (typeof claim.asserted.value !== 'number' || claim.asserted.unit !== '%') {
     return unverifiable('Klaim kenaikan harga tidak menyebut angka persen.', tol);
   }
 
-  const days = parseWindowPhrase(claim.asserted.window) ?? PRICE_DEFAULT_WINDOW_DAYS;
-  const window = windowEndingToday(days, ctx.today);
+  const window = ctx.window ?? windowEndingToday(parseWindowPhrase(claim.asserted.window) ?? PRICE_DEFAULT_WINDOW_DAYS, ctx.today);
+  const days = windowLengthDays(window);
+  // Jendela panjang: hanya harga awal dan akhir yang dibutuhkan; rendah/tinggi/volume tidak dilaporkan.
+  const probes = sampledWindows(window);
 
   let daily;
   try {
-    daily = await ctx.client.fetchDailyPrice(claim.ticker, window, { checkId: ctx.checkId });
+    if (probes) {
+      const head = await ctx.client.fetchDailyPrice(claim.ticker, probes[0], { checkId: ctx.checkId });
+      const tail = await ctx.client.fetchDailyPrice(claim.ticker, probes[1], { checkId: ctx.checkId });
+      daily = { ...tail, params: { symbol: claim.ticker, ...window, sampled: probes }, credits: head.credits + tail.credits,
+        cached: head.cached && tail.cached, data: [...head.data, ...tail.data] };
+    } else daily = await ctx.client.fetchDailyPrice(claim.ticker, window, { checkId: ctx.checkId });
   } catch (err) {
     if (isMissingData(err)) {
       return unverifiable(`Harga harian ${claim.ticker} tidak tersedia: ${(err as Error).message}`, tol);
@@ -114,11 +121,13 @@ export const verifyPriceMove: Verifier = async (claim: Claim, ctx): Promise<Veri
     ),
     makeEvidence(claim.claimId, daily, `Harga ${claim.ticker} ${change.startDate}`, change.startClose, 'IDR'),
     makeEvidence(claim.claimId, daily, `Harga ${claim.ticker} ${change.endDate}`, change.endClose, 'IDR'),
-    makeEvidence(claim.claimId, daily, `Harga terendah ${claim.ticker} di jendela`, change.lowClose, 'IDR'),
-    makeEvidence(claim.claimId, daily, `Harga tertinggi ${claim.ticker} di jendela`, change.highClose, 'IDR'),
+    ...(probes ? [] : [
+      makeEvidence(claim.claimId, daily, `Harga terendah ${claim.ticker} di jendela`, change.lowClose, 'IDR'),
+      makeEvidence(claim.claimId, daily, `Harga tertinggi ${claim.ticker} di jendela`, change.highClose, 'IDR'),
+    ]),
   ];
 
-  if (change.avgVolume !== null) {
+  if (change.avgVolume !== null && !probes) {
     evidence.push(
       makeEvidence(
         claim.claimId,
@@ -159,10 +168,13 @@ export const verifyPriceMove: Verifier = async (claim: Claim, ctx): Promise<Veri
     details: {
       windowDays: days,
       window,
-      lowClose: change.lowClose,
-      highClose: change.highClose,
-      avgVolume: change.avgVolume,
-      tradingDays: change.tradingDays,
+      // Cuplikan hanya mewakili awal dan akhir jendela; rendah/tinggi/volume tidak berlaku.
+      ...(probes ? { sampled: probes } : {
+        lowClose: change.lowClose,
+        highClose: change.highClose,
+        avgVolume: change.avgVolume,
+        tradingDays: change.tradingDays,
+      }),
       splits,
     },
   };

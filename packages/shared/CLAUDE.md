@@ -19,6 +19,9 @@ Aturan:
   dan skala ke satuan dasar. `raw` persis sama dengan potongan teks pada span UTF-16.
   Hasil ambigu tidak mempunyai nilai numerik dan ditandai `ambiguous: true`.
   Jangan menganggap `1.358`, `1,358`, atau singkatan `M` pasti mempunyai satu makna.
+  Pengecualian: sesudah `Rp` tanpa skala (`Rp10.950`, `Rp 1,358`), satu kelompok tiga
+  digit dibaca sebagai ribuan karena rupiah tidak ditulis dengan tiga desimal.
+  `Rp1.358 M` dan `1.358` tanpa Rp tetap ambigu.
 - `parseIndonesianNumber` adalah pembantu skalar kompatibel: invalid/ambigu -> null.
 - Fixture ADRO bersumber dari AGENTS.md bagian 6; fixture PER menggunakan data sintetis,
   dan fixture prediksi sengaja tidak memiliki evidence maupun pengujian hipotesis.
