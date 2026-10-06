@@ -37,6 +37,20 @@ export type ExtractionOptions = {
 const DECLINE = /(?:^|[^\p{L}])(?:turun|penurunan|anjlok|ambrol|ambruk|merosot|jatuh|longsor|terjun|terkoreksi|koreksi|melemah|pelemahan|susut|menyusut|minus|down|drop(?:ped)?|fell|fall(?:en)?|plunge[sd]?|decline[sd]?)(?![\p{L}])/giu;
 const RISE = /(?:^|[^\p{L}])(?:naik|kenaikan|melonjak|lonjakan|terbang|melesat|meroket|tumbuh|pertumbuhan|menguat|penguatan|up|rise|rose|gain(?:ed)?|surge[sd]?|jump(?:ed)?)(?![\p{L}])/giu;
 const SIGNED_TYPES = new Set(['price_move', 'earnings_growth']);
+const FLOW_OUT = /(?:^|[^\p{L}])(?:jual|jualan|menjual|kabur|keluar|outflow|buang|distribusi|lepas|guyur|net sell)(?![\p{L}])/iu;
+const FLOW_IN = /(?:^|[^\p{L}])(?:beli|membeli|borong|memborong|masuk|inflow|akumulasi|serok|koleksi|tampung|net buy)(?![\p{L}])/iu;
+
+/**
+ * Arah arus asing ditulis di kalimat ("asing buang BBRI"), tetapi metric dari LLM
+ * sering netral ("foreign flow"). Kode menempelkan arah literal dari kutipan.
+ */
+export function flowMetric(metric: string, quote: string): string {
+  const metricOut = FLOW_OUT.test(metric), metricIn = FLOW_IN.test(metric);
+  if (metricOut !== metricIn) return metric;
+  const out = FLOW_OUT.test(quote), inflow = FLOW_IN.test(quote);
+  if (out === inflow) return metric;
+  return `${metric} (${out ? 'jual bersih' : 'beli bersih'})`;
+}
 
 /**
  * Tanda angka perubahan yang ditetapkan kode: kata arah terdekat sebelum angka
@@ -133,7 +147,7 @@ export function validateExtractedClaims(
       const claim = ClaimSchema.parse({
         claimId: `${checkId}-c${claims.length + 1}`, checkId, span: [start, end],
         ticker, type: candidate.type, inScope,
-        asserted: { metric: asserted.metric,
+        asserted: { metric: candidate.type === 'foreign_flow' ? flowMetric(asserted.metric, quote) : asserted.metric,
           ...(matching && !matching.ambiguous ? { value: (matching.unit === '%' ? matching.value : matching.normalized)
             * (SIGNED_TYPES.has(candidate.type) ? directionSign(quote, matching.span[0], matching.raw) : 1) } : {}),
           ...(asserted.unit !== null ? { unit: asserted.unit } : {}),

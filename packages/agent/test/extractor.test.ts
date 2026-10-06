@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { ClaimSchema, type Entity } from '@cek-dulu/shared';
 import { checkFixtures } from '../../shared/fixtures/index.js';
-import { anchorQuote, directionSign, sentenceStart, extractClaims, extractClaimsWithDiagnostics, validateExtractedClaims,
+import { anchorQuote, directionSign, flowMetric, sentenceStart, extractClaims, extractClaimsWithDiagnostics, validateExtractedClaims,
   type ExtractedClaim } from '../src/extractor.js';
 import { LlmAdapter, MockLlmProvider } from '../src/llm.js';
 
@@ -167,6 +167,16 @@ describe('arah perubahan dari kata kerja', () => {
     expect(validateExtractedClaims(quote, entities, [candidate(quote, { asserted: { metric: 'yield', value: 5, unit: '%', window: null, period: null } })],
       'check1').claims[0]?.asserted.value).toBe(5);
   });
+});
+
+describe('arah arus asing dari kalimat', () => {
+  it.each([
+    ['foreign flow', 'Asing lagi buang BBRI', 'foreign flow (jual bersih)'],
+    ['foreign flow', 'Asing lagi borong BBRI', 'foreign flow (beli bersih)'],
+    ['asing jualan', 'Asing jualan BBRI', 'asing jualan'],
+    ['foreign flow', 'Asing beli lalu jual BBRI', 'foreign flow'],
+    ['foreign flow', 'Arus asing BBRI 20 hari', 'foreign flow'],
+  ])('%s + "%s"', (metric, quote, expected) => expect(flowMetric(metric, quote)).toBe(expected));
 });
 
 describe('penolakan sesudah LLM', () => {

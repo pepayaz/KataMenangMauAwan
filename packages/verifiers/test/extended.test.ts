@@ -7,6 +7,7 @@ import {
   verifyEarningsGrowth,
 } from '../src/earnings-growth.js';
 import {
+  flowDirection,
   isInflowClaim,
   lastNTradingDays,
   summarizeFlow,
@@ -172,6 +173,13 @@ describe('isInflowClaim (murni)', () => {
     expect(isInflowClaim('asing borong')).toBe(true);
     expect(isInflowClaim('asing jualan terus')).toBe(false);
   });
+
+  it('flowDirection null bila arah tidak disebut atau bertentangan', () => {
+    expect(flowDirection('foreign flow (jual bersih)')).toBe('out');
+    expect(flowDirection('asing borong')).toBe('in');
+    expect(flowDirection('foreign flow')).toBeNull();
+    expect(flowDirection('beli lalu jual')).toBeNull();
+  });
 });
 
 describe('verifyForeignFlow', () => {
@@ -197,6 +205,22 @@ describe('verifyForeignFlow', () => {
     );
     expect(out.matches).toBe(true);
     expect(out.note).toContain('beli bersih');
+  });
+
+  it('klaim jual bersih dinilai dari arah keluar', async () => {
+    const out = await verifyForeignFlow(
+      makeClaim('foreign_flow', 'BBRI', { metric: 'foreign flow (jual bersih)' }),
+      ctx(client([-1e9, -2e9, 5e8])),
+    );
+    expect(out.matches).toBe(true);
+  });
+
+  it('tanpa arah tidak dianggap beli', async () => {
+    const out = await verifyForeignFlow(
+      makeClaim('foreign_flow', 'BBRI', { metric: 'foreign flow' }),
+      ctx(client([-1e9, -2e9, 5e8])),
+    );
+    expect(out.matches).toBeNull();
   });
 
   it('membantah klaim borong bila asing justru keluar', async () => {
