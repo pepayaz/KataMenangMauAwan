@@ -1,0 +1,146 @@
+{
+  "measuredAt": "2026-10-06T05:41:08.263Z",
+  "model": "gemini-3.5-flash",
+  "rates": {
+    "inputUsdPerMillion": 1.5,
+    "cachedInputUsdPerMillion": 0.15,
+    "outputUsdPerMillion": 9
+  },
+  "pricingSource": "https://ai.google.dev/gemini-api/docs/pricing",
+  "methodology": "ADRO repeated with a new checkId, as in web UI. Same pipeline/fixture evidence/model; baseline strips only new thinking/output config and disables local cache. Ordered baseline then cold then immediate repeat per fixture. Controlled synthetic/offline verifier data; not a production-data accuracy evaluation. No video measured.",
+  "maxCalls": 24,
+  "maxObservedUsd": 0.5,
+  "callsMade": 5,
+  "estimatedTotalUsd": 0.015411000000000001,
+  "measurements": [
+    {
+      "fixture": "demo-adro",
+      "text": "ADRO yield 25,5% setahun",
+      "phase": "optimized_cold",
+      "elapsedMs": 7437.505700000001,
+      "httpCalls": 3,
+      "inputTokens": 2507,
+      "outputTokens": 329,
+      "thinkingTokens": 491,
+      "estimatedUsd": 0.011140500000000001,
+      "calls": [
+        {
+          "stage": "extracted_claims",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 936,
+          "outputTokens": 68,
+          "thinkingTokens": 491,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 3338.3779999999997
+        },
+        {
+          "stage": "context_hypotheses",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 818,
+          "outputTokens": 48,
+          "thinkingTokens": 0,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 1767.7785000000003
+        },
+        {
+          "stage": "claim_explanation",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 753,
+          "outputTokens": 213,
+          "thinkingTokens": 0,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 2289.119099999999
+        }
+      ],
+      "claims": [
+        {
+          "type": "dividend",
+          "ticker": "ADRO",
+          "asserted": {
+            "metric": "yield",
+            "value": 25.5,
+            "unit": "%",
+            "window": "setahun"
+          },
+          "inScope": true
+        }
+      ],
+      "verdicts": [
+        "misleading"
+      ],
+      "explanations": [
+        "Klaim mengenai dividen ADRO dapat menyesatkan karena tidak menggambarkan kondisi keuangan yang utuh. Data menunjukkan angka rata-rata dividen (Sectors dividend_yield_avg.avg_yield) sebesar 25,5%, dengan rata-rata mandiri sekitar 23,6%. Terdapat pembayaran khusus pada 28 November 2024 terkait pemisahan AADI sebesar Rp1358,18 dengan yield pembayaran khusus mencapai 45,2%, sementara yield TTM berada di angka 5,56%. Namun, rasio pembayaran kas (cash payout ratio) ADRO tercatat negatif sebesar -0,8970x (atau -0,8970x pada data dividend.cash_payout_ratio). Rasio pembayaran kas yang negatif ini menunjukkan bahwa kemampuan pembayaran perlu diperiksa lebih lanjut karena pembayaran kas melebihi arus kas atau bernilai negatif, sehingga data historis ini tidak dapat menjamin kinerja atau pembayaran dividen di masa depan."
+      ],
+      "expectedVerdict": "misleading",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    },
+    {
+      "fixture": "demo-adro",
+      "text": "ADRO yield 25,5% setahun",
+      "phase": "optimized_new_check",
+      "elapsedMs": 3347.4442,
+      "httpCalls": 2,
+      "inputTokens": 1581,
+      "outputTokens": 211,
+      "thinkingTokens": 0,
+      "estimatedUsd": 0.0042705,
+      "calls": [
+        {
+          "stage": "context_hypotheses",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 834,
+          "outputTokens": 51,
+          "thinkingTokens": 0,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 1553.4487000000008
+        },
+        {
+          "stage": "claim_explanation",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 747,
+          "outputTokens": 160,
+          "thinkingTokens": 0,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 1785.6592999999993
+        }
+      ],
+      "claims": [
+        {
+          "type": "dividend",
+          "ticker": "ADRO",
+          "asserted": {
+            "metric": "yield",
+            "value": 25.5,
+            "unit": "%",
+            "window": "setahun"
+          },
+          "inScope": true
+        }
+      ],
+      "verdicts": [
+        "misleading"
+      ],
+      "explanations": [
+        "Klaim mengenai dividen ADRO dapat menyesatkan karena rata-rata dividend yield sektor tercatat sebesar 25,5%, sementara rata-rata mandirinya sekitar 23,6%. Meskipun terdapat pembayaran khusus sebesar Rp1358,18 pada 28 November 2024 terkait pemisahan AADI dengan yield pembayaran khusus mencapai 45,2% dan yield TTM sebesar 5,56%, kemampuan pembayaran ini perlu diperhatikan lebih lanjut. Data historis menunjukkan rasio pembayaran kas (cash payout ratio) ADRO bernilai negatif, yaitu -0,8970x, sehingga konteks kemampuan pembayaran kas yang sebenarnya perlu diperiksa kembali karena rasio yang negatif atau melebihi arus kas tersebut."
+      ],
+      "expectedVerdict": "misleading",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    }
+  ]
+}

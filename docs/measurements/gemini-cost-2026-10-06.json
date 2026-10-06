@@ -1,0 +1,490 @@
+{
+  "measuredAt": "2026-10-06T05:40:34.217Z",
+  "model": "gemini-3.5-flash",
+  "rates": {
+    "inputUsdPerMillion": 1.5,
+    "cachedInputUsdPerMillion": 0.15,
+    "outputUsdPerMillion": 9
+  },
+  "pricingSource": "https://ai.google.dev/gemini-api/docs/pricing",
+  "methodology": "Same pipeline/fixture evidence/model; baseline strips only new thinking/output config and disables local cache. Ordered baseline then cold then immediate repeat per fixture. Controlled synthetic/offline verifier data; not a production-data accuracy evaluation. No video measured. Exact-repeat uses the same checkId and measures the cache ceiling, not a normal new UI check.",
+  "maxCalls": 24,
+  "maxObservedUsd": 0.5,
+  "callsMade": 16,
+  "estimatedTotalUsd": 0.10041,
+  "measurements": [
+    {
+      "fixture": "demo-adro",
+      "text": "ADRO yield 25,5% setahun",
+      "phase": "baseline",
+      "elapsedMs": 12933.369599999998,
+      "httpCalls": 3,
+      "inputTokens": 2507,
+      "outputTokens": 317,
+      "thinkingTokens": 2294,
+      "estimatedUsd": 0.0272595,
+      "calls": [
+        {
+          "stage": "extracted_claims",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 936,
+          "outputTokens": 68,
+          "thinkingTokens": 458,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 3138.2447
+        },
+        {
+          "stage": "context_hypotheses",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 818,
+          "outputTokens": 63,
+          "thinkingTokens": 438,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 3065.1441000000013
+        },
+        {
+          "stage": "claim_explanation",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 753,
+          "outputTokens": 186,
+          "thinkingTokens": 1398,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 6672.481599999999
+        }
+      ],
+      "claims": [
+        {
+          "type": "dividend",
+          "ticker": "ADRO",
+          "asserted": {
+            "metric": "yield",
+            "value": 25.5,
+            "unit": "%",
+            "window": "setahun"
+          },
+          "inScope": true
+        }
+      ],
+      "verdicts": [
+        "misleading"
+      ],
+      "expectedVerdict": "misleading",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    },
+    {
+      "fixture": "demo-adro",
+      "text": "ADRO yield 25,5% setahun",
+      "phase": "optimized_cold",
+      "elapsedMs": 7653.770099999998,
+      "httpCalls": 3,
+      "inputTokens": 2507,
+      "outputTokens": 297,
+      "thinkingTokens": 577,
+      "estimatedUsd": 0.011626500000000001,
+      "calls": [
+        {
+          "stage": "extracted_claims",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 936,
+          "outputTokens": 68,
+          "thinkingTokens": 577,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 3778.7526
+        },
+        {
+          "stage": "context_hypotheses",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 818,
+          "outputTokens": 37,
+          "thinkingTokens": 0,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 1505.972600000001
+        },
+        {
+          "stage": "claim_explanation",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 753,
+          "outputTokens": 192,
+          "thinkingTokens": 0,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 2359.6110999999983
+        }
+      ],
+      "claims": [
+        {
+          "type": "dividend",
+          "ticker": "ADRO",
+          "asserted": {
+            "metric": "yield",
+            "value": 25.5,
+            "unit": "%",
+            "window": "setahun"
+          },
+          "inScope": true
+        }
+      ],
+      "verdicts": [
+        "misleading"
+      ],
+      "expectedVerdict": "misleading",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    },
+    {
+      "fixture": "demo-adro",
+      "text": "ADRO yield 25,5% setahun",
+      "phase": "optimized_repeat",
+      "elapsedMs": 7.825400000001537,
+      "httpCalls": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "thinkingTokens": 0,
+      "estimatedUsd": 0,
+      "calls": [],
+      "claims": [
+        {
+          "type": "dividend",
+          "ticker": "ADRO",
+          "asserted": {
+            "metric": "yield",
+            "value": 25.5,
+            "unit": "%",
+            "window": "setahun"
+          },
+          "inScope": true
+        }
+      ],
+      "verdicts": [
+        "misleading"
+      ],
+      "expectedVerdict": "misleading",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    },
+    {
+      "fixture": "demo-per",
+      "text": "BBCA PER cuma 3x",
+      "phase": "baseline",
+      "elapsedMs": 13214.512599999998,
+      "httpCalls": 3,
+      "inputTokens": 1834,
+      "outputTokens": 270,
+      "thinkingTokens": 2288,
+      "estimatedUsd": 0.025773,
+      "calls": [
+        {
+          "stage": "extracted_claims",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 932,
+          "outputTokens": 61,
+          "thinkingTokens": 811,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 4308.1329000000005
+        },
+        {
+          "stage": "context_hypotheses",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 307,
+          "outputTokens": 116,
+          "thinkingTokens": 881,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 5132.396600000004
+        },
+        {
+          "stage": "claim_explanation",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 595,
+          "outputTokens": 93,
+          "thinkingTokens": 596,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 3765.3975999999966
+        }
+      ],
+      "claims": [
+        {
+          "type": "valuation",
+          "ticker": "BBCA",
+          "asserted": {
+            "metric": "PER",
+            "value": 3,
+            "unit": "x"
+          },
+          "inScope": true
+        }
+      ],
+      "verdicts": [
+        "supported"
+      ],
+      "expectedVerdict": "supported",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    },
+    {
+      "fixture": "demo-per",
+      "text": "BBCA PER cuma 3x",
+      "phase": "optimized_cold",
+      "elapsedMs": 6832.976499999997,
+      "httpCalls": 3,
+      "inputTokens": 1834,
+      "outputTokens": 247,
+      "thinkingTokens": 622,
+      "estimatedUsd": 0.010571999999999998,
+      "calls": [
+        {
+          "stage": "extracted_claims",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 932,
+          "outputTokens": 61,
+          "thinkingTokens": 622,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 3571.9296999999933
+        },
+        {
+          "stage": "context_hypotheses",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 307,
+          "outputTokens": 91,
+          "thinkingTokens": 0,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 1542.5165999999954
+        },
+        {
+          "stage": "claim_explanation",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 595,
+          "outputTokens": 95,
+          "thinkingTokens": 0,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 1713.8069000000032
+        }
+      ],
+      "claims": [
+        {
+          "type": "valuation",
+          "ticker": "BBCA",
+          "asserted": {
+            "metric": "PER",
+            "value": 3,
+            "unit": "x"
+          },
+          "inScope": true
+        }
+      ],
+      "verdicts": [
+        "supported"
+      ],
+      "expectedVerdict": "supported",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    },
+    {
+      "fixture": "demo-per",
+      "text": "BBCA PER cuma 3x",
+      "phase": "optimized_repeat",
+      "elapsedMs": 5.115499999999884,
+      "httpCalls": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "thinkingTokens": 0,
+      "estimatedUsd": 0,
+      "calls": [],
+      "claims": [
+        {
+          "type": "valuation",
+          "ticker": "BBCA",
+          "asserted": {
+            "metric": "PER",
+            "value": 3,
+            "unit": "x"
+          },
+          "inScope": true
+        }
+      ],
+      "verdicts": [
+        "supported"
+      ],
+      "expectedVerdict": "supported",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    },
+    {
+      "fixture": "demo-prediction",
+      "text": "BBRI bakal naik 80%",
+      "phase": "baseline",
+      "elapsedMs": 7933.214399999997,
+      "httpCalls": 2,
+      "inputTokens": 1289,
+      "outputTokens": 123,
+      "thinkingTokens": 1383,
+      "estimatedUsd": 0.015487500000000001,
+      "calls": [
+        {
+          "stage": "extracted_claims",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 932,
+          "outputTokens": 64,
+          "thinkingTokens": 759,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 4122.207000000002
+        },
+        {
+          "stage": "claim_explanation",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 357,
+          "outputTokens": 59,
+          "thinkingTokens": 624,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 3805.499299999996
+        }
+      ],
+      "claims": [
+        {
+          "type": "price_move",
+          "ticker": "BBRI",
+          "asserted": {
+            "metric": "naik",
+            "value": 80,
+            "unit": "%"
+          },
+          "inScope": false
+        }
+      ],
+      "verdicts": [
+        "out_of_scope"
+      ],
+      "expectedVerdict": "out_of_scope",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    },
+    {
+      "fixture": "demo-prediction",
+      "text": "BBRI bakal naik 80%",
+      "phase": "optimized_cold",
+      "elapsedMs": 5616.185700000002,
+      "httpCalls": 2,
+      "inputTokens": 1289,
+      "outputTokens": 117,
+      "thinkingTokens": 745,
+      "estimatedUsd": 0.009691499999999999,
+      "calls": [
+        {
+          "stage": "extracted_claims",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 932,
+          "outputTokens": 64,
+          "thinkingTokens": 745,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 3928.1708
+        },
+        {
+          "stage": "claim_explanation",
+          "model": "gemini-3.5-flash",
+          "attempt": 1,
+          "inputTokens": 357,
+          "outputTokens": 53,
+          "thinkingTokens": 0,
+          "cachedInputTokens": 0,
+          "status": 200,
+          "elapsedMs": 1682.8306999999986
+        }
+      ],
+      "claims": [
+        {
+          "type": "price_move",
+          "ticker": "BBRI",
+          "asserted": {
+            "metric": "price move",
+            "value": 80,
+            "unit": "%"
+          },
+          "inScope": false
+        }
+      ],
+      "verdicts": [
+        "out_of_scope"
+      ],
+      "expectedVerdict": "out_of_scope",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    },
+    {
+      "fixture": "demo-prediction",
+      "text": "BBRI bakal naik 80%",
+      "phase": "optimized_repeat",
+      "elapsedMs": 2.9222999999983585,
+      "httpCalls": 0,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "thinkingTokens": 0,
+      "estimatedUsd": 0,
+      "calls": [],
+      "claims": [
+        {
+          "type": "price_move",
+          "ticker": "BBRI",
+          "asserted": {
+            "metric": "price move",
+            "value": 80,
+            "unit": "%"
+          },
+          "inScope": false
+        }
+      ],
+      "verdicts": [
+        "out_of_scope"
+      ],
+      "expectedVerdict": "out_of_scope",
+      "groundingPassed": true,
+      "sectorsCredits": 0,
+      "usedTemplate": false,
+      "errors": []
+    }
+  ]
+}
