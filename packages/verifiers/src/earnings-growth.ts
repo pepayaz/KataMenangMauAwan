@@ -1,7 +1,7 @@
 import type { Claim } from '@cek-dulu/shared';
 import type { QuarterlyFinancialItem } from '@cek-dulu/sectors';
 import { isMissingData } from '@cek-dulu/sectors';
-import { REL_TOLERANCE, describeRelative, withinRelative } from './tolerance.js';
+import { GROWTH_ABS_FLOOR_PP, REL_TOLERANCE, describeRelative, withinAbsolute, withinRelative } from './tolerance.js';
 import { makeEvidence, unverifiable, type Verifier, type VerifierOutput } from './types.js';
 
 /**
@@ -88,8 +88,8 @@ export function computeGrowth(
 }
 
 export const verifyEarningsGrowth: Verifier = async (claim: Claim, ctx): Promise<VerifierOutput> => {
-  const tol = describeRelative(REL_TOLERANCE.earnings_growth);
-  if (typeof claim.asserted.value !== 'number') {
+  const tol = `${describeRelative(REL_TOLERANCE.earnings_growth)} atau ±${String(GROWTH_ABS_FLOOR_PP).replace('.', ',')} poin persen`;
+  if (typeof claim.asserted.value !== 'number' || claim.asserted.unit !== '%') {
     return unverifiable('Klaim pertumbuhan laba tidak menyebut angka persen.', tol);
   }
 
@@ -161,11 +161,8 @@ export const verifyEarningsGrowth: Verifier = async (claim: Claim, ctx): Promise
   );
   evidence.unshift(growthEvidence);
 
-  const matches = withinRelative(
-    claim.asserted.value,
-    growth.growthPct,
-    REL_TOLERANCE.earnings_growth,
-  );
+  const matches = withinRelative(claim.asserted.value, growth.growthPct, REL_TOLERANCE.earnings_growth)
+    || withinAbsolute(claim.asserted.value, growth.growthPct, GROWTH_ABS_FLOOR_PP);
 
   return {
     evidence,

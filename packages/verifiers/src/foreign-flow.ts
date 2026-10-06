@@ -130,15 +130,19 @@ export const verifyForeignFlow: Verifier = async (claim: Claim, ctx): Promise<Ve
   }
 
   const primary = evidence[0]!;
-  const claimedInflow = isInflowClaim(claim.asserted.metric);
+  const direction = flowDirection(claim.asserted.metric);
+  const claimedInflow = direction !== 'out';
 
-  let matches: boolean;
+  let matches: boolean | null;
   if (typeof claim.asserted.value === 'number') {
     const claimedValue = claim.asserted.value;
     matches =
       Math.sign(claimedValue) === Math.sign(summary.net) &&
       Math.abs(Math.abs(claimedValue) - Math.abs(summary.net)) <=
         FLOW_TOLERANCE * Math.abs(summary.net);
+  } else if (direction === null) {
+    // Tanpa arah, tidak ada yang bisa dibandingkan; jangan anggap beli.
+    matches = null;
   } else {
     matches = claimedInflow ? summary.net > 0 : summary.net < 0;
   }
@@ -163,9 +167,18 @@ export const verifyForeignFlow: Verifier = async (claim: Claim, ctx): Promise<Ve
   };
 };
 
+const OUTFLOW_WORDS = /\b(jual|jualan|menjual|kabur|keluar|outflow|buang|distribusi|lepas|net sell|guyur)\b/i;
+const INFLOW_WORDS = /\b(beli|membeli|borong|memborong|masuk|inflow|akumulasi|serok|koleksi|tampung|net buy)\b/i;
+
+/** Arah yang dinyatakan klaim; null bila tidak disebut atau bertentangan. Murni. */
+export function flowDirection(text: string): 'in' | 'out' | null {
+  const out = OUTFLOW_WORDS.test(text), inflow = INFLOW_WORDS.test(text);
+  return out === inflow ? null : out ? 'out' : 'in';
+}
+
 /** "Borong", "akumulasi", "masuk" berarti arus masuk; "kabur", "jualan" arus keluar. */
 export function isInflowClaim(metric: string): boolean {
-  return !/\b(jual|jualan|kabur|keluar|outflow|buang|distribusi|lepas)\b/i.test(metric);
+  return flowDirection(metric) !== 'out';
 }
 
 function formatIdr(value: number): string {

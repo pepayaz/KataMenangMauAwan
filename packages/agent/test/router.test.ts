@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ToolCallSchema, type Claim, type ClaimType } from '@cek-dulu/shared';
 import { addDays, estimateCredits, windowLengthDays, type EndpointName } from '@cek-dulu/sectors';
-import { routeClaim } from '../src/router.js';
+import { parseQuarter, routeClaim } from '../src/router.js';
 
 const today = '2026-09-26';
 function claim(type: ClaimType, asserted: Partial<Claim['asserted']> = {}): Claim {
   return { claimId: 'c1', checkId: 'check1', span: [0, 10], type, ticker: 'ADRO',
-    asserted: { metric: 'metric', value: 3, ...asserted }, inScope: true };
+    asserted: { metric: 'metric', ...(type === 'safety' ? {} : { value: 3 }),
+      ...(type === 'price_move' || type === 'earnings_growth' ? { unit: '%' as const } : {}), ...asserted }, inScope: true };
 }
 
 describe('router setiap tipe, tanpa LLM/I/O', () => {
@@ -17,7 +18,7 @@ describe('router setiap tipe, tanpa LLM/I/O', () => {
     ['accumulation', ['fetchBrokerSummary', 'fetchShareholdersComposition'], 2],
     ['safety', ['fetchCompanyReport', 'fetchSuspensions', 'fetchCorporateActions', 'fetchFreeFloat'], 13],
   ] as const)('tipe %s', (type, tools, credits) => {
-    const result = routeClaim(claim(type), { today });
+    const result = routeClaim(claim(type, type === 'price_move' ? { window: 'sebulan' } : {}), { today });
     expect(result.status).toBe('ready');
     expect(result.tools.map((t) => t.tool)).toEqual(tools);
     expect(result.estimatedCredits).toBe(credits);
@@ -44,8 +45,73 @@ describe('router setiap tipe, tanpa LLM/I/O', () => {
   });
 });
 
+describe('price_move tidak menebak jendela', () => {
+  it('tanpa jendela tidak memakai bawaan 30 hari', () => {
+    expect(routeClaim(claim('price_move'), { today })).toMatchObject({ status: 'needs_user_choice', tools: [], estimatedCredits: 0,
+      notes: ['Klaim tidak menyebut jangka waktu; pilih tanggal awal dan akhir.'] });
+  });
+  it('angka harga bukan persen tidak dibandingkan dengan perubahan harga', () => {
+    expect(routeClaim(claim('price_move', { value: 6400, unit: undefined, window: 'sebulan' }), { today }))
+      .toMatchObject({ status: 'unsupported', tools: [] });
+  });
+  it.each(['ATH vs Juni 2026', 'sejak IPO'])('rentang yang tidak bisa dipastikan (%s) meminta tanggal', (window) => {
+    expect(routeClaim(claim('price_move', { window }), { today }).status).toBe('needs_user_choice');
+  });
+  it.each([['past 5 years', 1825], ['last 3 months', 90], ['1Y', 365], ['5 tahun terakhir', 1825]] as const)(
+    'frasa %s dikenali', (window, days) => {
+      const result = routeClaim(claim('price_move', { window }), { today });
+      expect(result.status).toBe('ready');
+      expect(windowLengthDays({ start: result.tools[0]!.params.start as string, end: result.tools.at(-1)!.params.end as string })).toBe(days);
+    });
+  it('jendela panjang diambil dua cuplikan di awal dan akhir, bukan dipecah semua', () => {
+    const result = routeClaim(claim('price_move', { window: 'past 5 years' }), { today });
+    expect(result.tools).toHaveLength(2);
+    expect(result.estimatedCredits).toBe(2);
+    expect(result.tools.map((t) => windowLengthDays({ start: t.params.start as string, end: t.params.end as string }))).toEqual([21, 21]);
+    expect(result.tools.at(-1)?.params.end).toBe(today);
+  });
+  it.each(['sebulan ini', 'seminggu ini', '3 bulan ini'])('akhiran "ini" (%s) dikenali', (window) => {
+    expect(routeClaim(claim('price_move', { window }), { today }).status).toBe('ready');
+  });
+  it('jendela 90 hari tetap satu panggilan utuh', () => {
+    const result = routeClaim(claim('price_move', { window: '90 hari' }), { today });
+    expect(result.tools).toHaveLength(1);
+    expect(result.tools[0]?.params).toMatchObject({ start: addDays(today, -89), end: today });
+  });
+});
+
+describe('klaim yang tidak bisa dinilai tidak memakai kredit', () => {
+  it.each([
+    ['laba dalam rupiah', claim('earnings_growth', { metric: 'laba bersih', value: 15.5e12, unit: 'IDR' }), 'nilai laba'],
+    ['pertumbuhan MoM', claim('earnings_growth', { metric: 'pertumbuhan laba', window: 'MoM' }), 'bulanan'],
+    ['rasio angka di tipe safety', claim('safety', { metric: 'CASA', value: 85.2, unit: '%' }), 'pernyataan umum'],
+  ] as const)('%s', (_label, input, note) => {
+    const result = routeClaim(input, { today });
+    expect(result).toMatchObject({ status: 'unsupported', tools: [], estimatedCredits: 0 });
+    expect(result.notes[0]).toContain(note);
+  });
+  it('pertumbuhan YoY dalam persen tetap diperiksa', () => {
+    expect(routeClaim(claim('earnings_growth', { metric: 'pertumbuhan laba', value: 12, window: 'YoY' }), { today }).status).toBe('ready');
+  });
+});
+
+describe('periode kuartal', () => {
+  it.each([['Q1 2026', 1, 2026], ['KUARTAL I - 2026', 1, 2026], ['Triwulan III 2025', 3, 2025], ['1Q26', 1, 2026], ['kuartal 4/2025', 4, 2025]] as const)(
+    '%s', (period, q, year) => expect(parseQuarter(period)).toEqual({ q, year }));
+  it.each(['Kuartal V 2026', 'semester I 2026', '2026'])('%s bukan kuartal', (period) => expect(parseQuarter(period)).toBeNull());
+  it.each(['YoY', 'QoQ', 'tahunan'])('mode pertumbuhan %s di period bukan periode laporan', (period) => {
+    const result = routeClaim(claim('earnings_growth', { period }), { today });
+    expect(result.status).toBe('ready');
+    expect(result.tools[0]?.params).not.toHaveProperty('report_date');
+  });
+  it('periode kuartal Indonesia memilih report_date akhir kuartal', () => {
+    expect(routeClaim(claim('earnings_growth', { period: 'KUARTAL I - 2026' }), { today }).tools[0]?.params)
+      .toMatchObject({ report_date: '2026-03-31' });
+  });
+});
+
 describe('jendela inklusif dan batas endpoint', () => {
-  it.each(['price_move', 'foreign_flow'] as const)('memecah %s 181 hari tanpa gap/overlap', (type) => {
+  it.each(['foreign_flow'] as const)('memecah %s 181 hari tanpa gap/overlap', (type) => {
     const window = { start: '2026-03-30', end: today };
     const result = routeClaim(claim(type), { today, window });
     expect(result.tools).toHaveLength(3);

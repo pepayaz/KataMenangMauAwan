@@ -16,6 +16,7 @@ import { HunterToolError } from './hunter/index.js';
 import { LlmError, type LlmAdapter } from './llm.js';
 
 export type PipelineDeps = {
+  signal?: AbortSignal;
   client: SectorsClient; llm: Pick<LlmAdapter, 'generate'>; verifiers?: Partial<VerifierRegistry>;
   userSelections?: readonly UserTickerSelection[];
   prompts?: { extractor: string; explainer: string };
@@ -72,7 +73,10 @@ function verifierClient(client: SectorsClient, plan: RoutePlan, onCredit: (credi
     return async (...originalArgs: unknown[]) => {
       const args = [...originalArgs], calls = plan.tools.filter((t) => t.tool === property);
       if (['fetchDailyPrice', 'fetchForeignFlow', 'fetchBrokerSummary'].includes(property) && calls.length) {
-        args[1] = { start: calls[0]!.params.start, end: calls.at(-1)!.params.end };
+        // Cuplikan yang persis direncanakan router dibiarkan; selain itu dipaksa ke jendela router.
+        const asked = args[1] as { start?: unknown; end?: unknown } | undefined;
+        const planned = calls.some((call) => call.params.start === asked?.start && call.params.end === asked?.end);
+        if (!planned) args[1] = { start: calls[0]!.params.start, end: calls.at(-1)!.params.end };
       }
       if (property === 'fetchQuarterlyFinancials' && calls.length) {
         const { symbol: _symbol, ...params } = calls[0]!.params; args[1] = params;
@@ -99,6 +103,7 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
   // Satu antrean emitter menjaga urutan event walau worker klaim berjalan paralel.
   let emission = Promise.resolve();
   const trace = (stage: TraceEvent['stage'], message: string, data?: unknown, credits = 0): Promise<void> => {
+    deps.signal?.throwIfAborted();
     const event = TraceEventSchema.parse({ checkId: input.checkId, ts: now().toISOString(), stage, message, data, credits });
     emission = emission.then(() => emit(event)); return emission;
   };
@@ -106,14 +111,14 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
     verdicts: [], creditsUsed: 0, finishedAt: now().toISOString() };
   let normalized: Awaited<ReturnType<typeof normalizeText>>;
   try {
-    normalized = await normalizeText(input.rawText, { directory: deps.directory, llm: deps.llm, userSelections: deps.userSelections });
+    normalized = await normalizeText(input.rawText, { directory: deps.directory, llm: deps.llm, userSelections: deps.userSelections, signal: deps.signal });
     output.entities = normalized.entities;
     await trace('normalize', 'Resolusi saham selesai.', { status: normalized.status, entities: normalized.entities, choices: normalized.choices });
     if (normalized.status !== 'ready') {
       await trace('done', 'Pilihan saham pengguna diperlukan.', { status: 'needs_user_choice' });
       output.finishedAt = now().toISOString(); return CheckResultSchema.parse(output);
     }
-    const extracted = await extractClaimsWithDiagnostics(normalized.text, output.entities, { checkId: input.checkId, llm: deps.llm, prompt: deps.prompts?.extractor });
+    const extracted = await extractClaimsWithDiagnostics(normalized.text, output.entities, { checkId: input.checkId, llm: deps.llm, prompt: deps.prompts?.extractor, signal: deps.signal });
     output.claims = extracted.claims;
     await trace('extract', 'Ekstraksi klaim selesai.', { claimIds: output.claims.map((c) => c.claimId), rejected: extracted.rejected });
   } catch (error) {
@@ -127,20 +132,27 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
   const enabled = new Set(enabledClaimTypes(deps.flags ?? {}));
   const results: Array<{ verdict: ClaimVerdict; evidence: Evidence[]; hypotheses: CheckResult['hypothesisRuns']; credits: number }> = [];
   const processClaim = async (claim: Claim) => {
+    deps.signal?.throwIfAborted();
     let credits = 0, reportedCredits = 0, evidence: Evidence[] = [], hypotheses: CheckResult['hypothesisRuns'] = [];
     let verdict: AdjudicatedVerdict;
+    // Alasan router tanpa angka, supaya penjelasan "tidak bisa diverifikasi" tidak generik.
+    let reason: string[] = [];
     try {
       const plan = routeClaim(claim, { today });
+      if (plan.status === 'needs_user_choice' || plan.status === 'unsupported') reason = plan.notes.filter((note) => !/\d/.test(note));
       await trace('route', 'Rencana verifikasi selesai.', plan);
       let verified: VerifierOutput = { evidence: [], matches: null, tolerance: '-', note: '' };
       // B valuation selalu memakai tahun terbaru; composition B hanya tahun kini.
       const unsupportedPeriod = claim.type === 'valuation' && !!claim.asserted.period
         || claim.type === 'accumulation' && plan.tools.filter((t) => t.tool === 'fetchShareholdersComposition').length > 1;
       const canVerify = claim.inScope && plan.status === 'ready' && enabled.has(claim.type) && !unsupportedPeriod;
+      if (claim.inScope && plan.status === 'ready' && !enabled.has(claim.type)) reason = ['Pemeriksaan untuk jenis klaim ini belum diaktifkan.'];
       if (canVerify) {
         const verifier = deps.verifiers?.[claim.type] ?? VERIFIERS[claim.type];
+        const windowCalls = plan.tools.filter((t) => typeof t.params.start === 'string' && typeof t.params.end === 'string');
+        const window = windowCalls.length ? { start: windowCalls[0]!.params.start as string, end: windowCalls.at(-1)!.params.end as string } : undefined;
         verified = verifierSchema.parse(await verifier(claim, { client: verifierClient(deps.client, plan, (cost) => { credits += cost; }),
-          checkId: input.checkId, today }));
+          checkId: input.checkId, today, ...(window && claim.type === 'price_move' ? { window } : {}) }));
         evidence = normalizeVerifierEvidence(claim, verified.evidence);
         if (verified.computed && hasPercentagePoints(claim, verified.computed.unit))
           verified.computed = { ...verified.computed, value: verified.computed.value / 100 };
@@ -185,13 +197,14 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
       && validateGrounding(context.summary, evidence.filter((e) => context.evidenceIds.includes(e.evidenceId))).ok
       ? context.summary : 'Ada konteks penting yang didukung data pembanding.' }));
     await trace('adjudicate', 'Status klaim ditentukan oleh aturan.', { claimId: claim.claimId, verdict: verdict.verdict });
-    const template = deterministicExplanation(verdict);
+    const template = [deterministicExplanation(verdict), ...(verdict.verdict === 'unverifiable' ? reason : [])].join(' ');
     const displayEvidence = displayEvidenceValues(evidence);
     let usedTemplate = false;
     const explanation = await withGrounding(async (feedback) => {
       try {
         const written = await deps.llm.generate({ schema: explanationSchema, name: 'claim_explanation', prompt,
-          input: JSON.stringify({ claimType: claim.type, verdict, displayEvidence, feedback }) });
+          signal: deps.signal, input: JSON.stringify({ claimType: claim.type, verdict, displayEvidence, feedback,
+            ...(verdict.verdict === 'unverifiable' && reason.length ? { reason } : {}) }) });
         return written.explanation;
       } catch { usedTemplate = true; return template; }
     }, evidence, () => { usedTemplate = true; return template; }, isOutputAllowed);

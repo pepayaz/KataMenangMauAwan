@@ -47,6 +47,9 @@ describe('registry hipotesis', () => {
     const h = createHypothesisRegistry(claim, { today }).get('DIV_CASH_PAYOUT')!;
     expect(() => h.test({ ...claim, claimId: 'other' }, [])).toThrow();
     expect(() => createHypothesisRegistry(makeClaim('price_move', { window: 'kemarin sore' }), { today })).toThrow();
+    // Jendela panjang memakai cuplikan: hipotesis deret penuh tidak berlaku, bukan dilewati karena anggaran.
+    expect(createHypothesisRegistry(makeClaim('price_move', { window: 'past 5 years' }), { today }).size).toBe(0);
+    expect(createHypothesisRegistry(makeClaim('price_move', { window: '90 hari' }), { today }).size).toBeGreaterThan(0);
     expect(() => createHypothesisRegistry(claim, { today: '2026-02-30' })).toThrow();
   });
 });
@@ -224,9 +227,16 @@ describe('gateway B cache_only dan end-to-end hunter', () => {
     expect(daily.evidence).toHaveLength(4); expect(daily.credits).toBe(0);
     expect(actions.evidence[0]?.value).toBe('empty'); expect(fetchImpl).not.toHaveBeenCalled();
   });
-  it('gateway menolak live dan tool/params asing sebelum jaringan', async () => {
+  it('gateway live memesan estimasi kredit; offline selalu gratis', async () => {
+    const call = { tool: 'fetchCompanyReport', params: { symbol: 'ADRO', sections: ['dividend'] } };
+    const live = createSectorsHunterGateway(new SectorsClient({ config: { mode: 'live' }, fetchImpl: vi.fn() }), today);
+    const offline = createSectorsHunterGateway(new SectorsClient({ config: { mode: 'cache_only' }, fetchImpl: vi.fn() }), today);
+    expect(await live.quote(call)).toBe(1);
+    expect(await live.quote({ tool: 'invented', params: {} })).toBe(0);
+    expect(await offline.quote(call)).toBe(0);
+  });
+  it('gateway menolak tool/params asing sebelum jaringan', async () => {
     const fetchImpl = vi.fn();
-    expect(() => createSectorsHunterGateway(new SectorsClient({ config: { mode: 'live' }, fetchImpl }), today)).toThrow('cache_only');
     const tools = createSectorsHunterGateway(new SectorsClient({ config: { mode: 'cache_only' }, fetchImpl }), today);
     await expect(tools.execute({ tool: 'invented', params: {} }, { claim, maxCredits: 0 })).rejects.toBeInstanceOf(HunterToolError);
     await expect(tools.execute({ tool: 'fetchDailyPrice', params: { symbol: 'ADRO', start: '2026-01-01', end: today } },

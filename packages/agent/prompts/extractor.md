@@ -20,7 +20,11 @@ pertumbuhan dari laba. Jangan membulatkan, mengubah minus, atau mengisi angka
 dari ingatan. Bila tidak ada angka atau angkanya ambigu, isi value dan unit null.
 unit hanya '%' untuk %/persen, 'x' untuk x/kali, 'IDR' untuk Rp, 'shares' untuk
 saham/lembar; satuan yang tidak tertulis harus null. window dan period adalah
-kutipan literal dari quote, atau null jika tidak tertulis. metric adalah nama
+kutipan literal dari quote atau dari judul/awal kalimat yang sama sebelum quote
+(mis. "BEDAH DATA (KUARTAL I - 2026): BBRI laba Rp15,5 T" -> period
+"KUARTAL I - 2026"), atau null jika tidak tertulis. Untuk perubahan harga, isi
+window dengan rentang yang tertulis (mis. "past 5 years", "sebulan", "ATH vs
+Juni 2026"); jangan mengarang jendela yang tidak tertulis. metric adalah nama
 metrik singkat, bukan penjelasan atau nasihat. Field tidak tersedia memakai null.
 
 Prediksi masa depan dan opini subjektif memakai inScope: false. Jangan mengubah

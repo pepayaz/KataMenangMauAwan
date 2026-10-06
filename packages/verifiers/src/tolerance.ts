@@ -14,6 +14,12 @@ export const REL_TOLERANCE = {
   earnings_growth: 0.1,
 } as const;
 
+/**
+ * Batas bawah absolut untuk pertumbuhan laba: di sekitar nol, ±10% relatif
+ * menolak pembulatan wajar (klaim -0,1% untuk data -0,14%).
+ */
+export const GROWTH_ABS_FLOOR_PP = 0.5;
+
 /** Tipe 3: toleransi absolut dalam poin persen. */
 export const ABS_TOLERANCE_PP = {
   price_move: 3,

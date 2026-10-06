@@ -56,12 +56,41 @@ export function windowEndingToday(days: number, today = toISODate(new Date())): 
 }
 
 /**
- * Menafsirkan sebutan jendela berbahasa Indonesia menjadi jumlah hari kalender.
+ * Jendela panjang tidak diambil utuh (5 tahun = 21 panggilan). Untuk perubahan
+ * harga cukup harga di awal dan akhir jendela, jadi diambil dua cuplikan pendek.
+ * Null bila jendela muat dalam satu panggilan.
+ */
+export const PRICE_PROBE_DAYS = 21;
+export function sampledWindows(w: DateWindow, maxDays = 90, probeDays = PRICE_PROBE_DAYS): [DateWindow, DateWindow] | null {
+  if (windowLengthDays(w) <= maxDays) return null;
+  return [{ start: w.start, end: addDays(w.start, probeDays - 1) }, { start: addDays(w.end, -(probeDays - 1)), end: w.end }];
+}
+
+const ENGLISH_UNITS: Record<string, string> = { day: 'hari', week: 'minggu', month: 'bulan', year: 'tahun' };
+
+/**
+ * Konten media sosial sering memakai frasa Inggris ("past 5 years", "1Y").
+ * Diubah ke bentuk Indonesia yang dikenali; frasa lain dikembalikan apa adanya.
+ */
+export function normalizeWindowPhrase(phrase: string): string {
+  const p = phrase.toLowerCase().trim().replace(/\s+/g, ' ');
+  if (/^(?:the )?(?:past|last) (?:day|week|month|year)$/.test(p)) {
+    return { day: 'sehari', week: 'seminggu', month: 'sebulan', year: 'setahun' }[p.split(' ').at(-1)!]!;
+  }
+  const words = /^(?:(?:the )?(?:past|last) )?([1-9]\d*) (day|week|month|year)s?(?: ago)?$/.exec(p);
+  if (words) return `${words[1]} ${ENGLISH_UNITS[words[2]!]} terakhir`;
+  const short = /^([1-9]\d*) ?(d|w|m|y)$/.exec(p);
+  if (short) return `${short[1]} ${{ d: 'hari', w: 'minggu', m: 'bulan', y: 'tahun' }[short[2] as 'd' | 'w' | 'm' | 'y']} terakhir`;
+  return p;
+}
+
+/**
+ * Menafsirkan sebutan jendela menjadi jumlah hari kalender.
  * Mengembalikan null bila tidak dikenali — pemanggil harus memakai bawaan tipe klaim.
  */
 export function parseWindowPhrase(phrase: string | undefined): number | null {
   if (!phrase) return null;
-  const p = phrase.toLowerCase().trim();
+  const p = normalizeWindowPhrase(phrase);
 
   const table: Array<[RegExp, number]> = [
     [/\b(sehari|1\s*hari|hari ini)\b/, 1],

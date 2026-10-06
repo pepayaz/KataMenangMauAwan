@@ -33,6 +33,42 @@ export type ExtractionOptions = {
   onRejected?: (rejection: ExtractionRejection) => void;
 };
 
+// Arah perubahan sering ditulis dengan kata kerja, bukan tanda: "turun 7,4%" berarti -7,4%.
+const DECLINE = /(?:^|[^\p{L}])(?:turun|penurunan|anjlok|ambrol|ambruk|merosot|jatuh|longsor|terjun|terkoreksi|koreksi|melemah|pelemahan|susut|menyusut|minus|down|drop(?:ped)?|fell|fall(?:en)?|plunge[sd]?|decline[sd]?)(?![\p{L}])/giu;
+const RISE = /(?:^|[^\p{L}])(?:naik|kenaikan|melonjak|lonjakan|terbang|melesat|meroket|tumbuh|pertumbuhan|menguat|penguatan|up|rise|rose|gain(?:ed)?|surge[sd]?|jump(?:ed)?)(?![\p{L}])/giu;
+const SIGNED_TYPES = new Set(['price_move', 'earnings_growth']);
+const FLOW_OUT = /(?:^|[^\p{L}])(?:jual|jualan|menjual|kabur|keluar|outflow|buang|distribusi|lepas|guyur|net sell)(?![\p{L}])/iu;
+const FLOW_IN = /(?:^|[^\p{L}])(?:beli|membeli|borong|memborong|masuk|inflow|akumulasi|serok|koleksi|tampung|net buy)(?![\p{L}])/iu;
+
+/**
+ * Arah arus asing ditulis di kalimat ("asing buang BBRI"), tetapi metric dari LLM
+ * sering netral ("foreign flow"). Kode menempelkan arah literal dari kutipan.
+ */
+export function flowMetric(metric: string, quote: string): string {
+  const metricOut = FLOW_OUT.test(metric), metricIn = FLOW_IN.test(metric);
+  if (metricOut !== metricIn) return metric;
+  const out = FLOW_OUT.test(quote), inflow = FLOW_IN.test(quote);
+  if (out === inflow) return metric;
+  return `${metric} (${out ? 'jual bersih' : 'beli bersih'})`;
+}
+
+/**
+ * Tanda angka perubahan yang ditetapkan kode: kata arah terdekat sebelum angka
+ * menentukan; angka bertanda eksplisit (+/-) tidak diubah.
+ */
+export function directionSign(quote: string, numberStart: number, raw: string): 1 | -1 {
+  if (/^[+\-−]/.test(raw.trim())) return 1;
+  const before = quote.slice(0, numberStart);
+  const last = (pattern: RegExp) => Math.max(-1, ...[...before.matchAll(pattern)].map((m) => m.index));
+  const decline = last(DECLINE), rise = last(RISE);
+  if (decline < 0 && rise < 0) {
+    const after = quote.slice(numberStart);
+    const firstDecline = after.search(DECLINE), firstRise = after.search(RISE);
+    return firstDecline >= 0 && (firstRise < 0 || firstDecline < firstRise) ? -1 : 1;
+  }
+  return decline > rise ? -1 : 1;
+}
+
 const PREDICTION = /\b(?:bakal|akan|pasti|prediksi|target harga|to the moon|auto cuan)\b/i;
 const OPINION = /\b(?:menurut saya|saya rasa|saya yakin|bagus banget|jelek banget)\b/i;
 const VALUELESS_OPINION = /\b(?:murah|mahal|aman|bagus|jelek|cuan)\b/i;
@@ -49,6 +85,13 @@ export function anchorQuote(text: string, quote: string, hintStart: number): { s
     if (best === -1 || Math.abs(at - hintStart) < Math.abs(best - hintStart)) best = at;
   }
   return best === -1 ? null : { start: best, end: best + quote.length };
+}
+
+/** Awal kalimat yang memuat posisi `at`: sesudah tanda akhir kalimat + spasi, atau baris baru. */
+export function sentenceStart(text: string, at: number): number {
+  let start = 0;
+  for (const match of text.slice(0, at).matchAll(/[.!?](?=\s)|\n/g)) start = match.index + 1;
+  return start;
 }
 
 /** Validasi deterministik sesudah LLM; angka harus ada persis, bukan toleransi. */
@@ -78,7 +121,9 @@ export function validateExtractedClaims(
     const quote = text.slice(start, end);
     if (candidate.tickers.length === 0) { reject('NO_TICKER'); continue; }
     const asserted = candidate.asserted;
-    if ([asserted.window, asserted.period].some((period) => period !== null && (period.trim() === '' || !quote.includes(period)))) {
+    // Periode boleh ditulis di judul atau awal kalimat yang sama, tetapi tetap harus literal.
+    const context = text.slice(sentenceStart(text, start), end);
+    if ([asserted.window, asserted.period].some((period) => period !== null && (period.trim() === '' || !context.includes(period)))) {
       reject('PERIOD_NOT_WRITTEN'); continue;
     }
     const numbers = extractNumbers(quote);
@@ -102,9 +147,9 @@ export function validateExtractedClaims(
       const claim = ClaimSchema.parse({
         claimId: `${checkId}-c${claims.length + 1}`, checkId, span: [start, end],
         ticker, type: candidate.type, inScope,
-        asserted: { metric: asserted.metric,
-          ...(matching && !matching.ambiguous ? { value: matching.unit === '%'
-            ? matching.value : matching.normalized } : {}),
+        asserted: { metric: candidate.type === 'foreign_flow' ? flowMetric(asserted.metric, quote) : asserted.metric,
+          ...(matching && !matching.ambiguous ? { value: (matching.unit === '%' ? matching.value : matching.normalized)
+            * (SIGNED_TYPES.has(candidate.type) ? directionSign(quote, matching.span[0], matching.raw) : 1) } : {}),
           ...(asserted.unit !== null ? { unit: asserted.unit } : {}),
           ...(asserted.window !== null ? { window: asserted.window } : {}),
           ...(asserted.period !== null ? { period: asserted.period } : {}),

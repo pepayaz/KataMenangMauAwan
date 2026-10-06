@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ENDPOINTS, REPORT_SECTIONS, SectorsError, type SectorsClient, type ToolResult } from '@cek-dulu/sectors';
+import { ENDPOINTS, REPORT_SECTIONS, SectorsError, estimateCredits, type EndpointName, type SectorsClient, type ToolResult } from '@cek-dulu/sectors';
 import { flattenHunterToolResult } from './evidence.js';
 import { HunterToolError, type HunterToolGateway } from './executor.js';
 
@@ -15,16 +15,21 @@ const dailyParams = z.object({ symbol, start: date, end: date }).strict().refine
   return days > 0 && days <= ENDPOINTS.fetchDailyPrice.maxWindowDays!;
 });
 
-/** Jalur offline resmi B. Live memerlukan gateway reservasi atomik tersendiri dan izin eksplisit. */
+const LIVE_TOOLS = new Set(['fetchCompanyReport', 'fetchCorporateActions', 'fetchDailyPrice']);
+
+/**
+ * Gateway hunter di atas client B. Offline (cache_only/replay) selalu gratis.
+ * Live memesan estimasi kredit di muka lewat `quote`; client tetap menegakkan
+ * anggaran cek dan anggaran anggota sebelum jaringan disentuh.
+ */
 export function createSectorsHunterGateway(client: SectorsClient, today: string): HunterToolGateway {
-  const assertOffline = (): void => {
-    if (client.mode === 'live') throw new Error('Hunter development hanya menerima cache_only atau replay.');
-  };
-  assertOffline();
+  const live = client.mode === 'live';
   return {
-    async quote() { assertOffline(); return 0; },
+    async quote(call) {
+      if (!live || !LIVE_TOOLS.has(call.tool)) return 0;
+      return estimateCredits(call.tool as EndpointName, call.params);
+    },
     async execute(call, { claim, maxCredits }) {
-      assertOffline();
       if (maxCredits < 0) throw new HunterToolError(0);
       let response: ToolResult<unknown>;
       try {
@@ -43,7 +48,9 @@ export function createSectorsHunterGateway(client: SectorsClient, today: string)
         } else throw new Error('Tool tidak didukung.');
         return { evidence: flattenHunterToolResult(claim, response, today), credits: response.credits };
       } catch (error) {
-        throw new HunterToolError(0, error instanceof SectorsError && ['CACHE_MISS', 'REPLAY_MISS', 'NOT_FOUND', 'NO_DATA'].includes(error.code)
+        // 404 di mode live tetap menagih 1 kredit (lihat client B).
+        const billed = live && error instanceof SectorsError && error.code === 'NOT_FOUND' ? Math.min(1, maxCredits) : 0;
+        throw new HunterToolError(billed, error instanceof SectorsError && ['CACHE_MISS', 'REPLAY_MISS', 'NOT_FOUND', 'NO_DATA'].includes(error.code)
           ? 'missing_data' : 'tool_error');
       }
     },
