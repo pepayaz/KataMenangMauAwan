@@ -16,6 +16,7 @@ import { HunterToolError } from './hunter/index.js';
 import { LlmError, type LlmAdapter } from './llm.js';
 
 export type PipelineDeps = {
+  signal?: AbortSignal;
   client: SectorsClient; llm: Pick<LlmAdapter, 'generate'>; verifiers?: Partial<VerifierRegistry>;
   userSelections?: readonly UserTickerSelection[];
   prompts?: { extractor: string; explainer: string };
@@ -102,6 +103,7 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
   // Satu antrean emitter menjaga urutan event walau worker klaim berjalan paralel.
   let emission = Promise.resolve();
   const trace = (stage: TraceEvent['stage'], message: string, data?: unknown, credits = 0): Promise<void> => {
+    deps.signal?.throwIfAborted();
     const event = TraceEventSchema.parse({ checkId: input.checkId, ts: now().toISOString(), stage, message, data, credits });
     emission = emission.then(() => emit(event)); return emission;
   };
@@ -109,14 +111,14 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
     verdicts: [], creditsUsed: 0, finishedAt: now().toISOString() };
   let normalized: Awaited<ReturnType<typeof normalizeText>>;
   try {
-    normalized = await normalizeText(input.rawText, { directory: deps.directory, llm: deps.llm, userSelections: deps.userSelections });
+    normalized = await normalizeText(input.rawText, { directory: deps.directory, llm: deps.llm, userSelections: deps.userSelections, signal: deps.signal });
     output.entities = normalized.entities;
     await trace('normalize', 'Resolusi saham selesai.', { status: normalized.status, entities: normalized.entities, choices: normalized.choices });
     if (normalized.status !== 'ready') {
       await trace('done', 'Pilihan saham pengguna diperlukan.', { status: 'needs_user_choice' });
       output.finishedAt = now().toISOString(); return CheckResultSchema.parse(output);
     }
-    const extracted = await extractClaimsWithDiagnostics(normalized.text, output.entities, { checkId: input.checkId, llm: deps.llm, prompt: deps.prompts?.extractor });
+    const extracted = await extractClaimsWithDiagnostics(normalized.text, output.entities, { checkId: input.checkId, llm: deps.llm, prompt: deps.prompts?.extractor, signal: deps.signal });
     output.claims = extracted.claims;
     await trace('extract', 'Ekstraksi klaim selesai.', { claimIds: output.claims.map((c) => c.claimId), rejected: extracted.rejected });
   } catch (error) {
@@ -130,6 +132,7 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
   const enabled = new Set(enabledClaimTypes(deps.flags ?? {}));
   const results: Array<{ verdict: ClaimVerdict; evidence: Evidence[]; hypotheses: CheckResult['hypothesisRuns']; credits: number }> = [];
   const processClaim = async (claim: Claim) => {
+    deps.signal?.throwIfAborted();
     let credits = 0, reportedCredits = 0, evidence: Evidence[] = [], hypotheses: CheckResult['hypothesisRuns'] = [];
     let verdict: AdjudicatedVerdict;
     // Alasan router tanpa angka, supaya penjelasan "tidak bisa diverifikasi" tidak generik.
@@ -200,7 +203,7 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
     const explanation = await withGrounding(async (feedback) => {
       try {
         const written = await deps.llm.generate({ schema: explanationSchema, name: 'claim_explanation', prompt,
-          input: JSON.stringify({ claimType: claim.type, verdict, displayEvidence, feedback,
+          signal: deps.signal, input: JSON.stringify({ claimType: claim.type, verdict, displayEvidence, feedback,
             ...(verdict.verdict === 'unverifiable' && reason.length ? { reason } : {}) }) });
         return written.explanation;
       } catch { usedTemplate = true; return template; }

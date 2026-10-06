@@ -235,7 +235,8 @@ describe('provider gemini', () => {
     const abort = new AbortController(); abort.abort();
     const fetchImpl = vi.fn(async () => { throw new DOMException('aborted', 'TimeoutError'); });
     const error = await new LlmAdapter({ env: geminiEnv, fetchImpl }).generate({ ...request, signal: abort.signal }).catch((e: unknown) => e);
-    expect(error).toMatchObject({ code: 'PROVIDER' });
+    expect(error).toMatchObject({ name: 'AbortError' });
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('429 kuota habis langsung QUOTA tanpa retry', async () => {
@@ -258,5 +259,78 @@ describe('provider gemini', () => {
     expect(isLlmConfigured({ ...geminiEnv, LLM_PROVIDER: 'openai' })).toBe(true);
     expect(isLlmConfigured({ ...geminiEnv, LLM_PROVIDER: 'mock' })).toBe(false);
     expect(isLlmConfigured({ LLM_PROVIDER: 'gemini', LLM_MODEL: 'x' })).toBe(false);
+  });
+});
+
+
+describe('LLM cost controls', () => {
+  it('reuses only a validated exact response and returns isolated copies', async () => {
+    const provider = new MockLlmProvider([{ value: 3 }, { value: 4 }]);
+    const adapter = new LlmAdapter({ env, provider, cacheTtlMs: 60_000 });
+    const options = { ...request, name: 'cache_exact_test' };
+    const first = await adapter.generate(options);
+    first.value = 100;
+    expect(await adapter.generate(options)).toEqual({ value: 3 });
+    expect(provider.requests).toHaveLength(1);
+    expect(await adapter.generate({ ...options, input: 'Angka 4.' })).toEqual({ value: 4 });
+    expect(provider.requests).toHaveLength(2);
+  });
+
+  it('does not cache invalid outputs', async () => {
+    const provider = new MockLlmProvider([null, null, { value: 3 }]);
+    const adapter = new LlmAdapter({ env, provider, cacheTtlMs: 60_000 });
+    const options = { ...request, name: 'cache_invalid_test' };
+    await expect(adapter.generate(options)).rejects.toMatchObject({ code: 'INVALID_OUTPUT' });
+    expect(await adapter.generate(options)).toEqual({ value: 3 });
+    expect(provider.requests).toHaveLength(3);
+  });
+
+  it('expires cached responses', async () => {
+    const clock = vi.spyOn(Date, 'now');
+    try {
+      clock.mockReturnValue(1000);
+      const provider = new MockLlmProvider([{ value: 3 }, { value: 4 }]);
+      const adapter = new LlmAdapter({ env, provider, cacheTtlMs: 100 });
+      const options = { ...request, name: 'cache_expiry_test' };
+      expect(await adapter.generate(options)).toEqual({ value: 3 });
+      clock.mockReturnValue(1101);
+      expect(await adapter.generate(options)).toEqual({ value: 4 });
+      expect(provider.requests).toHaveLength(2);
+    } finally { clock.mockRestore(); }
+  });
+
+  it('aborted requests never use cache or invoke provider', async () => {
+    const provider = new MockLlmProvider([{ value: 3 }]);
+    const adapter = new LlmAdapter({ env, provider });
+    const controller = new AbortController(); controller.abort();
+    await expect(adapter.generate({ ...request, signal: controller.signal })).rejects.toBeDefined();
+    expect(provider.requests).toHaveLength(0);
+  });
+
+  it.each([['gemini-3.5-flash', { thinkingLevel: 'minimal' }],
+    ['gemini-3.8-flash', { thinkingLevel: 'low' }],
+    ['gemini-2.5-flash', { thinkingBudget: 0 }]])('limits simple task reasoning for %s', async (model, thinkingConfig) => {
+    const network = vi.fn(async (_url: unknown, _init?: RequestInit) => new Response(JSON.stringify({ candidates: [{ finishReason: 'STOP',
+      content: { parts: [{ text: '{"value":3}' }] } }] })));
+    const adapter = new LlmAdapter({ env: { LLM_PROVIDER: 'gemini', LLM_MODEL: model, LLM_API_KEY: 'dummy-unit-test' }, fetchImpl: network });
+    await adapter.generate({ ...request, name: 'claim_explanation' });
+    const body = JSON.parse(String(network.mock.calls[0]?.[1]?.body));
+    expect(body.generationConfig).toMatchObject({ thinkingConfig, maxOutputTokens: 4096 });
+  });
+
+  it('keeps extraction reasoning unchanged and records usage without input or keys', async () => {
+    const onUsage = vi.fn();
+    const network = vi.fn(async (_url: unknown, _init?: RequestInit) => new Response(JSON.stringify({
+      usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 20, thoughtsTokenCount: 30 },
+      candidates: [{ finishReason: 'STOP', content: { parts: [{ text: '{"value":3}' }] } }] })));
+    const adapter = new LlmAdapter({ env: { LLM_PROVIDER: 'gemini', LLM_MODEL: 'gemini-3.5-flash', LLM_API_KEY: 'dummy-unit-test' }, fetchImpl: network, onUsage });
+    await adapter.generate({ ...request, name: 'extracted_claims' });
+    const body = JSON.parse(String(network.mock.calls[0]?.[1]?.body));
+    expect(body.generationConfig.thinkingConfig).toBeUndefined();
+    expect(body.generationConfig.maxOutputTokens).toBeUndefined();
+    expect(onUsage).toHaveBeenCalledWith({ stage: 'extracted_claims', model: 'gemini-3.5-flash', attempt: 1,
+      inputTokens: 100, outputTokens: 20, thinkingTokens: 30 });
+    expect(JSON.stringify(onUsage.mock.calls)).not.toContain('dummy-unit-test');
+    expect(JSON.stringify(onUsage.mock.calls)).not.toContain(request.input);
   });
 });

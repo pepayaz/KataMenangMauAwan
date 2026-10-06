@@ -288,3 +288,26 @@ Belum selesai untuk kesiapan hackathon:
 Urutan berikutnya: pengujian LLM/cache nyata -> melengkapi hipotesis P0 dengan
 cache yang tersedia -> evaluasi kasus sulit -> perluasan P1 di feature flag.
 Tidak ada data live yang diambil otomatis.
+
+
+### LLM cost controls
+
+Validated exact responses are reused for 60 seconds in a bounded process-local memory
+cache (64 entries). Keys include a hash of provider credentials, model, JSON schema,
+prompt, text, and media content. No prompts, media, or credentials are written to disk.
+Invalid responses are never cached, cached results are validated again and cloned,
+and changed evidence/input produces a different cache key. `cacheTtlMs: 0` disables
+this cache. Serverless instances do not share the cache.
+
+Gemini writing, hypothesis selection, and ticker fallback use minimal reasoning on
+3.5/3.6 Flash, low reasoning on other Gemini 3 models, and no thinking on 2.5 Flash,
+with a 4096-token output ceiling. Extraction and OCR/video keep their original
+reasoning and output configuration. All existing schema, grounding, and verdict
+checks still apply. `[llm/usage]` logs contain only stage, model, attempt, input,
+output, and thinking token counts; `[llm/cache]` indicates reuse. These are usage
+measurements, not a billing total. Abort signals now propagate from the web stream
+through the pipeline to LLM calls. Already processed provider tokens may still be billed.
+
+No cheaper model is substituted automatically. Compare accuracy on the evaluation
+set before further reducing reasoning or video resolution. Savings depend on actual
+usage and should be measured from token logs; no percentage is guaranteed.

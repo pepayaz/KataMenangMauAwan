@@ -330,3 +330,28 @@ describe('pipeline pilihan saham pengguna', () => {
     expect(invalid.traces.find(event => event.stage === 'error')?.data).toMatchObject({ code: 'INVALID_USER_SELECTION' });
   });
 });
+
+
+describe('pipeline cancellation', () => {
+  it('does not start extraction for an already cancelled check', async () => {
+    const test = setup('ADRO PER 3x');
+    const controller = new AbortController(); controller.abort();
+    test.deps.signal = controller.signal;
+    await expect(test.run()).rejects.toBeDefined();
+    expect(test.requests).toHaveLength(0);
+  });
+
+  it('does not start further LLM stages after cancellation during extraction', async () => {
+    const test = setup('ADRO PER 3x');
+    const controller = new AbortController(); test.deps.signal = controller.signal;
+    const generate = vi.fn(async () => {
+      controller.abort();
+      return { claims: [candidate('ADRO PER 3x')] };
+    });
+    test.deps.llm = { generate } as unknown as PipelineDeps['llm'];
+    await expect(test.run()).rejects.toBeDefined();
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(generate.mock.calls[0]).toBeDefined();
+    expect(test.requests).toHaveLength(0);
+  });
+});

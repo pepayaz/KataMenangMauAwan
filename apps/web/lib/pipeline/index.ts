@@ -24,7 +24,8 @@ export function createPipeline(opts: { aliases?: AliasEntry[]; deps?: PipelineDe
         }),
       };
       const prompts = await loadWebPrompts();
-      return runCheck(input, { ...deps, prompts, flags: ctx.flags, userSelections: ctx.userSelections }, event => ctx.emit(event));
+      return runCheck(input, { ...deps, prompts, flags: ctx.flags, userSelections: ctx.userSelections, signal: ctx.signal,
+        llm: { generate: options => { ctx.signal?.throwIfAborted(); return deps.llm.generate({ ...options, signal: ctx.signal }); } } }, event => ctx.emit(event));
     },
   };
 }
