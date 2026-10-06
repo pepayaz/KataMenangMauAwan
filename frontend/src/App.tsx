@@ -44,6 +44,8 @@ import { readCheckStream } from "../../apps/web/lib/check-stream";
 import { HistoryItemSchema, formatEvidence, readHistory, storageKey, type HistoryItem } from "../../apps/web/lib/check-view";
 import { readTickerChoices, type UiTickerChoice } from "../../apps/web/lib/ticker-choices";
 import { downloadReportPdf } from "../../apps/web/lib/report-pdf";
+import { comparisonFor } from "../../apps/web/lib/report-presentation";
+import { cleanText } from "../../packages/agent/src/clean-text";
 
 type Page = "landing" | "check" | "history" | "saved";
 type Phase = "idle" | "analyzing" | "result";
@@ -58,7 +60,7 @@ type UiFixture = {
   evidence: readonly { label: string; value: string; flag: string }[];
   hypotheses: readonly { code: string; status: string }[]; source: string;
 };
-type DemoFixture = UiFixture;
+type DemoFixture = UiFixture & { quote?: string };
 
 const verdictPresentation: Record<Verdict, Pick<UiFixture, "status" | "shortStatus" | "tone" | "headline">> = {
   supported: { status: "Didukung", shortStatus: "SUPPORTED", tone: "lime", headline: "Klaim ini sesuai dengan data pembanding." },
@@ -68,18 +70,19 @@ const verdictPresentation: Record<Verdict, Pick<UiFixture, "status" | "shortStat
   out_of_scope: { status: "Di luar cakupan", shortStatus: "OUT OF SCOPE", tone: "neutral", headline: "Pernyataan ini berupa prediksi atau opini, bukan klaim faktual." },
 };
 
-function resultFixture(result: CheckResult): UiFixture | undefined {
-  const verdict = result.verdicts[0];
+/** Satu verdict ke tampilan. Angka memakai comparisonFor: persen klaim (25,5) dan evidence (0,255) diselaraskan. */
+function resultFixture(result: CheckResult, index = 0, text = ""): DemoFixture | undefined {
+  const verdict = result.verdicts[index] ?? result.verdicts[0];
   if (!verdict) return undefined;
   const claim = result.claims.find(item => item.claimId === verdict.claimId);
   const evidence = result.evidence.filter(item => verdict.evidenceIds.includes(item.evidenceId));
   const presentation = verdictPresentation[verdict.verdict]!;
-  const claimed = claim?.asserted.value === undefined ? "—" : formatEvidence({ value: claim.asserted.value, unit: claim.asserted.unit });
-  const computedEvidence = verdict.computed ? result.evidence.find(item => item.evidenceId === verdict.computed?.evidenceId) : undefined;
+  const comparison = comparisonFor(claim, verdict);
+  const quote = claim && text ? cleanText(text).slice(claim.span[0], claim.span[1]) : "";
   return {
     ticker: claim?.ticker ?? "—", category: claim?.type.replaceAll("_", " ").toUpperCase() ?? "UNRESOLVED",
-    ...presentation, summary: verdict.explanation, claimed,
-    verified: computedEvidence ? formatEvidence(computedEvidence) : "—", delta: "—",
+    ...presentation, summary: verdict.explanation, claimed: claim?.asserted.value === undefined ? "—" : comparison.left,
+    verified: verdict.computed ? comparison.right : "—", delta: "—", ...(quote ? { quote } : {}),
     context: verdict.missingContext[0]?.summary ?? "Tidak ada konteks tambahan yang terpicu.",
     contextPoints: verdict.missingContext.map(item => item.summary),
     detail: verdict.explanation, evidenceCount: evidence.length, duration: `${result.creditsUsed} kredit`,
@@ -1067,6 +1070,8 @@ function ResultView({
   onSave,
   onDownloadPdf,
   pdfBusy,
+  claimIndex,
+  onSelectClaim,
   onEvidence,
   traceOpen,
   setTraceOpen,
@@ -1077,6 +1082,8 @@ function ResultView({
   onSave: () => void;
   onDownloadPdf: () => void;
   pdfBusy: boolean;
+  claimIndex: number;
+  onSelectClaim: (index: number) => void;
   onEvidence: () => void;
   traceOpen: boolean;
   setTraceOpen: (open: boolean) => void;
@@ -1111,6 +1118,28 @@ function ResultView({
         <VerdictSeal fixture={fixture} />
       </div>
 
+      {active.result.verdicts.length > 1 && (
+        <section className="claim-switcher" aria-label="Klaim yang diperiksa">
+          <div className="claim-switcher-head"><span>KLAIM DIPERIKSA / {String(active.result.verdicts.length).padStart(2, "0")}</span>
+            <span>{Object.entries(active.result.verdicts.reduce<Record<string, number>>((counts, verdict) => ({ ...counts,
+              [verdictPresentation[verdict.verdict].status]: (counts[verdictPresentation[verdict.verdict].status] ?? 0) + 1 }), {}))
+              .map(([status, count]) => `${count} ${status.toLowerCase()}`).join(" · ")}</span></div>
+          <div className="claim-switcher-list">
+            {active.result.verdicts.map((verdict, index) => {
+              const item = resultFixture(active.result, index, active.text)!;
+              return (
+                <button key={verdict.claimId} className={index === claimIndex ? "selected" : ""} aria-pressed={index === claimIndex}
+                  onClick={() => onSelectClaim(index)}>
+                  <span className="claim-switcher-index">{String(index + 1).padStart(2, "0")}</span>
+                  <span className="claim-switcher-text"><b>{item.ticker} · {item.category}</b><small>{item.quote || active.text}</small></span>
+                  <span className={`status-flag ${item.tone}`}><VerdictIcon tone={item.tone} size={12} /> {item.shortStatus}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <section className={`verdict-hero ${tone}`}>
         <div className="verdict-rings" />
         <div className="verdict-hero-top">
@@ -1129,7 +1158,7 @@ function ResultView({
       <div className="report-grid">
         <section className="claim-report-module">
           <div className="claim-module-head">
-            <div><span>CLAIM 01 / {fixture?.category || "UNRESOLVED"}</span><blockquote>“{active.text}”</blockquote></div>
+            <div><span>CLAIM {String(claimIndex + 1).padStart(2, "0")} / {fixture?.category || "UNRESOLVED"}</span><blockquote title={fixture?.quote || active.text}>“{fixture?.quote || active.text}”</blockquote></div>
             <div className={`status-flag ${tone}`}><VerdictIcon tone={tone} size={14} /> {fixture?.shortStatus || "UNVERIFIABLE"}</div>
           </div>
           <div className="claim-module-body">
@@ -1256,9 +1285,12 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
   const [choices, setChoices] = useState<UiTickerChoice[]>([]);
   const [selections, setSelections] = useState<Record<string, string>>({});
 
+  const [claimIndex, setClaimIndex] = useState(0);
+  // Rapor lain dibuka: mulai lagi dari klaim pertama.
+  useEffect(() => { setClaimIndex(0); }, [active?.id]);
   const activeFixture = useMemo(
-    () => active ? resultFixture(active.result) : undefined,
-    [active],
+    () => active ? resultFixture(active.result, claimIndex, active.text) : undefined,
+    [active, claimIndex],
   );
   const inputFixture = useMemo(
     () => examples.find((example) => example.text === input.trim()),
@@ -1463,6 +1495,8 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
                 onSave={toggleSave}
                 onDownloadPdf={downloadPdf}
                 pdfBusy={pdfBusy}
+                claimIndex={claimIndex}
+                onSelectClaim={setClaimIndex}
                 onEvidence={() => setModal("evidence")}
                 traceOpen={traceOpen}
                 setTraceOpen={setTraceOpen}
