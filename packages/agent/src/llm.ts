@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import OpenAI from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
@@ -85,7 +86,10 @@ const sleep = (ms: number, signal?: AbortSignal): Promise<void> => new Promise((
 });
 const GEMINI_REFUSAL_REASONS =new Set(['SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'IMAGE_SAFETY']);
 
+export type LlmUsage = { stage: string; model: string; attempt: number; inputTokens: number; outputTokens: number; thinkingTokens: number };
+
 type GeminiResponse = {
+  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number };
   promptFeedback?: { blockReason?: string };
   candidates?: { finishReason?: string; content?: { parts?: { text?: string; thought?: boolean }[] } }[];
 };
@@ -94,7 +98,8 @@ type GeminiResponse = {
 class GeminiProvider implements LlmProvider {
   readonly name = 'gemini';
   constructor(private readonly apiKey: string, private readonly fetchImpl: typeof fetch = fetch,
-    private readonly retryDelaysMs: readonly number[] = [1000, 3000, 6000, 10000]) {}
+    private readonly retryDelaysMs: readonly number[] = [1000, 3000, 6000, 10000],
+    private readonly onUsage: (usage: LlmUsage) => void = usage => console.info('[llm/usage]', usage)) {}
   async complete(request: LlmRequest): Promise<unknown> {
     const parts: Record<string, unknown>[] = [{ text: request.input }];
     if (request.imageDataUrl) {
@@ -110,10 +115,17 @@ class GeminiProvider implements LlmProvider {
     if (request.feedback.length > 0) parts.push({ text:
       `Keluaran sebelumnya tidak valid. Perbaiki JSON sesuai skema; jangan menambah fakta. Kesalahan: ${JSON.stringify(request.feedback)}` });
     const model = request.model.replace(/^models\//, '');
+    // Keep extraction/media quality unchanged; reduce reasoning only for short writing/classification.
+    const simple = ['claim_explanation', 'context_hypotheses', 'ticker_selection'].includes(request.format.name);
+    const thinkingConfig = simple && /^gemini-3[.-]/.test(model) ? { thinkingLevel: /^gemini-3\.[56]-/.test(model) ? 'minimal' : 'low' }
+      : simple && /^gemini-2\.5-flash(?:-|$)/.test(model) ? { thinkingBudget: 0 } : undefined;
     const body = JSON.stringify({
       systemInstruction: { parts: [{ text: request.prompt }] },
       contents: [{ role: 'user', parts }],
       generationConfig: { responseMimeType: 'application/json', responseJsonSchema: request.format.schema,
+        ...(thinkingConfig ? { thinkingConfig } : {}),
+        // Includes thinking; leave ample space for full multi-claim extraction/transcription.
+        ...(simple ? { maxOutputTokens: 4096 } : {}),
         ...(request.videoDataUrl ? { temperature: 0 } : {}) },
     });
     let response: Response | undefined;
@@ -143,6 +155,12 @@ class GeminiProvider implements LlmProvider {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     let result: GeminiResponse;
     try { result = await response.json() as GeminiResponse; } catch (error) { return timedOut(error); }
+    if (result.usageMetadata) {
+      const usage = result.usageMetadata;
+      try { this.onUsage({ stage: request.format.name, model, attempt: request.attempt,
+        inputTokens: usage.promptTokenCount ?? 0, outputTokens: usage.candidatesTokenCount ?? 0,
+        thinkingTokens: usage.thoughtsTokenCount ?? 0 }); } catch { /* Telemetry cannot fail a check. */ }
+    }
     if (result.promptFeedback?.blockReason) throw new LlmError('REFUSED', request.attempt);
     const candidate = result.candidates?.[0];
     if (!candidate) throw new LlmError('INCOMPLETE', request.attempt);
@@ -164,6 +182,9 @@ export type LlmAdapterOptions = {
   provider?: LlmProvider;
   mockOutputs?: readonly unknown[];
   fetchImpl?: typeof fetch;
+  onUsage?: (usage: LlmUsage) => void;
+  /** Validated exact responses only, in memory, never persisted. Zero disables caching. */
+  cacheTtlMs?: number;
 };
 
 /** Subset JSON strict: cegah schema fungsi/transform dilewati konverter SDK. */
@@ -180,7 +201,12 @@ function isStructuredSchema(schema: z.ZodTypeAny): boolean {
 }
 
 /** Satu jalur structured output dan retry validasi untuk seluruh tahap LLM. */
+const responseCache = new Map<string, { expiresAt: number; value: unknown }>();
+const MAX_RESPONSE_CACHE_ENTRIES = 64;
+
 export class LlmAdapter {
+  private readonly cacheScope: string;
+  private readonly cacheTtlMs: number;
   private readonly provider: LlmProvider;
   private readonly model: string;
   constructor(options: LlmAdapterOptions = {}) {
@@ -189,6 +215,9 @@ export class LlmAdapter {
     const model = env.LLM_MODEL?.trim();
     if (!providerName || !model) throw new LlmError('CONFIG');
     this.model = model;
+    this.cacheScope = createHash('sha256').update(JSON.stringify([providerName, model, env.LLM_API_KEY ?? ''])).digest('hex');
+    this.cacheTtlMs = options.cacheTtlMs ?? (options.provider || options.fetchImpl || providerName === 'mock' ? 0 : 60_000);
+    if (!Number.isFinite(this.cacheTtlMs) || this.cacheTtlMs < 0) throw new LlmError('CONFIG');
     if (options.provider) {
       if (options.provider.name !== providerName) throw new LlmError('CONFIG');
       this.provider = options.provider;
@@ -197,13 +226,32 @@ export class LlmAdapter {
     } else if (providerName === 'openai' && env.LLM_API_KEY?.trim()) {
       this.provider = new OpenAiProvider(env.LLM_API_KEY, options.fetchImpl);
     } else if (providerName === 'gemini' && env.LLM_API_KEY?.trim()) {
-      this.provider = new GeminiProvider(env.LLM_API_KEY.trim(), options.fetchImpl);
+      this.provider = new GeminiProvider(env.LLM_API_KEY.trim(), options.fetchImpl, undefined, options.onUsage);
     } else throw new LlmError('CONFIG');
   }
 
   async generate<S extends z.ZodTypeAny>(options: {
     schema: S; name: string; prompt: string; input: string; imageDataUrl?: string; videoDataUrl?: string; signal?: AbortSignal;
   }): Promise<z.infer<S>> {
+    options.signal?.throwIfAborted();
+    let cacheKey: string | undefined;
+    if (this.cacheTtlMs > 0) {
+      try {
+        const schema = zodTextFormat(options.schema, options.name).schema;
+        cacheKey = createHash('sha256').update(this.cacheScope).update(JSON.stringify({
+          schema, name: options.name, prompt: options.prompt, input: options.input,
+          image: options.imageDataUrl, video: options.videoDataUrl })).digest('hex');
+      } catch { throw new LlmError('SCHEMA'); }
+      const cached = responseCache.get(cacheKey);
+      if (cached && cached.expiresAt > Date.now()) {
+        const parsed = options.schema.safeParse(structuredClone(cached.value));
+        if (parsed.success) {
+          console.info('[llm/cache]', { stage: options.name, model: this.model, hit: true });
+          return parsed.data;
+        }
+      }
+      responseCache.delete(cacheKey);
+    }
     if (options.imageDataUrl !== undefined && (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(options.imageDataUrl)
       || options.imageDataUrl.length > 4_200_000)) throw new LlmError('INPUT');
     if (options.videoDataUrl !== undefined && (!/^data:video\/(mp4|webm);base64,[A-Za-z0-9+/]+={0,2}$/.test(options.videoDataUrl)
@@ -217,6 +265,7 @@ export class LlmAdapter {
     } catch { throw new LlmError('SCHEMA'); }
     let feedback: LlmValidationIssue[] = [];
     for (let attempt = 1; attempt <= 2; attempt += 1) {
+      options.signal?.throwIfAborted();
       let output: unknown;
       try {
         output = await this.provider.complete({ model: this.model, prompt: options.prompt,
@@ -235,7 +284,15 @@ export class LlmAdapter {
         continue;
       }
       const parsed = options.schema.safeParse(output);
-      if (parsed.success) return parsed.data;
+      if (parsed.success) {
+        options.signal?.throwIfAborted();
+        if (cacheKey) {
+          for (const [key, entry] of responseCache) if (entry.expiresAt <= Date.now()) responseCache.delete(key);
+          if (responseCache.size >= MAX_RESPONSE_CACHE_ENTRIES) responseCache.delete(responseCache.keys().next().value!);
+          responseCache.set(cacheKey, { expiresAt: Date.now() + this.cacheTtlMs, value: structuredClone(parsed.data) });
+        }
+        return parsed.data;
+      }
       feedback = parsed.error.issues.map((issue) => ({ path: issue.path.join('.'), code: issue.code }));
     }
     throw new LlmError('INVALID_OUTPUT', 2);
