@@ -38,6 +38,25 @@ export function formatEvidence(evidence: Pick<Evidence, 'value' | 'unit'>, maxim
   return evidence.unit === 'IDR' ? `Rp${text}` : `${text}${evidence.unit === 'x' ? '×' : evidence.unit ? ` ${evidence.unit}` : ''}`;
 }
 
+/** Mengubah nama alat internal menjadi nama sumber yang layak ditampilkan. */
+export function readableToolName(tool: string): string {
+  const labels: Record<string, string> = {
+    fetchCompanyReport: 'Laporan perusahaan',
+    fetchQuarterlyFinancials: 'Laporan keuangan kuartalan',
+    fetchQuarterlyFinancialDates: 'Jadwal laporan keuangan',
+    fetchDailyPrice: 'Harga dan transaksi harian',
+    fetchForeignFlow: 'Arus dana asing',
+    fetchCorporateActions: 'Aksi korporasi',
+    fetchShareholdersComposition: 'Komposisi pemegang saham',
+    fetchFreeFloat: 'Saham publik',
+    fetchBrokerSummary: 'Ringkasan transaksi broker',
+    fetchSuspensions: 'Informasi suspensi',
+    fetchListingPerformance: 'Kinerja sejak pencatatan',
+    fetchCompanies: 'Daftar perusahaan',
+  };
+  return labels[tool] ?? 'Data pendukung';
+}
+
 /** Present documented fixture field names as prose without changing evidence or values. */
 export function readableSourceText(text: string): string {
   const labels: Record<string, string> = {

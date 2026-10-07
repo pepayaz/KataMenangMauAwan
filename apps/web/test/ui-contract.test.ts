@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { checkFixtures } from '../../../packages/shared/fixtures/index.js';
-import { formatEvidence, readableSourceText, readHistory, historyMatches, HistoryItemSchema, examples, type HistoryItem } from '../lib/check-view';
+import { formatEvidence, readableSourceText, readableToolName, readHistory, historyMatches, HistoryItemSchema, examples, type HistoryItem } from '../lib/check-view';
 import { restoreStoredCheck, storedTimestamp } from '../lib/stored-check';
 import { fetchRemoteHistory, fetchRemoteReport, sessionHeaders } from '../lib/history-client';
 import CheckReport from '../components/check-report';
@@ -19,6 +19,11 @@ const fixture = checkFixtures[0]!;
 const item: HistoryItem = { id: fixture.result.checkId, text: fixture.input.rawText, createdAt: fixture.input.createdAt,
   demo: true, saved: false, result: fixture.result, traces: fixture.traces };
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllEnvs(); });
+it('menampilkan nama sumber data tanpa membocorkan nama fungsi internal', () => {
+  expect(readableToolName('fetchCompanyReport')).toBe('Laporan perusahaan');
+  expect(readableToolName('fetchDailyPrice')).toBe('Harga dan transaksi harian');
+  expect(readableToolName('alat-yang-belum-dikenal')).toBe('Data pendukung');
+});
 function sqlFixture() {
   return { check: { id: item.id, credits_used: 0, finished_at: item.result.finishedAt },
     claims: item.result.claims.map(c => ({ id: c.claimId, type: c.type, ticker: c.ticker, asserted: c.asserted, in_scope: c.inScope, span: `[${c.span[0]},${c.span[1]})` })),
@@ -38,6 +43,12 @@ describe('rapor dan riwayat UI memakai hasil shared', () => {
     expect(html.match(/Periksa klaim/g)).toHaveLength(1);
     expect(html).not.toContain('localhost');
     expect(html).not.toContain('Preview desain');
+    expect(html).toContain('1 · MASUKKAN KLAIM');
+    expect(html).toContain('2 · CEK DATA SECTORS');
+    expect(html).toContain('3 · KONTEKS DITEMUKAN');
+    expect(html).toContain('4 · HASIL PEMERIKSAAN');
+    expect(html).not.toContain('CONTEXT ENGINE');
+    expect(html).not.toContain('TRACE 12.4S');
     expect(html).toContain('bukan nasihat investasi');
     expect(html).not.toContain('<textarea');
   });
