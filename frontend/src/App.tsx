@@ -567,7 +567,6 @@ function LandingPage({
             <div><ShieldCheck size={22} /><span>GROUNDING RULE</span></div>
             <h3>Tidak ada angka tanpa evidence.</h3>
             <p>Penjelasan hanya boleh memakai angka yang tersedia pada evidence. Status klaim ditentukan oleh aturan pemeriksaan, bukan opini model.</p>
-            <aside><span>STATUS DATA</span><b><i /> DATA CONTOH LOKAL</b><small>Belum menggunakan data pasar terbaru.</small></aside>
           </div>
         </section>}
 

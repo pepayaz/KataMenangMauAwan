@@ -6972,9 +6972,8 @@ body::before {
 .data-source-grid footer b { color: #8799b5; font-weight: 500; }
 
 .data-grounding-panel {
-  min-height: 160px;
   margin-top: 16px;
-  padding: 25px 280px 25px 26px;
+  padding: 25px 26px;
   position: relative;
   border-left: 2px solid #8178ff;
   background: linear-gradient(90deg, rgba(129,120,255,.09), rgba(55,215,255,.025), transparent);
@@ -7004,28 +7003,9 @@ body::before {
   line-height: 1.65;
 }
 
-.data-grounding-panel aside {
-  width: 240px;
-  position: absolute;
-  right: 24px;
-  top: 28px;
-  padding-left: 20px;
-  border-left: 1px solid rgba(126,132,216,.17);
-}
-
-.data-grounding-panel aside span,
-.data-grounding-panel aside b,
-.data-grounding-panel aside small { display: block; }
-.data-grounding-panel aside span { color: #5e718e; font-family: var(--font-mono); font-size: 8px; }
-.data-grounding-panel aside b { margin-top: 12px; color: #a7b6ca; font-family: var(--font-mono); font-size: 9px; font-weight: 500; }
-.data-grounding-panel aside i { width: 5px; height: 5px; margin-right: 7px; display: inline-block; border-radius: 50%; background: var(--lime); box-shadow: 0 0 7px rgba(184,255,92,.4); }
-.data-grounding-panel aside small { margin-top: 9px; color: #65758c; font-size: 10px; line-height: 1.55; }
-
 @media (max-width: 900px) {
   .data-page-heading { grid-template-columns: 1fr; gap: 22px; }
   .data-source-grid { grid-template-columns: 1fr; }
-  .data-grounding-panel { padding-right: 26px; }
-  .data-grounding-panel aside { width: auto; margin-top: 22px; padding: 18px 0 0; position: static; border-top: 1px solid rgba(126,132,216,.17); border-left: 0; }
 }
 
 @media (max-width: 600px) {
