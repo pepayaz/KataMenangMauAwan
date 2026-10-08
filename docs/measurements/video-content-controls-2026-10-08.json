@@ -1,0 +1,943 @@
+[
+  {
+    "id": "matching",
+    "text": "BBTN laba bersih Rp2,4 triliun pada semester I 2026. Laba bersih BBTN tumbuh 40,8% YoY pada semester I 2026.",
+    "expectedVerdicts": [
+      "supported",
+      "misleading"
+    ],
+    "httpStatus": 200,
+    "seconds": 7.144,
+    "frames": [
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:42.602Z",
+          "stage": "normalize",
+          "message": "Resolusi saham selesai.",
+          "data": {
+            "status": "ready",
+            "entities": [
+              {
+                "surface": "BBTN",
+                "ticker": "BBTN",
+                "confidence": 0.95,
+                "method": "explicit"
+              }
+            ],
+            "choices": []
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:44.872Z",
+          "stage": "extract",
+          "message": "Ekstraksi klaim selesai.",
+          "data": {
+            "claimIds": [
+              "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1",
+              "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2"
+            ],
+            "rejected": []
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:44.873Z",
+          "stage": "route",
+          "message": "Rencana verifikasi selesai.",
+          "data": {
+            "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1",
+            "tools": [
+              {
+                "tool": "fetchQuarterlyFinancials",
+                "params": {
+                  "symbol": "BBTN",
+                  "n_quarters": 6,
+                  "report_date": "2026-06-30"
+                }
+              }
+            ],
+            "estimatedCredits": 6,
+            "status": "ready",
+            "notes": []
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:44.873Z",
+          "stage": "route",
+          "message": "Rencana verifikasi selesai.",
+          "data": {
+            "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2",
+            "tools": [
+              {
+                "tool": "fetchQuarterlyFinancials",
+                "params": {
+                  "symbol": "BBTN",
+                  "n_quarters": 6,
+                  "report_date": "2026-06-30"
+                }
+              }
+            ],
+            "estimatedCredits": 6,
+            "status": "ready",
+            "notes": []
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:45.047Z",
+          "stage": "verify",
+          "message": "Verifikasi angka selesai.",
+          "data": {
+            "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1",
+            "status": "compared",
+            "unsupportedPeriod": false,
+            "note": "Laba bersih dibandingkan dengan field earnings pada periode klaim.",
+            "coverage": {
+              "endpoint": "fetchQuarterlyFinancials",
+              "metric": "laba bersih",
+              "field": "earnings",
+              "requestedPeriod": "semester I 2026",
+              "availableDates": [
+                "2026-06-30",
+                "2026-03-31",
+                "2025-12-31",
+                "2025-09-30",
+                "2025-06-30",
+                "2025-03-31"
+              ],
+              "sourceCached": true,
+              "status": "CHECKED",
+              "formula": "period_total",
+              "currentDates": [
+                "2026-03-31",
+                "2026-06-30"
+              ]
+            },
+            "sourceCalls": [
+              {
+                "tool": "fetchQuarterlyFinancials",
+                "params": {
+                  "symbol": "BBTN",
+                  "n_quarters": 6,
+                  "report_date": "2026-06-30"
+                },
+                "status": "received",
+                "cached": true,
+                "credits": 0
+              }
+            ],
+            "evidenceIds": [
+              "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1:laba-bersih-bbtn-semester-i-2026"
+            ]
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:45.048Z",
+          "stage": "verify",
+          "message": "Verifikasi angka selesai.",
+          "data": {
+            "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2",
+            "status": "compared",
+            "unsupportedPeriod": false,
+            "note": "Laba bersih YOY dihitung dari field earnings.",
+            "coverage": {
+              "endpoint": "fetchQuarterlyFinancials",
+              "metric": "pertumbuhan laba bersih",
+              "field": "earnings",
+              "requestedPeriod": "semester I 2026",
+              "availableDates": [
+                "2026-06-30",
+                "2026-03-31",
+                "2025-12-31",
+                "2025-09-30",
+                "2025-06-30",
+                "2025-03-31"
+              ],
+              "sourceCached": true,
+              "status": "CHECKED",
+              "formula": "(current - base) / base * 100",
+              "currentDates": [
+                "2026-03-31",
+                "2026-06-30"
+              ],
+              "baseDate": "2025-06-30"
+            },
+            "sourceCalls": [
+              {
+                "tool": "fetchQuarterlyFinancials",
+                "params": {
+                  "symbol": "BBTN",
+                  "n_quarters": 6,
+                  "report_date": "2026-06-30"
+                },
+                "status": "reused",
+                "cached": true,
+                "credits": 0
+              }
+            ],
+            "evidenceIds": [
+              "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2:pertumbuhan-laba-bersih-yoy-bbtn",
+              "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2:laba-bersih-bbtn-semester-i-2026",
+              "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2:laba-bersih-bbtn-semester-i-2025"
+            ]
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:45.051Z",
+          "stage": "hunt",
+          "message": "Pemeriksaan konteks selesai.",
+          "data": {
+            "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1",
+            "results": [],
+            "skipped": [],
+            "pendingTools": [],
+            "selectionSource": "fallback"
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:45.051Z",
+          "stage": "hunt",
+          "message": "Pemeriksaan konteks selesai.",
+          "data": {
+            "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2",
+            "results": [],
+            "skipped": [],
+            "pendingTools": [],
+            "selectionSource": "fallback"
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:45.051Z",
+          "stage": "adjudicate",
+          "message": "Status klaim ditentukan oleh aturan.",
+          "data": {
+            "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1",
+            "verdict": "supported"
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:45.051Z",
+          "stage": "adjudicate",
+          "message": "Status klaim ditentukan oleh aturan.",
+          "data": {
+            "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2",
+            "verdict": "supported"
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:48.553Z",
+          "stage": "adjudicate",
+          "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+          "data": {
+            "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1",
+            "step": "grounding",
+            "usedTemplate": true
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:48.969Z",
+          "stage": "adjudicate",
+          "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+          "data": {
+            "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2",
+            "step": "grounding",
+            "usedTemplate": true
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "ts": "2026-10-08T10:32:48.970Z",
+          "stage": "done",
+          "message": "Pemeriksaan selesai.",
+          "data": {
+            "claimCount": 2,
+            "creditsUsed": 0
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "result",
+        "data": {
+          "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+          "entities": [
+            {
+              "surface": "BBTN",
+              "ticker": "BBTN",
+              "confidence": 0.95,
+              "method": "explicit"
+            }
+          ],
+          "claims": [
+            {
+              "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1",
+              "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+              "span": [
+                0,
+                51
+              ],
+              "type": "earnings_growth",
+              "ticker": "BBTN",
+              "asserted": {
+                "metric": "laba bersih",
+                "value": 2400000000000,
+                "unit": "IDR",
+                "period": "semester I 2026"
+              },
+              "inScope": true
+            },
+            {
+              "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2",
+              "checkId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95",
+              "span": [
+                53,
+                107
+              ],
+              "type": "earnings_growth",
+              "ticker": "BBTN",
+              "asserted": {
+                "metric": "pertumbuhan laba bersih",
+                "value": 40.8,
+                "unit": "%",
+                "window": "YoY",
+                "period": "semester I 2026"
+              },
+              "inScope": true
+            }
+          ],
+          "evidence": [
+            {
+              "evidenceId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1:laba-bersih-bbtn-semester-i-2026",
+              "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1",
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "credits": 0,
+              "cached": true,
+              "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+              "label": "Laba bersih BBTN Semester I 2026",
+              "value": 2402212000000,
+              "unit": "IDR"
+            },
+            {
+              "evidenceId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2:pertumbuhan-laba-bersih-yoy-bbtn",
+              "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2",
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "credits": 0,
+              "cached": true,
+              "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+              "label": "Pertumbuhan laba bersih YOY BBTN",
+              "value": 0.4078,
+              "unit": "%"
+            },
+            {
+              "evidenceId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2:laba-bersih-bbtn-semester-i-2026",
+              "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2",
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "credits": 0,
+              "cached": true,
+              "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+              "label": "Laba bersih BBTN Semester I 2026",
+              "value": 2402212000000,
+              "unit": "IDR"
+            },
+            {
+              "evidenceId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2:laba-bersih-bbtn-semester-i-2025",
+              "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2",
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "credits": 0,
+              "cached": true,
+              "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+              "label": "Laba bersih BBTN Semester I 2025",
+              "value": 1706389000000,
+              "unit": "IDR"
+            }
+          ],
+          "hypothesisRuns": [],
+          "verdicts": [
+            {
+              "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1",
+              "verdict": "supported",
+              "computed": {
+                "value": 2402212000000,
+                "unit": "IDR",
+                "evidenceId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1:laba-bersih-bbtn-semester-i-2026"
+              },
+              "missingContext": [],
+              "explanation": "Angka dalam klaim sesuai dengan data yang tersedia. Status ini menilai kesesuaian angka saja.",
+              "evidenceIds": [
+                "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c1:laba-bersih-bbtn-semester-i-2026"
+              ]
+            },
+            {
+              "claimId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2",
+              "verdict": "supported",
+              "computed": {
+                "value": 0.4078,
+                "unit": "%",
+                "evidenceId": "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2:pertumbuhan-laba-bersih-yoy-bbtn"
+              },
+              "missingContext": [],
+              "explanation": "Angka dalam klaim sesuai dengan data yang tersedia. Status ini menilai kesesuaian angka saja.",
+              "evidenceIds": [
+                "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2:pertumbuhan-laba-bersih-yoy-bbtn",
+                "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2:laba-bersih-bbtn-semester-i-2026",
+                "51ee1cfb-e09c-4cff-82fe-980a124f6d95-c2:laba-bersih-bbtn-semester-i-2025"
+              ]
+            }
+          ],
+          "creditsUsed": 0,
+          "finishedAt": "2026-10-08T10:32:48.970Z"
+        }
+      }
+    ],
+    "pass": true
+  },
+  {
+    "id": "changed-numbers",
+    "text": "BBTN laba bersih Rp5 triliun pada semester I 2026. Laba bersih BBTN tumbuh 90% YoY pada semester I 2026.",
+    "expectedVerdicts": [
+      "refuted"
+    ],
+    "httpStatus": 200,
+    "seconds": 5.883,
+    "frames": [
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:49.314Z",
+          "stage": "normalize",
+          "message": "Resolusi saham selesai.",
+          "data": {
+            "status": "ready",
+            "entities": [
+              {
+                "surface": "BBTN",
+                "ticker": "BBTN",
+                "confidence": 0.95,
+                "method": "explicit"
+              }
+            ],
+            "choices": []
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:51.111Z",
+          "stage": "extract",
+          "message": "Ekstraksi klaim selesai.",
+          "data": {
+            "claimIds": [
+              "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1",
+              "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2"
+            ],
+            "rejected": []
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:51.111Z",
+          "stage": "route",
+          "message": "Rencana verifikasi selesai.",
+          "data": {
+            "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1",
+            "tools": [
+              {
+                "tool": "fetchQuarterlyFinancials",
+                "params": {
+                  "symbol": "BBTN",
+                  "n_quarters": 6,
+                  "report_date": "2026-06-30"
+                }
+              }
+            ],
+            "estimatedCredits": 6,
+            "status": "ready",
+            "notes": []
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:51.111Z",
+          "stage": "route",
+          "message": "Rencana verifikasi selesai.",
+          "data": {
+            "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2",
+            "tools": [
+              {
+                "tool": "fetchQuarterlyFinancials",
+                "params": {
+                  "symbol": "BBTN",
+                  "n_quarters": 6,
+                  "report_date": "2026-06-30"
+                }
+              }
+            ],
+            "estimatedCredits": 6,
+            "status": "ready",
+            "notes": []
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:51.311Z",
+          "stage": "verify",
+          "message": "Verifikasi angka selesai.",
+          "data": {
+            "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1",
+            "status": "compared",
+            "unsupportedPeriod": false,
+            "note": "Laba bersih dibandingkan dengan field earnings pada periode klaim.",
+            "coverage": {
+              "endpoint": "fetchQuarterlyFinancials",
+              "metric": "laba bersih",
+              "field": "earnings",
+              "requestedPeriod": "semester I 2026",
+              "availableDates": [
+                "2026-06-30",
+                "2026-03-31",
+                "2025-12-31",
+                "2025-09-30",
+                "2025-06-30",
+                "2025-03-31"
+              ],
+              "sourceCached": true,
+              "status": "CHECKED",
+              "formula": "period_total",
+              "currentDates": [
+                "2026-03-31",
+                "2026-06-30"
+              ]
+            },
+            "sourceCalls": [
+              {
+                "tool": "fetchQuarterlyFinancials",
+                "params": {
+                  "symbol": "BBTN",
+                  "n_quarters": 6,
+                  "report_date": "2026-06-30"
+                },
+                "status": "received",
+                "cached": true,
+                "credits": 0
+              }
+            ],
+            "evidenceIds": [
+              "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1:laba-bersih-bbtn-semester-i-2026"
+            ]
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:51.311Z",
+          "stage": "verify",
+          "message": "Verifikasi angka selesai.",
+          "data": {
+            "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2",
+            "status": "compared",
+            "unsupportedPeriod": false,
+            "note": "Laba bersih YOY dihitung dari field earnings.",
+            "coverage": {
+              "endpoint": "fetchQuarterlyFinancials",
+              "metric": "pertumbuhan laba bersih",
+              "field": "earnings",
+              "requestedPeriod": "semester I 2026",
+              "availableDates": [
+                "2026-06-30",
+                "2026-03-31",
+                "2025-12-31",
+                "2025-09-30",
+                "2025-06-30",
+                "2025-03-31"
+              ],
+              "sourceCached": true,
+              "status": "CHECKED",
+              "formula": "(current - base) / base * 100",
+              "currentDates": [
+                "2026-03-31",
+                "2026-06-30"
+              ],
+              "baseDate": "2025-06-30"
+            },
+            "sourceCalls": [
+              {
+                "tool": "fetchQuarterlyFinancials",
+                "params": {
+                  "symbol": "BBTN",
+                  "n_quarters": 6,
+                  "report_date": "2026-06-30"
+                },
+                "status": "reused",
+                "cached": true,
+                "credits": 0
+              }
+            ],
+            "evidenceIds": [
+              "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2:pertumbuhan-laba-bersih-yoy-bbtn",
+              "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2:laba-bersih-bbtn-semester-i-2026",
+              "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2:laba-bersih-bbtn-semester-i-2025"
+            ]
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:51.312Z",
+          "stage": "hunt",
+          "message": "Pemeriksaan konteks selesai.",
+          "data": {
+            "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1",
+            "results": [],
+            "skipped": [],
+            "pendingTools": [],
+            "selectionSource": "fallback"
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:51.312Z",
+          "stage": "hunt",
+          "message": "Pemeriksaan konteks selesai.",
+          "data": {
+            "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2",
+            "results": [],
+            "skipped": [],
+            "pendingTools": [],
+            "selectionSource": "fallback"
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:51.312Z",
+          "stage": "adjudicate",
+          "message": "Status klaim ditentukan oleh aturan.",
+          "data": {
+            "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1",
+            "verdict": "refuted"
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:51.313Z",
+          "stage": "adjudicate",
+          "message": "Status klaim ditentukan oleh aturan.",
+          "data": {
+            "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2",
+            "verdict": "refuted"
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:54.597Z",
+          "stage": "adjudicate",
+          "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+          "data": {
+            "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2",
+            "step": "grounding",
+            "usedTemplate": true
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:54.899Z",
+          "stage": "adjudicate",
+          "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+          "data": {
+            "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1",
+            "step": "grounding",
+            "usedTemplate": true
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "trace",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "ts": "2026-10-08T10:32:54.899Z",
+          "stage": "done",
+          "message": "Pemeriksaan selesai.",
+          "data": {
+            "claimCount": 2,
+            "creditsUsed": 0
+          },
+          "credits": 0
+        }
+      },
+      {
+        "event": "result",
+        "data": {
+          "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+          "entities": [
+            {
+              "surface": "BBTN",
+              "ticker": "BBTN",
+              "confidence": 0.95,
+              "method": "explicit"
+            }
+          ],
+          "claims": [
+            {
+              "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1",
+              "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+              "span": [
+                0,
+                49
+              ],
+              "type": "earnings_growth",
+              "ticker": "BBTN",
+              "asserted": {
+                "metric": "laba bersih",
+                "value": 5000000000000,
+                "unit": "IDR",
+                "period": "semester I 2026"
+              },
+              "inScope": true
+            },
+            {
+              "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2",
+              "checkId": "108f20c7-1776-44f5-a3df-a0f4b24892ca",
+              "span": [
+                51,
+                103
+              ],
+              "type": "earnings_growth",
+              "ticker": "BBTN",
+              "asserted": {
+                "metric": "pertumbuhan laba bersih",
+                "value": 90,
+                "unit": "%",
+                "window": "YoY",
+                "period": "semester I 2026"
+              },
+              "inScope": true
+            }
+          ],
+          "evidence": [
+            {
+              "evidenceId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1:laba-bersih-bbtn-semester-i-2026",
+              "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1",
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "credits": 0,
+              "cached": true,
+              "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+              "label": "Laba bersih BBTN Semester I 2026",
+              "value": 2402212000000,
+              "unit": "IDR"
+            },
+            {
+              "evidenceId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2:pertumbuhan-laba-bersih-yoy-bbtn",
+              "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2",
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "credits": 0,
+              "cached": true,
+              "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+              "label": "Pertumbuhan laba bersih YOY BBTN",
+              "value": 0.4078,
+              "unit": "%"
+            },
+            {
+              "evidenceId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2:laba-bersih-bbtn-semester-i-2026",
+              "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2",
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "credits": 0,
+              "cached": true,
+              "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+              "label": "Laba bersih BBTN Semester I 2026",
+              "value": 2402212000000,
+              "unit": "IDR"
+            },
+            {
+              "evidenceId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2:laba-bersih-bbtn-semester-i-2025",
+              "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2",
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "credits": 0,
+              "cached": true,
+              "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+              "label": "Laba bersih BBTN Semester I 2025",
+              "value": 1706389000000,
+              "unit": "IDR"
+            }
+          ],
+          "hypothesisRuns": [],
+          "verdicts": [
+            {
+              "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1",
+              "verdict": "refuted",
+              "computed": {
+                "value": 2402212000000,
+                "unit": "IDR",
+                "evidenceId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1:laba-bersih-bbtn-semester-i-2026"
+              },
+              "missingContext": [],
+              "explanation": "Angka dalam klaim berbeda dari data pembanding di luar toleransi pemeriksaan.",
+              "evidenceIds": [
+                "108f20c7-1776-44f5-a3df-a0f4b24892ca-c1:laba-bersih-bbtn-semester-i-2026"
+              ]
+            },
+            {
+              "claimId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2",
+              "verdict": "refuted",
+              "computed": {
+                "value": 0.4078,
+                "unit": "%",
+                "evidenceId": "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2:pertumbuhan-laba-bersih-yoy-bbtn"
+              },
+              "missingContext": [],
+              "explanation": "Angka dalam klaim berbeda dari data pembanding di luar toleransi pemeriksaan.",
+              "evidenceIds": [
+                "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2:pertumbuhan-laba-bersih-yoy-bbtn",
+                "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2:laba-bersih-bbtn-semester-i-2026",
+                "108f20c7-1776-44f5-a3df-a0f4b24892ca-c2:laba-bersih-bbtn-semester-i-2025"
+              ]
+            }
+          ],
+          "creditsUsed": 0,
+          "finishedAt": "2026-10-08T10:32:54.899Z"
+        }
+      }
+    ],
+    "pass": true
+  }
+]

@@ -1,4 +1,4 @@
-import type { Claim } from '@cek-dulu/shared';
+import { satisfiesBound, type Claim } from '@cek-dulu/shared';
 import type { HistoricalValuation, ValuationSection } from '@cek-dulu/sectors';
 import { isMissingData } from '@cek-dulu/sectors';
 import { REL_TOLERANCE, describeRelative, withinRelative } from './tolerance.js';
@@ -119,10 +119,16 @@ export const verifyValuation: Verifier = async (claim: Claim, ctx): Promise<Veri
 
   const valuation: ValuationSection | undefined = report.data.valuation;
   const rows = valuation?.historical_valuation ?? [];
-  const comparison = compareValuation(rows, metric, claim.asserted.value);
+  const yearMatch = /^(?:tahun\s+|fy\s*)?(\d{4})$/i.exec(claim.asserted.period?.trim() ?? '');
+  if (claim.asserted.period && !yearMatch) return {
+    ...unverifiable(`Sumber valuation menyediakan rasio per tahun, bukan ${metric.toUpperCase()} pada tanggal harian klaim. Nilai terbaru tidak dipakai sebagai pengganti.`, tol),
+    details: { coverage: { status: 'DATED_SOURCE_MISSING', endpoint: 'fetchCompanyReport', field: `valuation.historical_valuation.${metric}`,
+      requestedPeriod: claim.asserted.period, availableYears: rows.map(row => row.year), missingFields: [`${metric.toUpperCase()} pada tanggal klaim`], sourceCached: report.cached } },
+  };
+  const comparison = compareValuation(yearMatch ? rows.filter(row => row.year === Number(yearMatch[1])) : rows, metric, claim.asserted.value);
 
   if (!comparison) {
-    return unverifiable(`${claim.ticker} tidak punya data ${metric.toUpperCase()} historis.`, tol);
+    return { ...unverifiable(`Field ${metric.toUpperCase()} pada periode valuasi yang diminta tidak tersedia.`, tol), details: { coverage: { status: 'FIELD_OR_YEAR_MISSING', endpoint: 'fetchCompanyReport', field: `valuation.historical_valuation.${metric}`, requestedPeriod: claim.asserted.period ?? 'tahun terbaru', availableYears: rows.map(row => row.year) } } };
   }
 
   const upper = metric.toUpperCase();
@@ -157,9 +163,9 @@ export const verifyValuation: Verifier = async (claim: Claim, ctx): Promise<Veri
   return {
     evidence,
     computed: { value: comparison.official, unit: 'x', evidenceId: primary!.evidenceId },
-    matches: comparison.matches,
-    tolerance: tol,
-    note: comparison.matches
+    matches: claim.asserted.comparison ? satisfiesBound(comparison.official, comparison.claimed, claim.asserted.comparison) : comparison.matches,
+    tolerance: claim.asserted.comparison ? `Batas ${claim.asserted.comparison}; tanpa toleransi relatif` : tol,
+    note: claim.asserted.comparison ? `${upper} ${comparison.year} adalah ${comparison.official}; dibandingkan dengan batas ${claim.asserted.comparison} ${comparison.claimed}.` : comparison.matches
       ? `${upper} ${comparison.year} adalah ${comparison.official}; klaim ${comparison.claimed} masuk toleransi.`
       : `${upper} ${comparison.year} adalah ${comparison.official}, bukan ${comparison.claimed}.` +
         (comparison.matchingYears.length > 0

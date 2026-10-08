@@ -54,7 +54,7 @@ export function sourceCharts(evidence: Evidence[], claim?: Claim, verdict?: Clai
     const pair = comparisonFor(claim, verdict);
     if (pair.values && evidence.some(record => record.evidenceId === verdict.computed?.evidenceId)) charts.push({ key: 'claim-comparison',
       title: 'Klaim vs data', note: 'Skala yang sama · dimulai dari nol', rows: [
-        { label: 'Diklaim', value: pair.values[0], display: pair.left, detail: `Teks klaim · ${pair.exactLeft}` },
+        { label: claim?.asserted.comparison ? 'Batas klaim' : 'Diklaim', value: pair.values[0], display: pair.left, detail: `Teks klaim · ${pair.exactLeft}` },
         { label: 'Pembanding', value: pair.values[1], display: pair.right, evidenceId: verdict.computed?.evidenceId, detail: `Data pembanding · ${pair.exactRight}` },
       ] });
   }
@@ -73,10 +73,11 @@ export function comparisonFor(claim: Claim | undefined, verdict: ClaimVerdict) {
     while (digits < 20 && formatEvidence(left, digits) === formatEvidence(right, digits)) digits++;
   }
   const compatible = left && right && left.unit === right.unit && Number.isFinite(left.value) && Number.isFinite(right.value);
+  const operator = claim?.asserted.comparison ? { gt: '> ', gte: '≥ ', lt: '< ', lte: '≤ ' }[claim.asserted.comparison] : '';
   return {
-    left: left ? formatEvidence(left, digits) : 'Tidak disebutkan',
+    left: left ? operator + formatEvidence(left, digits) : 'Tidak disebutkan',
     right: right ? formatEvidence(right, digits) : 'Belum tersedia',
-    exactLeft: left ? formatEvidence(left, 20) : undefined,
+    exactLeft: left ? operator + formatEvidence(left, 20) : undefined,
     exactRight: right ? formatEvidence(right, 20) : undefined,
     values: compatible ? [left.value, right.value] as [number, number] : undefined,
   };

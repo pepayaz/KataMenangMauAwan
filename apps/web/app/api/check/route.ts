@@ -1,3 +1,4 @@
+import { checkOutcome } from '@/lib/check-outcome';
 import { webCacheDirectory } from '@/lib/web-cache';
 import { UserTickerSelectionSchema, isLlmConfigured } from '@cek-dulu/agent';
 import { randomUUID } from 'node:crypto';
@@ -95,8 +96,10 @@ export async function POST(req: Request): Promise<Response> {
     async start(controller) {
       const stopHeartbeat = startHeartbeat(controller);
       const pending: Array<Promise<unknown>> = [];
+      const traces: TraceEvent[] = [];
 
       const emitter = createTraceEmitter(controller, checkId, (event: TraceEvent) => {
+        traces.push(event);
         // Penulisan jejak tidak ditunggu: latensi Postgres tidak boleh menahan UI.
         if (db) pending.push(saveTraceEvent(db, event));
       });
@@ -111,7 +114,7 @@ export async function POST(req: Request): Promise<Response> {
           signal: abort.signal,
         });
 
-        if (db) await saveCheckResult(db, result);
+        if (db) await saveCheckResult(db, result, checkOutcome(result, traces).kind === 'error' ? 'error' : 'done');
         if (!cancelled) controller.enqueue(encodeSse('result', result));
       } catch (err) {
         const message = 'Pemeriksaan gagal. Periksa konfigurasi LLM dan cache Sectors.';

@@ -1,4 +1,4 @@
-import type { Claim } from '@cek-dulu/shared';
+import { satisfiesBound, type Claim } from '@cek-dulu/shared';
 import type { DividendSection } from '@cek-dulu/sectors';
 import { isMissingData } from '@cek-dulu/sectors';
 import { REL_TOLERANCE, describeRelative, toFraction, withinRelative } from './tolerance.js';
@@ -129,10 +129,10 @@ export function dividendAmountBases(dividend: DividendSection, ticker: string, p
     if (!inPeriod) continue;
     for (const payment of row.breakdown ?? []) {
       if (typeof payment.total !== 'number' || !Number.isFinite(payment.total)) continue;
-      out.push({ kind: 'payment', label: `Dividen per saham ${ticker} ${payment.date}`, value: payment.total, date: payment.date });
+      out.push({ kind: 'payment', label: `Dividen per saham ${ticker}; tanggal data ${payment.date} (bukan tanggal pembayaran)`, value: payment.total, date: payment.date });
     }
     if ((!Number.isFinite(year) || rowYear === year) && typeof row.total_dividend === 'number' && Number.isFinite(row.total_dividend)) {
-      out.push({ kind: 'year_total', label: `Total dividen per saham ${ticker} ${rowYear}`, value: row.total_dividend, year: rowYear });
+      out.push({ kind: 'year_total', label: `Total dividen per saham ${ticker} pada tahun kalender ${rowYear} (bukan total tahun buku)`, value: row.total_dividend, year: rowYear });
     }
   }
   if (!Number.isFinite(year) && typeof dividend.dividend_ttm === 'number' && Number.isFinite(dividend.dividend_ttm)) {
@@ -156,7 +156,7 @@ function verifyDividendAmount(claim: Claim, report: Parameters<typeof makeEviden
   const tol = describeRelative(DIVIDEND_AMOUNT_TOLERANCE);
   const claimed = claim.asserted.value!;
   if (claimed > MAX_DIVIDEND_PER_SHARE_IDR) {
-    return unverifiable('Sectors hanya menyediakan dividen per saham; total nilai dividen perusahaan tidak dapat diverifikasi.', tol);
+    return unverifiable('Sumber dividen yang diperiksa memuat nominal per saham, bukan total pembayaran perusahaan. Total dividen perusahaan belum dapat diverifikasi dari sumber ini.', tol);
   }
   const bases = dividendAmountBases(dividend, claim.ticker, claim.asserted.period);
   if (!bases.length) {
@@ -200,7 +200,33 @@ export const verifyDividend: Verifier = async (claim: Claim, ctx): Promise<Verif
     return unverifiable(`${claim.ticker} tidak punya data dividen di Sectors.`, tol);
   }
 
+  if (/payout|rasio pembayaran|rasio pembagian/i.test(claim.asserted.metric)) {
+    const field = /cash|kas/i.test(claim.asserted.metric) ? 'cash_payout_ratio' : 'payout_ratio';
+    const actual = dividend[field];
+    if (claim.asserted.period || typeof actual !== 'number' || !Number.isFinite(actual)) return {
+      ...unverifiable('Rasio pembayaran dividen dengan periode yang sesuai belum tersedia; dividend yield tidak digunakan sebagai pengganti.', tol),
+      details: { coverage: { status: 'PAYOUT_PERIOD_OR_FIELD_MISSING', field: `dividend.${field}`, requestedPeriod: claim.asserted.period ?? 'terbaru' } },
+    };
+    const claimed = toFraction(claim.asserted.value, claim.asserted.unit);
+    const primary = makeEvidence(claim.claimId, report, `${field === 'payout_ratio' ? 'Payout' : 'Cash payout'} ratio ${claim.ticker}`, actual, '%');
+    return { evidence: [primary], computed: { value: actual, unit: '%', evidenceId: primary.evidenceId },
+      matches: claim.asserted.comparison ? satisfiesBound(actual, claimed, claim.asserted.comparison) : withinRelative(claimed, actual, REL_TOLERANCE.dividend),
+      tolerance: claim.asserted.comparison ? `Batas ${claim.asserted.comparison}; tanpa toleransi relatif` : tol,
+      note: 'Persentase pembagian laba dibandingkan dengan payout ratio, bukan dividend yield.',
+      details: { coverage: { status: 'CHECKED', field: `dividend.${field}` } } };
+  }
   if (isDividendAmountClaim(claim)) return verifyDividendAmount(claim, report, dividend);
+  if (claim.asserted.comparison) {
+    const bases = dividendBases(dividend);
+    const year = /\b(20\d{2})\b/.exec(claim.asserted.period ?? '')?.[1];
+    const basis = year ? bases.find(b => b.kind === 'year' && b.year === Number(year)) : bases.find(b => b.kind === 'ttm');
+    if (!basis) return unverifiable('Yield pada periode batas yang diklaim belum tersedia.', tol);
+    const primary = makeEvidence(claim.claimId, report, `${basis.label} ${claim.ticker}`, basis.value, '%');
+    return { evidence: [primary], computed: { value: basis.value, unit: '%', evidenceId: primary.evidenceId },
+      matches: satisfiesBound(basis.value, toFraction(claim.asserted.value, claim.asserted.unit), claim.asserted.comparison),
+      tolerance: `Batas ${claim.asserted.comparison}; tanpa toleransi relatif`, note: 'Batas yield dibandingkan pada periode yang sesuai, bukan disamakan dengan angka ambang.',
+      details: { matchedBasis: basis.kind, yieldTtm: dividend.yield_ttm ?? null } };
+  }
 
   const claimed = toFraction(claim.asserted.value, claim.asserted.unit);
   const result = matchDividendYield(dividend, claimed, claim.asserted.period);

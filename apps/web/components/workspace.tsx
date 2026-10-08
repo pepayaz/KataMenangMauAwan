@@ -31,7 +31,7 @@ import {
 } from "../lib/check-view";
 import { verdictLabels, historyMatches, HistoryItemSchema } from "../lib/check-view";
 import { readCheckStream } from "../lib/check-stream";
-import { readTickerChoices, type UiTickerChoice } from "../lib/ticker-choices";
+import { readTickerChoices, tickerSelections, type UiTickerChoice } from "../lib/ticker-choices";
 
 import type { TraceEvent } from "@cek-dulu/shared/schemas";
 import CheckReport from "./check-report";
@@ -161,8 +161,7 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
     try {
       const response = await fetch('/api/check', { method: 'POST', signal: controller.signal,
         headers: { ...(isDemo ? {} : await sessionHeaders()), 'Content-Type': 'application/json' }, body: JSON.stringify({ text, source: inputSource, url: inputUrl, demo: isDemo,
-          userSelections: Object.entries(selections).filter(([, ticker]) => ticker)
-            .map(([surface, ticker]) => ({ surface, ticker: ticker === NOT_A_STOCK ? null : ticker })) }) });
+          userSelections: tickerSelections(choices, Object.fromEntries(Object.entries(selections).map(([surface, ticker]) => [surface, ticker === NOT_A_STOCK ? '' : ticker]))) }) });
       if (!response.ok) {
         const body: unknown = await response.json();
         const message = body && typeof body === 'object' && 'error' in body && typeof body.error === 'string' ? body.error : 'Permintaan ditolak.';
@@ -385,11 +384,11 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
                       {running && <button type="button" className="text-button" onClick={() => abortRef.current?.abort()}>Batalkan tampilan</button>}
                     </div>
                     {choices.length > 0 && <fieldset className="ticker-choice" disabled={running || inputBusy}>
-                      <legend>Pilih saham yang dimaksud, lalu cek kembali</legend>
+                      <legend>Konfirmasi saham (opsional)</legend>
                       {choices.map(choice => <label key={choice.surface}>Sebutan “{choice.surface}”{' '}
                         <select aria-label={`Saham untuk ${choice.surface}`} value={selections[choice.surface] ?? ''}
                           onChange={event => setSelections(previous => ({ ...previous, [choice.surface]: event.target.value }))}>
-                          <option value="">Pilih saham</option>{choice.candidates.map(candidate => <option key={candidate.ticker} value={candidate.ticker}>{candidate.ticker} — {candidate.label}</option>)}
+                          <option value="">Lewati sebutan ini</option>{choice.candidates.map(candidate => <option key={candidate.ticker} value={candidate.ticker}>{candidate.ticker} — {candidate.label}</option>)}
                           <option value={NOT_A_STOCK}>Bukan saham</option>
                         </select>{!choice.candidates.length && <span> Tidak ada kandidat; pilih “Bukan saham” atau tulis kode saham eksplisit.</span>}
                       </label>)}
@@ -398,7 +397,7 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
                       <button
                         className="primary-button"
                         type="submit"
-                        disabled={!input.trim() || running || inputBusy || choices.some(choice => !selections[choice.surface])}
+                        disabled={!input.trim() || running || inputBusy}
                       >
                         {running ? (
                           <>

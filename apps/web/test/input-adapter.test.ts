@@ -218,3 +218,10 @@ describe('pesan kegagalan LLM pada input', () => {
     expect((await response.json() as { error: string }).error).toContain(text);
   });
 });
+
+describe('input failure diagnostics',()=>{
+ it.each(['TIMEOUT','INVALID_OUTPUT','INCOMPLETE','REFUSED'] as const)('keeps sanitized %s code',async code=>{
+  const response=inputFailure(new LlmError(code,1));
+  const body=await response.json();expect(body.code).toBe(`LLM_${code}`);expect(body.error).not.toBe('Input belum dapat dibaca. Coba lagi, atau tempel teks klaim.');
+ });
+});

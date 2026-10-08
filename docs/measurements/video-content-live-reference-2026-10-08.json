@@ -1,0 +1,86 @@
+{
+  "method": "Independent Python calculation from raw cached source responses, no API calls and no application verifier imports",
+  "checks": [
+    {
+      "name": "UNVR laba bersih",
+      "pass": true,
+      "actual": 3335249000000
+    },
+    {
+      "name": "UNVR pertumbuhan laba bersih",
+      "pass": true,
+      "actual": 10.816733107441333
+    },
+    {
+      "name": "UNVR penjualan bersih",
+      "pass": true,
+      "actual": 27613255000000
+    },
+    {
+      "name": "UNVR pertumbuhan penjualan bersih",
+      "pass": true,
+      "actual": 0.7145219567520567
+    },
+    {
+      "name": "Segment revenue is not replaced by company revenue",
+      "pass": true,
+      "actual": null
+    },
+    {
+      "name": "BBTN H1 nominal profit",
+      "pass": true,
+      "actual": 2402212000000
+    },
+    {
+      "name": "GJTL yield_ttm bound",
+      "pass": true,
+      "actual": 0
+    },
+    {
+      "name": "GJTL missing payout_ratio",
+      "pass": true,
+      "actual": null
+    },
+    {
+      "name": "GJTL PBV below 1",
+      "pass": true,
+      "actual": 0.403630743531704
+    },
+    {
+      "name": "AUTO yield_ttm bound",
+      "pass": true,
+      "actual": 0.0665697674418605
+    },
+    {
+      "name": "AUTO payout_ratio bound",
+      "pass": true,
+      "actual": 0.456555896221244
+    },
+    {
+      "name": "AUTO PBV below 1",
+      "pass": true,
+      "actual": 1.03684383481872
+    },
+    {
+      "name": "BJTM yield_ttm bound",
+      "pass": true,
+      "actual": 0.109941745498805
+    },
+    {
+      "name": "BJTM payout_ratio bound",
+      "pass": true,
+      "actual": 0.333237478307495
+    },
+    {
+      "name": "BJTM PBV below 1",
+      "pass": true,
+      "actual": 0.586060158950405
+    },
+    {
+      "name": "Final rechecks did not spend new Sectors credits",
+      "pass": true,
+      "actual": null
+    }
+  ],
+  "pass": true
+}

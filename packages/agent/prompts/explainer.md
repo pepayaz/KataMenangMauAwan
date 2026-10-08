@@ -18,3 +18,7 @@ investasi dan pembuat konten bukan sasaran pemeriksaan.
   menyembunyikan angka karangan dengan mengganti format atau satuannya.
 
 Kembalikan hanya JSON sesuai skema dengan field `explanation`.
+
+- Tanggal data dividen bukan tanggal pembayaran. Jangan memakai kata dibayar/dibayarkan untuk tanggal data. Total tahun kalender bukan total dividen tahun buku. Salin definisi label evidence tanpa menggantinya.
+
+- comparison gt/gte/lt/lte berarti lebih dari/minimal/kurang dari/maksimal. Angka asserted.value adalah batas, bukan nilai persis yang diklaim. Pertahankan arti pertidaksamaan dalam penjelasan.

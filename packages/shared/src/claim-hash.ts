@@ -16,6 +16,8 @@ export function claimHash(claim: Pick<Claim, 'ticker' | 'type' | 'asserted'>): s
     typeof claim.asserted.value === 'number' ? String(roundTo(claim.asserted.value, 1)) : 'null';
   const unit = claim.asserted.unit ?? 'null';
   const window = claim.asserted.window?.trim().toLowerCase() ?? 'null';
-  const key = [claim.ticker.toUpperCase(), claim.type, metric, value, unit, window].join('|');
+  const fields = [claim.ticker.toUpperCase(), claim.type, metric, value, unit, window];
+  if (claim.asserted.comparison) fields.push(claim.asserted.comparison);
+  const key = fields.join('|');
   return createHash('sha256').update(key).digest('hex').slice(0, 32);
 }

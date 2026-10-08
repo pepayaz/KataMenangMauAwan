@@ -122,3 +122,9 @@ describe('source charts do not require fabricated history', () => {
     expect(sourceCharts(records)[0]?.rows).toHaveLength(4); expect(records).toHaveLength(7);
   });
 });
+
+it('displays the bound operator next to the claimed number',()=>{
+ const bounded = {...claim,asserted:{metric:'PBV',value:1,unit:'x' as const,comparison:'lt' as const}};
+ const result = comparisonFor(bounded,{...verdict,computed:{value:0.4,unit:'x',evidenceId:base.evidenceId}});
+ expect(result.left).toBe('< 1×');expect(result.exactLeft).toBe('< 1×');
+});

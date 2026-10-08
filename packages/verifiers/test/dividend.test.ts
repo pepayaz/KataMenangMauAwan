@@ -182,7 +182,7 @@ describe('dividen nominal per saham', () => {
       { metric: 'dividen interim per saham', value: 87, unit: 'IDR', period: 'tahun buku 2025' }), ctx(unvrClient()));
     expect(out.matches).toBe(true);
     expect(out.details).toMatchObject({ matchedBasis: 'payment', claimKind: 'per_share_amount',
-      matchedLabel: 'Dividen per saham UNVR 2025-12-15' });
+      matchedLabel: 'Dividen per saham UNVR; tanggal data 2025-12-15 (bukan tanggal pembayaran)' });
     expect(out.evidence.map((e) => e.label).some((l) => l.includes('2020'))).toBe(false);
     expect(out.computed).toMatchObject({ value: 87, unit: 'IDR' });
     expect(out.evidence.every((e) => e.unit === 'IDR')).toBe(true);

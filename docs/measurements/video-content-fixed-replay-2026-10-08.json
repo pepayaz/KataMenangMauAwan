@@ -1,0 +1,2444 @@
+[
+  {
+    "id": "bbtn-h1",
+    "method": "Recorded original extraction revalidated against fixed code, real Sectors; explanation fallback; no new LLM extraction/video test",
+    "result": {
+      "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+      "entities": [
+        {
+          "surface": "BBTN",
+          "ticker": "BBTN",
+          "confidence": 0.95,
+          "method": "explicit"
+        }
+      ],
+      "claims": [
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c1",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            0,
+            22
+          ],
+          "type": "price_move",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "harga"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c2",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            0,
+            22
+          ],
+          "type": "price_move",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "perubahan harga harian",
+            "value": 4.13,
+            "unit": "%"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            45,
+            82
+          ],
+          "type": "earnings_growth",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "pertumbuhan laba bersih",
+            "value": 40,
+            "unit": "%",
+            "period": "semester satu 2026"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            83,
+            177
+          ],
+          "type": "earnings_growth",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "laba bersih",
+            "value": 2400000000000,
+            "unit": "IDR",
+            "period": "semester satu 2026"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            178,
+            219
+          ],
+          "type": "earnings_growth",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "pertumbuhan laba bersih",
+            "value": 40.8,
+            "unit": "%",
+            "window": "yoy",
+            "period": "semester satu 2026"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            220,
+            254
+          ],
+          "type": "earnings_growth",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "pendapatan bunga",
+            "value": -22,
+            "unit": "%",
+            "window": "yoy",
+            "period": "semester satu 2026"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c7",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            255,
+            286
+          ],
+          "type": "earnings_growth",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "NIM (level)",
+            "value": 3.5,
+            "unit": "%",
+            "window": "yoy",
+            "period": "semester satu 2026"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            287,
+            348
+          ],
+          "type": "earnings_growth",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "provisi",
+            "value": -81,
+            "unit": "%",
+            "period": "semester satu 2026"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c9",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            425,
+            503
+          ],
+          "type": "earnings_growth",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "akuisisi portofolio kredit pensiun",
+            "value": 7340000000000,
+            "unit": "IDR",
+            "period": "semester satu 2026"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c10",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            504,
+            558
+          ],
+          "type": "valuation",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "PBV",
+            "period": "19 Jul 2026"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c11",
+          "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+          "span": [
+            776,
+            838
+          ],
+          "type": "valuation",
+          "ticker": "BBTN",
+          "asserted": {
+            "metric": "PBV",
+            "value": 0.47,
+            "unit": "x",
+            "period": "19 Jul 2026"
+          },
+          "inScope": true
+        }
+      ],
+      "evidence": [
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3:pertumbuhan-laba-bersih-yoy-bbtn",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Pertumbuhan laba bersih YOY BBTN",
+          "value": 0.4078,
+          "unit": "%"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3:laba-bersih-bbtn-semester-i-2026",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Laba bersih BBTN Semester I 2026",
+          "value": 2402212000000,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3:laba-bersih-bbtn-semester-i-2025",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Laba bersih BBTN Semester I 2025",
+          "value": 1706389000000,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4:laba-bersih-bbtn-semester-i-2026",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Laba bersih BBTN Semester I 2026",
+          "value": 2402212000000,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5:pertumbuhan-laba-bersih-yoy-bbtn",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Pertumbuhan laba bersih YOY BBTN",
+          "value": 0.4078,
+          "unit": "%"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5:laba-bersih-bbtn-semester-i-2026",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Laba bersih BBTN Semester I 2026",
+          "value": 2402212000000,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5:laba-bersih-bbtn-semester-i-2025",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Laba bersih BBTN Semester I 2025",
+          "value": 1706389000000,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6:pertumbuhan-pendapatan-bunga-yoy-bbtn",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Pertumbuhan pendapatan bunga YOY BBTN",
+          "value": -0.11720000000000001,
+          "unit": "%"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6:pendapatan-bunga-bbtn-semester-i-2026",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Pendapatan bunga BBTN Semester I 2026",
+          "value": 16331530000000,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6:pendapatan-bunga-bbtn-semester-i-2025",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Pendapatan bunga BBTN Semester I 2025",
+          "value": 18500696000000,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8:pertumbuhan-beban-provisi-yoy-bbtn",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Pertumbuhan beban provisi YOY BBTN",
+          "value": -0.5793,
+          "unit": "%"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8:beban-provisi-bbtn-semester-i-2026",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Beban provisi BBTN Semester I 2026",
+          "value": 1545723000000,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8:beban-provisi-bbtn-semester-i-2025",
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "BBTN",
+            "n_quarters": 6,
+            "report_date": "2026-06-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+          "label": "Beban provisi BBTN Semester I 2025",
+          "value": 3673746000000,
+          "unit": "IDR"
+        }
+      ],
+      "hypothesisRuns": [],
+      "verdicts": [
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c1",
+          "verdict": "unverifiable",
+          "missingContext": [],
+          "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Klaim harga ini bukan persentase perubahan, jadi tidak dibandingkan dengan perubahan harga.",
+          "evidenceIds": []
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c2",
+          "verdict": "unverifiable",
+          "missingContext": [],
+          "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Klaim tidak menyebut jangka waktu; pilih tanggal awal dan akhir.",
+          "evidenceIds": []
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+          "verdict": "supported",
+          "computed": {
+            "value": 0.4078,
+            "unit": "%",
+            "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3:pertumbuhan-laba-bersih-yoy-bbtn"
+          },
+          "missingContext": [],
+          "explanation": "Angka dalam klaim sesuai dengan data yang tersedia. Status ini menilai kesesuaian angka saja. Pembanding: 40,78%.",
+          "evidenceIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c3:pertumbuhan-laba-bersih-yoy-bbtn",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c3:laba-bersih-bbtn-semester-i-2026",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c3:laba-bersih-bbtn-semester-i-2025"
+          ]
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4",
+          "verdict": "supported",
+          "computed": {
+            "value": 2402212000000,
+            "unit": "IDR",
+            "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4:laba-bersih-bbtn-semester-i-2026"
+          },
+          "missingContext": [],
+          "explanation": "Angka dalam klaim sesuai dengan data yang tersedia. Status ini menilai kesesuaian angka saja. Pembanding: Rp2402212000000.",
+          "evidenceIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c4:laba-bersih-bbtn-semester-i-2026"
+          ]
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+          "verdict": "supported",
+          "computed": {
+            "value": 0.4078,
+            "unit": "%",
+            "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5:pertumbuhan-laba-bersih-yoy-bbtn"
+          },
+          "missingContext": [],
+          "explanation": "Angka dalam klaim sesuai dengan data yang tersedia. Status ini menilai kesesuaian angka saja. Pembanding: 40,78%.",
+          "evidenceIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c5:pertumbuhan-laba-bersih-yoy-bbtn",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c5:laba-bersih-bbtn-semester-i-2026",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c5:laba-bersih-bbtn-semester-i-2025"
+          ]
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+          "verdict": "refuted",
+          "computed": {
+            "value": -0.11720000000000001,
+            "unit": "%",
+            "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6:pertumbuhan-pendapatan-bunga-yoy-bbtn"
+          },
+          "missingContext": [],
+          "explanation": "Angka dalam klaim berbeda dari data pembanding di luar toleransi pemeriksaan. Pembanding: -11,72%.",
+          "evidenceIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c6:pertumbuhan-pendapatan-bunga-yoy-bbtn",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c6:pendapatan-bunga-bbtn-semester-i-2026",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c6:pendapatan-bunga-bbtn-semester-i-2025"
+          ]
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c7",
+          "verdict": "unverifiable",
+          "missingContext": [],
+          "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. NIM tersedia sebagai rasio tahunan. Data tahun terbaru tidak dipakai menggantikan rasio kuartal atau semester pada klaim.",
+          "evidenceIds": []
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+          "verdict": "refuted",
+          "computed": {
+            "value": -0.5793,
+            "unit": "%",
+            "evidenceId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8:pertumbuhan-beban-provisi-yoy-bbtn"
+          },
+          "missingContext": [],
+          "explanation": "Angka dalam klaim berbeda dari data pembanding di luar toleransi pemeriksaan. Pembanding: -57,93%.",
+          "evidenceIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c8:pertumbuhan-beban-provisi-yoy-bbtn",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c8:beban-provisi-bbtn-semester-i-2026",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c8:beban-provisi-bbtn-semester-i-2025"
+          ]
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c9",
+          "verdict": "unverifiable",
+          "missingContext": [],
+          "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Program belum memiliki pembanding dengan definisi yang sama untuk metrik ini. Nilai transaksi akuisisi dan jumlah nasabah tidak boleh diganti dengan total kredit atau laba; sumber transaksi khusus belum diperiksa.",
+          "evidenceIds": []
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c10",
+          "verdict": "unverifiable",
+          "missingContext": [],
+          "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Klaim valuasi tidak menyebut angka, jadi tidak ada yang bisa dibandingkan.",
+          "evidenceIds": []
+        },
+        {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c11",
+          "verdict": "unverifiable",
+          "missingContext": [],
+          "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Sumber valuation menyediakan rasio per tahun, bukan PB pada tanggal harian klaim. Nilai terbaru tidak dipakai sebagai pengganti.",
+          "evidenceIds": []
+        }
+      ],
+      "creditsUsed": 0,
+      "finishedAt": "2026-10-08T11:06:53.288Z"
+    },
+    "frames": [
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.245Z",
+        "stage": "normalize",
+        "message": "Resolusi saham selesai.",
+        "data": {
+          "status": "ready",
+          "entities": [
+            {
+              "surface": "BBTN",
+              "ticker": "BBTN",
+              "confidence": 0.95,
+              "method": "explicit"
+            }
+          ],
+          "choices": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.273Z",
+        "stage": "extract",
+        "message": "Ekstraksi klaim selesai.",
+        "data": {
+          "claimIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c1",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c2",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c4",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c7",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c9",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c10",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c11"
+          ],
+          "rejected": [
+            {
+              "candidateIndex": 4,
+              "reason": "DUPLICATE_CLAIM",
+              "ticker": "BBTN"
+            }
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.280Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c1",
+          "tools": [],
+          "estimatedCredits": 0,
+          "status": "unsupported",
+          "notes": [
+            "Klaim harga ini bukan persentase perubahan, jadi tidak dibandingkan dengan perubahan harga."
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.280Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c2",
+          "tools": [],
+          "estimatedCredits": 0,
+          "status": "needs_user_choice",
+          "notes": [
+            "Klaim tidak menyebut jangka waktu; pilih tanggal awal dan akhir."
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.280Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c1",
+          "status": "needs_data_or_flag",
+          "unsupportedPeriod": false,
+          "note": "Klaim harga ini bukan persentase perubahan, jadi tidak dibandingkan dengan perubahan harga.",
+          "coverage": {
+            "status": "VERIFIER_UNAVAILABLE",
+            "metric": "harga",
+            "sourceQueried": false,
+            "reason": "Klaim harga ini bukan persentase perubahan, jadi tidak dibandingkan dengan perubahan harga."
+          },
+          "sourceCalls": [],
+          "evidenceIds": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.281Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c2",
+          "status": "needs_data_or_flag",
+          "unsupportedPeriod": false,
+          "note": "Klaim tidak menyebut jangka waktu; pilih tanggal awal dan akhir.",
+          "coverage": {
+            "status": "CONFIGURATION_OR_PERIOD",
+            "metric": "perubahan harga harian",
+            "sourceQueried": false,
+            "reason": "Klaim tidak menyebut jangka waktu; pilih tanggal awal dan akhir."
+          },
+          "sourceCalls": [],
+          "evidenceIds": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.281Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c1"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.281Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c2"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.281Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c1",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.281Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c2",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.289Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c1",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.289Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c2",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.291Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+          "tools": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              }
+            }
+          ],
+          "estimatedCredits": 6,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:52.293Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4",
+          "tools": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              }
+            }
+          ],
+          "estimatedCredits": 6,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.009Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+          "status": "compared",
+          "unsupportedPeriod": false,
+          "note": "Laba bersih YOY dihitung dari field earnings.",
+          "coverage": {
+            "endpoint": "fetchQuarterlyFinancials",
+            "metric": "pertumbuhan laba bersih",
+            "field": "earnings",
+            "requestedPeriod": "semester satu 2026",
+            "availableDates": [
+              "2026-06-30",
+              "2026-03-31",
+              "2025-12-31",
+              "2025-09-30",
+              "2025-06-30",
+              "2025-03-31"
+            ],
+            "sourceCached": true,
+            "status": "CHECKED",
+            "formula": "(current - base) / base * 100",
+            "currentDates": [
+              "2026-03-31",
+              "2026-06-30"
+            ],
+            "baseDate": "2025-06-30"
+          },
+          "sourceCalls": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "status": "received",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c3:pertumbuhan-laba-bersih-yoy-bbtn",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c3:laba-bersih-bbtn-semester-i-2026",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c3:laba-bersih-bbtn-semester-i-2025"
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.010Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4",
+          "status": "compared",
+          "unsupportedPeriod": false,
+          "note": "Laba bersih dibandingkan dengan field earnings pada periode klaim.",
+          "coverage": {
+            "endpoint": "fetchQuarterlyFinancials",
+            "metric": "laba bersih",
+            "field": "earnings",
+            "requestedPeriod": "semester satu 2026",
+            "availableDates": [
+              "2026-06-30",
+              "2026-03-31",
+              "2025-12-31",
+              "2025-09-30",
+              "2025-06-30",
+              "2025-03-31"
+            ],
+            "sourceCached": true,
+            "status": "CHECKED",
+            "formula": "period_total",
+            "currentDates": [
+              "2026-03-31",
+              "2026-06-30"
+            ]
+          },
+          "sourceCalls": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "status": "reused",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c4:laba-bersih-bbtn-semester-i-2026"
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.012Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+          "results": [],
+          "skipped": [],
+          "pendingTools": [],
+          "selectionSource": "fallback"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.012Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4",
+          "results": [],
+          "skipped": [],
+          "pendingTools": [],
+          "selectionSource": "fallback"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.012Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+          "verdict": "supported"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.012Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4",
+          "verdict": "supported"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.020Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.022Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.022Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+          "tools": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              }
+            }
+          ],
+          "estimatedCredits": 6,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.022Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+          "tools": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              }
+            }
+          ],
+          "estimatedCredits": 6,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.023Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+          "status": "compared",
+          "unsupportedPeriod": false,
+          "note": "Laba bersih YOY dihitung dari field earnings.",
+          "coverage": {
+            "endpoint": "fetchQuarterlyFinancials",
+            "metric": "pertumbuhan laba bersih",
+            "field": "earnings",
+            "requestedPeriod": "semester satu 2026",
+            "availableDates": [
+              "2026-06-30",
+              "2026-03-31",
+              "2025-12-31",
+              "2025-09-30",
+              "2025-06-30",
+              "2025-03-31"
+            ],
+            "sourceCached": true,
+            "status": "CHECKED",
+            "formula": "(current - base) / base * 100",
+            "currentDates": [
+              "2026-03-31",
+              "2026-06-30"
+            ],
+            "baseDate": "2025-06-30"
+          },
+          "sourceCalls": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "status": "reused",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c5:pertumbuhan-laba-bersih-yoy-bbtn",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c5:laba-bersih-bbtn-semester-i-2026",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c5:laba-bersih-bbtn-semester-i-2025"
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.024Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+          "status": "compared",
+          "unsupportedPeriod": false,
+          "note": "Pendapatan bunga YOY dihitung dari field financials_sector_metrics.interest_income.",
+          "coverage": {
+            "endpoint": "fetchQuarterlyFinancials",
+            "metric": "pendapatan bunga",
+            "field": "financials_sector_metrics.interest_income",
+            "requestedPeriod": "semester satu 2026",
+            "availableDates": [
+              "2026-06-30",
+              "2026-03-31",
+              "2025-12-31",
+              "2025-09-30",
+              "2025-06-30",
+              "2025-03-31"
+            ],
+            "sourceCached": true,
+            "status": "CHECKED",
+            "formula": "(current - base) / base * 100",
+            "currentDates": [
+              "2026-03-31",
+              "2026-06-30"
+            ],
+            "baseDate": "2025-06-30"
+          },
+          "sourceCalls": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "status": "reused",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c6:pertumbuhan-pendapatan-bunga-yoy-bbtn",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c6:pendapatan-bunga-bbtn-semester-i-2026",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c6:pendapatan-bunga-bbtn-semester-i-2025"
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.024Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+          "results": [],
+          "skipped": [],
+          "pendingTools": [],
+          "selectionSource": "fallback"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.024Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+          "results": [],
+          "skipped": [],
+          "pendingTools": [],
+          "selectionSource": "fallback"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.024Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+          "verdict": "supported"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.024Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+          "verdict": "refuted"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.026Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.026Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.026Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c7",
+          "tools": [
+            {
+              "tool": "fetchCompanyReport",
+              "params": {
+                "symbol": "BBTN",
+                "sections": [
+                  "financials"
+                ]
+              }
+            }
+          ],
+          "estimatedCredits": 1,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.026Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+          "tools": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              }
+            }
+          ],
+          "estimatedCredits": 6,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.028Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+          "status": "compared",
+          "unsupportedPeriod": false,
+          "note": "Beban provisi YOY dihitung dari field provision.",
+          "coverage": {
+            "endpoint": "fetchQuarterlyFinancials",
+            "metric": "provisi",
+            "field": "provision",
+            "requestedPeriod": "semester satu 2026",
+            "availableDates": [
+              "2026-06-30",
+              "2026-03-31",
+              "2025-12-31",
+              "2025-09-30",
+              "2025-06-30",
+              "2025-03-31"
+            ],
+            "sourceCached": true,
+            "status": "CHECKED",
+            "formula": "(current - base) / base * 100",
+            "currentDates": [
+              "2026-03-31",
+              "2026-06-30"
+            ],
+            "baseDate": "2025-06-30"
+          },
+          "sourceCalls": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              },
+              "status": "reused",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": [
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c8:pertumbuhan-beban-provisi-yoy-bbtn",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c8:beban-provisi-bbtn-semester-i-2026",
+            "321548de-cc50-48a6-8da0-5888d2e7bf82-c8:beban-provisi-bbtn-semester-i-2025"
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.028Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+          "results": [],
+          "skipped": [],
+          "pendingTools": [],
+          "selectionSource": "fallback"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.029Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+          "verdict": "refuted"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.031Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c8",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.031Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c9",
+          "tools": [],
+          "estimatedCredits": 0,
+          "status": "unsupported",
+          "notes": [
+            "Program belum memiliki pembanding dengan definisi yang sama untuk metrik ini. Nilai transaksi akuisisi dan jumlah nasabah tidak boleh diganti dengan total kredit atau laba; sumber transaksi khusus belum diperiksa."
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.031Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c9",
+          "status": "needs_data_or_flag",
+          "unsupportedPeriod": false,
+          "note": "Program belum memiliki pembanding dengan definisi yang sama untuk metrik ini. Nilai transaksi akuisisi dan jumlah nasabah tidak boleh diganti dengan total kredit atau laba; sumber transaksi khusus belum diperiksa.",
+          "coverage": {
+            "status": "VERIFIER_UNAVAILABLE",
+            "metric": "akuisisi portofolio kredit pensiun",
+            "requestedPeriod": "semester satu 2026",
+            "sourceQueried": false,
+            "reason": "Program belum memiliki pembanding dengan definisi yang sama untuk metrik ini. Nilai transaksi akuisisi dan jumlah nasabah tidak boleh diganti dengan total kredit atau laba; sumber transaksi khusus belum diperiksa."
+          },
+          "sourceCalls": [],
+          "evidenceIds": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.031Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c9"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.031Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c9",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.031Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c9",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.031Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c10",
+          "tools": [
+            {
+              "tool": "fetchCompanyReport",
+              "params": {
+                "symbol": "BBTN",
+                "sections": [
+                  "valuation"
+                ]
+              }
+            }
+          ],
+          "estimatedCredits": 1,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.032Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c10",
+          "status": "missing_evidence",
+          "unsupportedPeriod": false,
+          "note": "Klaim valuasi tidak menyebut angka, jadi tidak ada yang bisa dibandingkan.",
+          "sourceCalls": [],
+          "evidenceIds": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.032Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c10"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.032Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c10",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.032Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c10",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.032Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c11",
+          "tools": [
+            {
+              "tool": "fetchCompanyReport",
+              "params": {
+                "symbol": "BBTN",
+                "sections": [
+                  "valuation"
+                ]
+              }
+            }
+          ],
+          "estimatedCredits": 1,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.199Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c7",
+          "status": "missing_evidence",
+          "unsupportedPeriod": false,
+          "note": "NIM tersedia sebagai rasio tahunan. Data tahun terbaru tidak dipakai menggantikan rasio kuartal atau semester pada klaim.",
+          "coverage": {
+            "endpoint": "fetchCompanyReport",
+            "field": "financials.historical_financial_ratio.profitability.net_interest_margin",
+            "requestedPeriod": "semester satu 2026",
+            "metric": "NIM",
+            "availableYears": [
+              2018,
+              2019,
+              2020,
+              2021,
+              2022,
+              2023,
+              2024,
+              2025
+            ],
+            "sourceCached": true,
+            "status": "PERIOD_GRANULARITY_MISMATCH",
+            "missingFields": [
+              "NIM untuk periode klaim"
+            ],
+            "reportGranularity": "annual"
+          },
+          "sourceCalls": [
+            {
+              "tool": "fetchCompanyReport",
+              "params": {
+                "symbol": "BBTN",
+                "sections": [
+                  "financials"
+                ]
+              },
+              "status": "received",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.199Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c7"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.199Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c7",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.199Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c7",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.287Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c11",
+          "status": "missing_evidence",
+          "unsupportedPeriod": false,
+          "note": "Sumber valuation menyediakan rasio per tahun, bukan PB pada tanggal harian klaim. Nilai terbaru tidak dipakai sebagai pengganti.",
+          "coverage": {
+            "status": "DATED_SOURCE_MISSING",
+            "endpoint": "fetchCompanyReport",
+            "field": "valuation.historical_valuation.pb",
+            "requestedPeriod": "19 Jul 2026",
+            "availableYears": [
+              2022,
+              2023,
+              2024,
+              2025,
+              2026
+            ],
+            "missingFields": [
+              "PB pada tanggal klaim"
+            ],
+            "sourceCached": true
+          },
+          "sourceCalls": [
+            {
+              "tool": "fetchCompanyReport",
+              "params": {
+                "symbol": "BBTN",
+                "sections": [
+                  "valuation"
+                ]
+              },
+              "status": "received",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.287Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c11"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.287Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c11",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.288Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c11",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "321548de-cc50-48a6-8da0-5888d2e7bf82",
+        "ts": "2026-10-08T11:06:53.288Z",
+        "stage": "done",
+        "message": "Pemeriksaan selesai.",
+        "data": {
+          "claimCount": 11,
+          "creditsUsed": 0
+        },
+        "credits": 0
+      }
+    ]
+  },
+  {
+    "id": "dividend-yield",
+    "method": "Real transcript normalization with updated official directory; no recorded extraction available",
+    "normalization": {
+      "text": "ULTJ: 1435 +20 (+1.41%), estimasi dividen yield 9-10% per tahun, Gross Profit Margin (GPM): 34.14%, Net Profit Margin (NPM): 17.81%, Return On Equity (ROE): 22.72%, Debt Equity Ratio (DER): 13.53% (Rasio utang hanya 13,5%), Dividend Yield: 9.06%, Price Earnings Ratio (PER): 7.53x (PE ratio sekitar 9x).\nMLBI: 6350 +25 (+0.40%), estimasi dividen yield sekitar 8,9% (Dividend Yield: 8.83%).\nDLTA: 1765 +10 (+0.57%), estimasi dividen yield bisa 10% per tahun, Debt Equity Ratio (DER): 47.63%.",
+      "entities": [
+        {
+          "surface": "ULTJ",
+          "ticker": "ULTJ",
+          "confidence": 0.95,
+          "method": "explicit"
+        },
+        {
+          "surface": "MLBI",
+          "ticker": "MLBI",
+          "confidence": 0.95,
+          "method": "explicit"
+        },
+        {
+          "surface": "DLTA",
+          "ticker": "DLTA",
+          "confidence": 0.95,
+          "method": "explicit"
+        }
+      ],
+      "status": "ready",
+      "choices": []
+    }
+  },
+  {
+    "id": "financial-quality",
+    "method": "Real transcript normalization with updated official directory; no recorded extraction available",
+    "normalization": {
+      "text": "deviden yield-nya di atas 6%, deviden payout rasio-nya itu masih di bawah 60%, masih ada 40% laba. GJTL, AUTO, BJTM. PBV < 1x. GJTL 1310 +85 (+6.94%), AUTO 2770 +20 (+0.73%), BJTM 515 -5 (-0.96%).",
+      "entities": [
+        {
+          "surface": "GJTL",
+          "ticker": "GJTL",
+          "confidence": 0.95,
+          "method": "explicit"
+        },
+        {
+          "surface": "AUTO",
+          "ticker": "AUTO",
+          "confidence": 0.95,
+          "method": "explicit"
+        },
+        {
+          "surface": "BJTM",
+          "ticker": "BJTM",
+          "confidence": 0.95,
+          "method": "explicit"
+        }
+      ],
+      "status": "ready",
+      "choices": []
+    }
+  },
+  {
+    "id": "unvr-news",
+    "method": "Recorded original extraction revalidated against fixed code, real Sectors; explanation fallback; no new LLM extraction/video test",
+    "result": {
+      "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+      "entities": [
+        {
+          "surface": "unilever indonesia",
+          "ticker": "UNVR",
+          "confidence": 0.9,
+          "method": "alias"
+        }
+      ],
+      "claims": [
+        {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+          "span": [
+            0,
+            148
+          ],
+          "type": "dividend",
+          "ticker": "UNVR",
+          "asserted": {
+            "metric": "dividen interim",
+            "value": 87,
+            "unit": "IDR",
+            "period": "tahun buku 2025"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c2",
+          "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+          "span": [
+            0,
+            148
+          ],
+          "type": "dividend",
+          "ticker": "UNVR",
+          "asserted": {
+            "metric": "total dividen interim",
+            "value": 3300000000000,
+            "unit": "IDR",
+            "period": "tahun buku 2025"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c3",
+          "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+          "span": [
+            498,
+            588
+          ],
+          "type": "earnings_growth",
+          "ticker": "UNVR",
+          "asserted": {
+            "metric": "laba bersih",
+            "value": 3330000000000,
+            "unit": "IDR",
+            "period": "hingga kuartal tiga 2025"
+          },
+          "inScope": true
+        },
+        {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4",
+          "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+          "span": [
+            498,
+            618
+          ],
+          "type": "earnings_growth",
+          "ticker": "UNVR",
+          "asserted": {
+            "metric": "pertumbuhan laba bersih",
+            "value": 10.81,
+            "unit": "%",
+            "window": "year on year",
+            "period": "hingga kuartal tiga 2025"
+          },
+          "inScope": true
+        }
+      ],
+      "evidence": [
+        {
+          "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:dividen-per-saham-unvr-tanggal-data-2025-12-15-b",
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "tool": "fetchCompanyReport",
+          "params": {
+            "symbol": "UNVR",
+            "sections": [
+              "dividend"
+            ]
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:15:49.964+00:00",
+          "label": "Dividen per saham UNVR; tanggal data 2025-12-15 (bukan tanggal pembayaran)",
+          "value": 87,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:dividen-per-saham-unvr-tanggal-data-2025-06-16-b",
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "tool": "fetchCompanyReport",
+          "params": {
+            "symbol": "UNVR",
+            "sections": [
+              "dividend"
+            ]
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:15:49.964+00:00",
+          "label": "Dividen per saham UNVR; tanggal data 2025-06-16 (bukan tanggal pembayaran)",
+          "value": 47,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:total-dividen-per-saham-unvr-pada-tahun-kalender",
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "tool": "fetchCompanyReport",
+          "params": {
+            "symbol": "UNVR",
+            "sections": [
+              "dividend"
+            ]
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:15:49.964+00:00",
+          "label": "Total dividen per saham UNVR pada tahun kalender 2025 (bukan total tahun buku)",
+          "value": 134,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:dividen-per-saham-unvr-tanggal-data-2026-06-15-b",
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "tool": "fetchCompanyReport",
+          "params": {
+            "symbol": "UNVR",
+            "sections": [
+              "dividend"
+            ]
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T09:15:49.964+00:00",
+          "label": "Dividen per saham UNVR; tanggal data 2026-06-15 (bukan tanggal pembayaran)",
+          "value": 114,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c3:laba-bersih-unvr-kumulatif-hingga-q3-2025",
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c3",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "UNVR",
+            "n_quarters": 7,
+            "report_date": "2025-09-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T10:51:05.546+00:00",
+          "label": "Laba bersih UNVR Kumulatif hingga Q3 2025",
+          "value": 3335249000000,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4:pertumbuhan-laba-bersih-yoy-unvr",
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "UNVR",
+            "n_quarters": 7,
+            "report_date": "2025-09-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T10:51:05.546+00:00",
+          "label": "Pertumbuhan laba bersih YOY UNVR",
+          "value": 0.1082,
+          "unit": "%"
+        },
+        {
+          "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4:laba-bersih-unvr-kumulatif-hingga-q3-2025",
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "UNVR",
+            "n_quarters": 7,
+            "report_date": "2025-09-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T10:51:05.546+00:00",
+          "label": "Laba bersih UNVR Kumulatif hingga Q3 2025",
+          "value": 3335249000000,
+          "unit": "IDR"
+        },
+        {
+          "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4:laba-bersih-unvr-kumulatif-hingga-q3-2024",
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4",
+          "tool": "fetchQuarterlyFinancials",
+          "params": {
+            "symbol": "UNVR",
+            "n_quarters": 7,
+            "report_date": "2025-09-30"
+          },
+          "credits": 0,
+          "cached": true,
+          "fetchedAt": "2026-10-08T10:51:05.546+00:00",
+          "label": "Laba bersih UNVR Kumulatif hingga Q3 2024",
+          "value": 3009698000000,
+          "unit": "IDR"
+        }
+      ],
+      "hypothesisRuns": [],
+      "verdicts": [
+        {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "verdict": "supported",
+          "computed": {
+            "value": 87,
+            "unit": "IDR",
+            "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:dividen-per-saham-unvr-tanggal-data-2025-12-15-b"
+          },
+          "missingContext": [],
+          "explanation": "Angka dalam klaim sesuai dengan data yang tersedia. Status ini menilai kesesuaian angka saja. Pembanding: Rp87.",
+          "evidenceIds": [
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:dividen-per-saham-unvr-tanggal-data-2025-12-15-b",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:dividen-per-saham-unvr-tanggal-data-2025-06-16-b",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:total-dividen-per-saham-unvr-pada-tahun-kalender",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:dividen-per-saham-unvr-tanggal-data-2026-06-15-b"
+          ]
+        },
+        {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c2",
+          "verdict": "unverifiable",
+          "missingContext": [],
+          "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Sumber dividen yang diperiksa memuat nominal per saham, bukan total pembayaran perusahaan. Total dividen perusahaan belum dapat diverifikasi dari sumber ini.",
+          "evidenceIds": []
+        },
+        {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c3",
+          "verdict": "supported",
+          "computed": {
+            "value": 3335249000000,
+            "unit": "IDR",
+            "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c3:laba-bersih-unvr-kumulatif-hingga-q3-2025"
+          },
+          "missingContext": [],
+          "explanation": "Angka dalam klaim sesuai dengan data yang tersedia. Status ini menilai kesesuaian angka saja. Pembanding: Rp3335249000000.",
+          "evidenceIds": [
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c3:laba-bersih-unvr-kumulatif-hingga-q3-2025"
+          ]
+        },
+        {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4",
+          "verdict": "supported",
+          "computed": {
+            "value": 0.1082,
+            "unit": "%",
+            "evidenceId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4:pertumbuhan-laba-bersih-yoy-unvr"
+          },
+          "missingContext": [],
+          "explanation": "Angka dalam klaim sesuai dengan data yang tersedia. Status ini menilai kesesuaian angka saja. Pembanding: 10,82%.",
+          "evidenceIds": [
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c4:pertumbuhan-laba-bersih-yoy-unvr",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c4:laba-bersih-unvr-kumulatif-hingga-q3-2025",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c4:laba-bersih-unvr-kumulatif-hingga-q3-2024"
+          ]
+        }
+      ],
+      "creditsUsed": 0,
+      "finishedAt": "2026-10-08T11:06:56.183Z"
+    },
+    "frames": [
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.535Z",
+        "stage": "normalize",
+        "message": "Resolusi saham selesai.",
+        "data": {
+          "status": "ready",
+          "entities": [
+            {
+              "surface": "unilever indonesia",
+              "ticker": "UNVR",
+              "confidence": 0.9,
+              "method": "alias"
+            }
+          ],
+          "choices": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.548Z",
+        "stage": "extract",
+        "message": "Ekstraksi klaim selesai.",
+        "data": {
+          "claimIds": [
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c2",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c3",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c4"
+          ],
+          "rejected": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.560Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "tools": [
+            {
+              "tool": "fetchCompanyReport",
+              "params": {
+                "symbol": "UNVR",
+                "sections": [
+                  "dividend"
+                ]
+              }
+            }
+          ],
+          "estimatedCredits": 1,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.560Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c2",
+          "tools": [
+            {
+              "tool": "fetchCompanyReport",
+              "params": {
+                "symbol": "UNVR",
+                "sections": [
+                  "dividend"
+                ]
+              }
+            }
+          ],
+          "estimatedCredits": 1,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.959Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "status": "compared",
+          "unsupportedPeriod": false,
+          "note": "Dividen UNVR Rp87 per saham cocok dengan dividen per saham unvr; tanggal data 2025-12-15 (bukan tanggal pembayaran).",
+          "sourceCalls": [
+            {
+              "tool": "fetchCompanyReport",
+              "params": {
+                "symbol": "UNVR",
+                "sections": [
+                  "dividend"
+                ]
+              },
+              "status": "received",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": [
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:dividen-per-saham-unvr-tanggal-data-2025-12-15-b",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:dividen-per-saham-unvr-tanggal-data-2025-06-16-b",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:total-dividen-per-saham-unvr-pada-tahun-kalender",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c1:dividen-per-saham-unvr-tanggal-data-2026-06-15-b"
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.959Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c2",
+          "status": "missing_evidence",
+          "unsupportedPeriod": false,
+          "note": "Sumber dividen yang diperiksa memuat nominal per saham, bukan total pembayaran perusahaan. Total dividen perusahaan belum dapat diverifikasi dari sumber ini.",
+          "sourceCalls": [
+            {
+              "tool": "fetchCompanyReport",
+              "params": {
+                "symbol": "UNVR",
+                "sections": [
+                  "dividend"
+                ]
+              },
+              "status": "reused",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.959Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c2"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.959Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "results": [],
+          "skipped": [],
+          "pendingTools": [],
+          "selectionSource": "fallback"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.959Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c2",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.959Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "verdict": "supported"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.959Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c2",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.960Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c1",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.960Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c3",
+          "tools": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "UNVR",
+                "n_quarters": 7,
+                "report_date": "2025-09-30"
+              }
+            }
+          ],
+          "estimatedCredits": 7,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:55.960Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4",
+          "tools": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "UNVR",
+                "n_quarters": 7,
+                "report_date": "2025-09-30"
+              }
+            }
+          ],
+          "estimatedCredits": 7,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:56.181Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c3",
+          "status": "compared",
+          "unsupportedPeriod": false,
+          "note": "Laba bersih dibandingkan dengan field earnings pada periode klaim.",
+          "coverage": {
+            "endpoint": "fetchQuarterlyFinancials",
+            "metric": "laba bersih",
+            "field": "earnings",
+            "requestedPeriod": "hingga kuartal tiga 2025",
+            "availableDates": [
+              "2025-09-30",
+              "2025-06-30",
+              "2025-03-31",
+              "2024-12-31",
+              "2024-09-30",
+              "2024-06-30",
+              "2024-03-31"
+            ],
+            "sourceCached": true,
+            "status": "CHECKED",
+            "formula": "period_total",
+            "currentDates": [
+              "2025-03-31",
+              "2025-06-30",
+              "2025-09-30"
+            ]
+          },
+          "sourceCalls": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "UNVR",
+                "n_quarters": 7,
+                "report_date": "2025-09-30"
+              },
+              "status": "received",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": [
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c3:laba-bersih-unvr-kumulatif-hingga-q3-2025"
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:56.181Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4",
+          "status": "compared",
+          "unsupportedPeriod": false,
+          "note": "Laba bersih YOY dihitung dari field earnings.",
+          "coverage": {
+            "endpoint": "fetchQuarterlyFinancials",
+            "metric": "pertumbuhan laba bersih",
+            "field": "earnings",
+            "requestedPeriod": "hingga kuartal tiga 2025",
+            "availableDates": [
+              "2025-09-30",
+              "2025-06-30",
+              "2025-03-31",
+              "2024-12-31",
+              "2024-09-30",
+              "2024-06-30",
+              "2024-03-31"
+            ],
+            "sourceCached": true,
+            "status": "CHECKED",
+            "formula": "(current - base) / base * 100",
+            "currentDates": [
+              "2025-03-31",
+              "2025-06-30",
+              "2025-09-30"
+            ],
+            "baseDate": "2024-09-30"
+          },
+          "sourceCalls": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "UNVR",
+                "n_quarters": 7,
+                "report_date": "2025-09-30"
+              },
+              "status": "reused",
+              "cached": true,
+              "credits": 0
+            }
+          ],
+          "evidenceIds": [
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c4:pertumbuhan-laba-bersih-yoy-unvr",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c4:laba-bersih-unvr-kumulatif-hingga-q3-2025",
+            "cc1221c9-1339-4457-bd63-e95c629fdd64-c4:laba-bersih-unvr-kumulatif-hingga-q3-2024"
+          ]
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:56.181Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c3",
+          "results": [],
+          "skipped": [],
+          "pendingTools": [],
+          "selectionSource": "fallback"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:56.181Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks selesai.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4",
+          "results": [],
+          "skipped": [],
+          "pendingTools": [],
+          "selectionSource": "fallback"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:56.181Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c3",
+          "verdict": "supported"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:56.181Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4",
+          "verdict": "supported"
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:56.183Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c3",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:56.183Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "cc1221c9-1339-4457-bd63-e95c629fdd64-c4",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      },
+      {
+        "checkId": "cc1221c9-1339-4457-bd63-e95c629fdd64",
+        "ts": "2026-10-08T11:06:56.183Z",
+        "stage": "done",
+        "message": "Pemeriksaan selesai.",
+        "data": {
+          "claimCount": 4,
+          "creditsUsed": 0
+        },
+        "credits": 0
+      }
+    ]
+  }
+]
