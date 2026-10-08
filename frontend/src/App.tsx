@@ -464,6 +464,7 @@ function LandingPage({
 
             <form
               className="hero-input-dock"
+              autoComplete="off"
               onSubmit={(event) => {
                 event.preventDefault();
                 enterWorkspace(true);
@@ -472,6 +473,7 @@ function LandingPage({
               <Search size={18} />
               <input
                 value={input}
+                autoComplete="off"
                 onChange={(event) => setInput(event.target.value)}
                 placeholder="Tempel klaim saham..."
                 aria-label="Klaim saham"
@@ -646,12 +648,25 @@ function AppSidebar({
   );
 }
 
-function AppTopbar({ phase }: { phase: Phase }) {
+function AppTopbar({ page, phase, onHome, onCheck }: {
+  page: Exclude<Page, 'landing'>;
+  phase: Phase;
+  onHome: () => void;
+  onCheck: () => void;
+}) {
+  const current = page === 'history' ? 'RIWAYAT' : page === 'saved' ? 'TERSIMPAN'
+    : phase === 'idle' ? 'ANALISIS BARU' : phase === 'analyzing' ? 'INVESTIGASI BERJALAN' : 'RAPOR';
   return (
     <header className="app-topbar">
-      <div className="instrument-breadcrumb">
-        <span>CEK DULU</span><i>/</i><span>CHECK</span><i>/</i><b>{phase === "idle" ? "NEW ANALYSIS" : phase === "analyzing" ? "LIVE INVESTIGATION" : "REPORT"}</b>
-      </div>
+      <nav className="instrument-breadcrumb" aria-label="Breadcrumb">
+        <button type="button" onClick={onHome}>CEK DULU</button>
+        <i aria-hidden="true">/</i>
+        {page === 'check' ? <>
+          <button type="button" onClick={onCheck}>CHECK</button>
+          <i aria-hidden="true">/</i>
+          <span aria-current="page">{current}</span>
+        </> : <span aria-current="page">{current}</span>}
+      </nav>
     </header>
   );
 }
@@ -725,6 +740,104 @@ export function IntelligencePreview() {
           aria-pressed={index === activeIndex} onClick={() => setActiveIndex(index)} />)}
       </div>
     </aside>
+  );
+}
+
+export function EvidenceRequirements() {
+  const [expanded, setExpanded] = useState(false);
+  const [activeEvidence, setActiveEvidence] = useState(0);
+  const [evidencePaused, setEvidencePaused] = useState(false);
+  const evidenceSlides = [
+    { id: "price", code: "PRC", label: "PERGERAKAN HARGA", title: "Harga awal dan akhir pada periode yang sama",
+      description: "Backend menghitung perubahan harga serta memeriksa rentang tanggal, volume, dan aksi korporasi bila relevan.",
+      source: "Minimal dua harga penutupan yang valid", tags: ["Tanggal awal", "Tanggal akhir", "Volume", "Aksi korporasi"], icon: Activity, tone: "cyan" },
+    { id: "valuation", code: "VAL", label: "VALUASI", title: "Rasio terbaru yang sesuai dengan klaim",
+      description: "PER atau PBV dibandingkan dengan periode historis dan perusahaan sejenis bila datanya tersedia.",
+      source: "Rasio perusahaan dari laporan terbaru", tags: ["PER / PBV", "Periode", "Riwayat", "Perusahaan sejenis"], icon: Layers3, tone: "indigo" },
+    { id: "dividend", code: "DIV", label: "DIVIDEN", title: "Yield, pembayaran, dan periode dividen",
+      description: "Data diperiksa terhadap yield terbaru, riwayat pembayaran, serta kejadian khusus yang dapat mengubah konteks.",
+      source: "Pembayaran dan yield pada periode terkait", tags: ["Yield terbaru", "Pembayaran", "Riwayat", "Kejadian khusus"], icon: Database, tone: "teal" },
+    { id: "earnings", code: "GRW", label: "PERTUMBUHAN LABA", title: "Dua periode laporan yang sebanding",
+      description: "Kuartal atau tahun harus sudah dilaporkan. Periode yang belum tersedia tidak akan ditebak.",
+      source: "Dua laporan dengan periode yang setara", tags: ["Periode awal", "Periode akhir", "Laba", "Pendapatan"], icon: Waypoints, tone: "violet" },
+  ] as const;
+  const selectedEvidence = evidenceSlides[activeEvidence]!;
+  const SelectedEvidenceIcon = selectedEvidence.icon;
+
+  useEffect(() => {
+    if (!expanded || evidencePaused || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(() => setActiveEvidence(index => (index + 1) % evidenceSlides.length), 5000);
+    return () => window.clearInterval(timer);
+  }, [expanded, evidencePaused, evidenceSlides.length]);
+
+  function moveEvidence(direction: -1 | 1) {
+    setActiveEvidence(index => (index + direction + evidenceSlides.length) % evidenceSlides.length);
+  }
+
+  return (
+    <section className="evidence-requirements" aria-labelledby="evidence-requirements-title">
+      <div className="evidence-requirements-intro">
+        <span className="evidence-requirements-icon"><CircleHelp size={18} /></span>
+        <div>
+          <span className="panel-kicker">SEBELUM MULAI</span>
+          <h2 id="evidence-requirements-title">Supaya klaim bisa diperiksa</h2>
+          <p>Kamu tidak perlu mencari bukti sendiri. Tulis klaim dengan jelas, lalu Cek Dulu mencari data pembanding dari Sectors.</p>
+        </div>
+      </div>
+
+      <div className="claim-requirement-list" aria-label="Informasi yang perlu ada dalam klaim">
+        <div><b>01</b><span><strong>Saham</strong><small>Ticker atau nama perusahaan</small></span></div>
+        <div><b>02</b><span><strong>Angka atau metrik</strong><small>Misalnya persentase, PER, atau yield</small></span></div>
+        <div><b>03</b><span><strong>Periode</strong><small>Misalnya 30 hari, kuartal, atau tahun</small></span></div>
+      </div>
+
+      <div className={`evidence-requirements-detail ${expanded ? "is-open" : ""}`}>
+        <button type="button" className="evidence-requirements-trigger" aria-expanded={expanded}
+          aria-controls="evidence-requirements-content" onClick={() => setExpanded(value => !value)}>
+          <span><Database size={14} /> Evidence apa yang akan dicari?</span><ChevronDown size={15} />
+        </button>
+        <div id="evidence-requirements-content" className="evidence-requirements-collapse" aria-hidden={!expanded}>
+          <div>
+            <div className="evidence-requirements-body">
+              <div className={`evidence-carousel ${selectedEvidence.tone}`}
+                onMouseEnter={() => setEvidencePaused(true)} onMouseLeave={() => setEvidencePaused(false)}
+                onFocusCapture={() => setEvidencePaused(true)}
+                onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setEvidencePaused(false); }}>
+                <div className="evidence-carousel-head">
+                  <span><i /> EVIDENCE SCANNER</span>
+                  <b>{String(activeEvidence + 1).padStart(2, "0")} / {String(evidenceSlides.length).padStart(2, "0")}</b>
+                </div>
+                <div className="evidence-carousel-progress" aria-hidden="true"><i style={{ width: `${((activeEvidence + 1) / evidenceSlides.length) * 100}%` }} /></div>
+                <article className="evidence-carousel-slide" key={selectedEvidence.id} aria-live="polite">
+                  <div className="evidence-slide-mark"><SelectedEvidenceIcon size={25} /><span>{selectedEvidence.code}</span></div>
+                  <div className="evidence-slide-copy">
+                    <span>{selectedEvidence.label}</span>
+                    <h3>{selectedEvidence.title}</h3>
+                    <p>{selectedEvidence.description}</p>
+                  </div>
+                  <aside>
+                    <span>DATA YANG DICARI</span>
+                    <strong>{selectedEvidence.source}</strong>
+                    <div>{selectedEvidence.tags.map(tag => <i key={tag}>{tag}</i>)}</div>
+                  </aside>
+                </article>
+                <div className="evidence-carousel-nav">
+                  <div className="evidence-carousel-dots" aria-label="Pilih jenis evidence">
+                    {evidenceSlides.map((slide, index) => <button type="button" key={slide.id}
+                      aria-label={`Tampilkan evidence ${slide.label.toLowerCase()}`} aria-pressed={activeEvidence === index}
+                      onClick={() => setActiveEvidence(index)}><span>{String(index + 1).padStart(2, "0")}</span></button>)}
+                  </div>
+                  <div className="evidence-carousel-arrows">
+                    <button type="button" aria-label="Evidence sebelumnya" onClick={() => moveEvidence(-1)}><ArrowRight size={16} /></button>
+                    <button type="button" aria-label="Evidence berikutnya" onClick={() => moveEvidence(1)}><ArrowRight size={16} /></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -819,6 +932,8 @@ function IdleCheck({
         <div className="page-readout"><Fingerprint size={15} /> INPUT → CLAIM → EVIDENCE → CONTEXT → VERDICT</div>
       </div>
 
+      <EvidenceRequirements />
+
       <div className="check-grid">
         <section className="input-chamber">
           <div className="chamber-topstrip">
@@ -826,6 +941,7 @@ function IdleCheck({
             <span className="ready-indicator"><i /> SISTEM SIAP</span>
           </div>
           <form
+            autoComplete="off"
             onSubmit={(event) => {
               event.preventDefault();
               startCheck();
@@ -859,6 +975,7 @@ function IdleCheck({
                   id="claim-input"
                   ref={inputRef}
                   value={input}
+                  autoComplete="off"
                   maxLength={5000}
                   onChange={(event) => setInput(event.target.value)}
                   placeholder={'Tempel klaim saham di sini…\ncontoh: “ADRO yield dividennya 25% setahun.”'}
@@ -962,7 +1079,7 @@ function IdleCheck({
             {mode !== "text" && input && (
               <div className="prepared-text-panel">
                 <div className="prepared-text-head"><span>TEKS HASIL PEMBACAAN / EDITABLE</span><span><CheckCircle2 size={13} /> READY</span></div>
-                <textarea value={input} maxLength={5000} onChange={(event) => setInput(event.target.value)} aria-label="Teks klaim saham" />
+                <textarea value={input} maxLength={5000} autoComplete="off" onChange={(event) => setInput(event.target.value)} aria-label="Teks klaim saham" />
                 <div className="prepared-status"><span>{mediaMessage}</span><small>TEKS SIAP · PERIKSA SEBELUM CEK</small></div>
               </div>
             )}
@@ -1110,8 +1227,14 @@ function ResultView({
   const tone = fixture?.tone || "violet";
   const [claimQuery, setClaimQuery] = useState("");
   const [evidenceQuery, setEvidenceQuery] = useState("");
+  const [claimDirection, setClaimDirection] = useState<"forward" | "backward">("forward");
   useEffect(() => setClaimQuery(""), [active.id]);
   useEffect(() => setEvidenceQuery(""), [active.id, claimIndex]);
+  function selectClaim(index: number) {
+    if (index === claimIndex) return;
+    setClaimDirection(index > claimIndex ? "forward" : "backward");
+    onSelectClaim(index);
+  }
   const normalizedClaimQuery = claimQuery.trim().toLocaleLowerCase("id-ID");
   const claimRows = active.result.verdicts.map((verdict, index) => ({
     verdict,
@@ -1143,7 +1266,7 @@ function ResultView({
         </div>
       </div>
 
-      <div className="result-heading">
+      <div className={`result-heading claim-change ${claimDirection}`} key={`heading-${active.id}-${claimIndex}`}>
         <div>
           <span className="page-index">INVESTIGATION REPORT</span>
           <h1>{fixture?.headline || "Klaim ini belum dapat diverifikasi tanpa evidence."}</h1>
@@ -1165,7 +1288,7 @@ function ResultView({
           <div className="claim-switcher-list">
             {filteredClaimRows.map(({ verdict, index, item }) => (
                 <button key={verdict.claimId} className={index === claimIndex ? "selected" : ""} aria-pressed={index === claimIndex}
-                  onClick={() => onSelectClaim(index)}>
+                  onClick={() => selectClaim(index)}>
                   <span className="claim-switcher-index">{String(index + 1).padStart(2, "0")}</span>
                   <span className="claim-switcher-text"><b>{item.ticker} · {item.category}</b><small>{item.quote || active.text}</small></span>
                   <span className={`status-flag ${item.tone}`}><VerdictIcon tone={item.tone} size={12} /> {item.shortStatus}</span>
@@ -1178,7 +1301,7 @@ function ResultView({
         </section>
       )}
 
-      <section className={`verdict-hero ${tone}`}>
+      <section className={`verdict-hero ${tone} claim-change ${claimDirection}`} key={`verdict-${active.id}-${claimIndex}`}>
         <div className="verdict-rings" />
         <div className="verdict-hero-top">
           <div><span>VERDICT</span><b><VerdictIcon tone={tone} size={17} /> {fixture?.status || "Tidak bisa diverifikasi"}</b></div>
@@ -1194,7 +1317,7 @@ function ResultView({
       </section>
 
       <div className="report-grid">
-        <section className="claim-report-module">
+        <section className={`claim-report-module claim-change ${claimDirection}`} key={`claim-report-${active.id}-${claimIndex}`}>
           <div className="claim-module-head">
             <div><span>CLAIM {String(claimIndex + 1).padStart(2, "0")} / {fixture?.category || "UNRESOLVED"}</span><blockquote title={fixture?.quote || active.text}>“{fixture?.quote || active.text}”</blockquote></div>
             <div className={`status-flag ${tone}`}><VerdictIcon tone={tone} size={14} /> {fixture?.shortStatus || "UNVERIFIABLE"}</div>
@@ -1452,18 +1575,49 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
     finally { setPdfBusy(false); }
   }
 
+  function clearDraft() {
+    setInput("");
+    setInputSource("paste");
+    setInputUrl(undefined);
+    setChoices([]);
+    setSelections({});
+    setError("");
+  }
+
   function resetCheck() {
     clearTimers();
     setActive(null);
     setPhase("idle");
-    setInput("");
-    setInputSource("paste"); setInputUrl(undefined);
+    clearDraft();
     setActiveStep(0);
     setTraceOpen(false);
     setTraces([]);
-    setChoices([]); setSelections({});
-    setError("");
     setViewRevision((current) => current + 1);
+  }
+
+  function showLanding(view: LandingView = "home") {
+    clearTimers();
+    abortRef.current?.abort();
+    clearDraft();
+    setLandingDestination(view);
+    setPage("landing");
+    setPhase("idle");
+    setViewRevision((current) => current + 1);
+    window.scrollTo({ top: 0 });
+  }
+
+  function showCheckInput() {
+    clearTimers();
+    abortRef.current?.abort();
+    clearDraft();
+    setPage("check");
+    setActive(null);
+    setPhase("idle");
+    setActiveStep(0);
+    setTraceOpen(false);
+    setTraces([]);
+    setViewRevision((current) => current + 1);
+    window.scrollTo({ top: 0 });
   }
 
   if (page === "landing") {
@@ -1485,27 +1639,27 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
       <AppSidebar
         page={page}
         setPage={(next) => {
+          if (next === "check") {
+            showCheckInput();
+            return;
+          }
           clearTimers();
+          abortRef.current?.abort();
+          clearDraft();
+          setActive(null);
+          setPhase("idle");
+          setActiveStep(0);
+          setTraceOpen(false);
+          setTraces([]);
           setPage(next);
           setViewRevision((current) => current + 1);
-          if (next === "check" && phase === "analyzing") {
-            setPhase("idle");
-            setActive(null);
-          }
         }}
         historyCount={history.length}
         savedCount={savedItems.length}
-        goLanding={(view = "home") => {
-          clearTimers();
-          setLandingDestination(view);
-          setPage("landing");
-          setPhase("idle");
-          setViewRevision((current) => current + 1);
-          window.scrollTo({ top: 0 });
-        }}
+        goLanding={showLanding}
       />
       <div className="workspace-main">
-        <AppTopbar phase={phase} />
+        <AppTopbar page={page} phase={phase} onHome={() => showLanding()} onCheck={showCheckInput} />
         <main className="workspace-canvas">
           <div className="canvas-grid" />
           <div className="canvas-glow canvas-glow-a" />
