@@ -1,5 +1,17 @@
 import type { CheckResult, TraceEvent } from '@cek-dulu/shared/schemas';
 
+export function coverageDetails(event: TraceEvent): string[] {
+  if (event.stage !== 'verify' || !event.data || typeof event.data !== 'object') return [];
+  const data = event.data as Record<string, unknown>;
+  const coverage = data.coverage && typeof data.coverage === 'object' ? data.coverage as Record<string, unknown> : {};
+  const missingFields = Array.isArray(coverage.missingFields) ? coverage.missingFields.filter((field): field is string => typeof field === 'string') : [];
+  const availableDates = Array.isArray(coverage.availableDates) ? coverage.availableDates.filter((date): date is string => typeof date === 'string') : [];
+  return [...(typeof data.note === 'string' && data.note ? [data.note] : []),
+    ...(typeof coverage.requestedPeriod === 'string' ? [`Periode yang diminta: ${coverage.requestedPeriod}`] : []),
+    ...(missingFields.length ? [`Data yang belum tersedia: ${missingFields.join(', ')}`] : []),
+    ...(availableDates.length ? [`Tanggal data tersedia: ${availableDates.join(', ')}`] : [])];
+}
+
 export function checkOutcome(result: CheckResult, traces: readonly TraceEvent[]) {
   if (result.verdicts.length) return { kind: 'complete' as const, message: 'Pemeriksaan selesai.' };
   const error = traces.find(event => event.stage === 'error');
@@ -28,8 +40,13 @@ export function traceDetails(event: TraceEvent): string[] {
     return [`${claims} klaim diterima · ${rejected} kandidat ditolak`, ...new Set((Array.isArray(data.rejected) ? data.rejected : [])
       .flatMap(item => item && typeof item === 'object' && typeof item.reason === 'string' ? [reasons[item.reason] ?? 'Kandidat tidak lolos validasi'] : []))];
   }
-  if (event.stage === 'verify') return [data.status === 'out_of_scope' ? 'Di luar cakupan pemeriksaan.'
-    : data.status === 'needs_data_or_flag' ? 'Jenis klaim, periode, atau data belum dapat diproses.'
-    : `${Array.isArray(data.evidenceIds) ? data.evidenceIds.length : 0} bukti diperoleh`, `${event.credits ?? 0} kredit Sectors`, ...(Array.isArray(data.sourceCalls) ? data.sourceCalls.map((source: { tool?: string; status?: string; cached?: boolean; code?: string }) => `${source.tool}: ${source.status === 'failed' ? `gagal (${source.code})` : source.status === 'reused' ? 'respons Sectors dipakai bersama dalam pemeriksaan ini' : source.cached ? 'data Sectors dari cache' : 'respons langsung Sectors'}`) : []), ...(typeof data.note === 'string' && data.note ? [data.note] : [])];
+  if (event.stage === 'verify') {
+    return [data.status === 'out_of_scope' ? 'Di luar cakupan pemeriksaan.'
+      : data.status === 'needs_data_or_flag' ? 'Jenis klaim, periode, atau data belum dapat diproses.'
+      : `${Array.isArray(data.evidenceIds) ? data.evidenceIds.length : 0} bukti diperoleh`,
+      `${event.credits ?? 0} kredit Sectors`,
+      ...(Array.isArray(data.sourceCalls) ? data.sourceCalls.map((source: { tool?: string; status?: string; cached?: boolean; code?: string }) => `${source.tool}: ${source.status === 'failed' ? `gagal (${source.code})` : source.status === 'reused' ? 'respons Sectors dipakai bersama dalam pemeriksaan ini' : source.cached ? 'data Sectors dari cache' : 'respons langsung Sectors'}`) : []),
+      ...coverageDetails(event)];
+  }
   return [];
 }

@@ -43,7 +43,7 @@ import { HistoryItemSchema, formatEvidence, readableClaimType, readableSourceTex
 import { readTickerChoices, tickerSelections, type UiTickerChoice } from "../../apps/web/lib/ticker-choices";
 import { downloadReportPdf } from "../../apps/web/lib/report-pdf";
 import { comparisonFor, explanationParts } from "../../apps/web/lib/report-presentation";
-import { checkOutcome, traceDetails } from '../../apps/web/lib/check-outcome';
+import { checkOutcome, coverageDetails, traceDetails } from '../../apps/web/lib/check-outcome';
 import { cleanText } from "../../packages/agent/src/clean-text";
 
 type Page = "landing" | "check" | "history" | "saved";
@@ -1284,9 +1284,37 @@ export function ResultView({
   const normalizedEvidenceQuery = evidenceQuery.trim().toLocaleLowerCase("id-ID");
   const filteredEvidence = fixture?.evidence.filter(row => !normalizedEvidenceQuery
     || `${row.label} ${row.value}`.toLocaleLowerCase("id-ID").includes(normalizedEvidenceQuery)) ?? [];
+  const currentClaimId = active.result.verdicts[claimIndex]?.claimId;
+  const gapPoints = [...new Set(active.traces.filter(event => {
+    if (event.stage !== "verify" || !event.data || typeof event.data !== "object") return false;
+    const eventClaimId = "claimId" in event.data && typeof event.data.claimId === "string" ? event.data.claimId : undefined;
+    return !currentClaimId || !eventClaimId || eventClaimId === currentClaimId;
+  }).flatMap(coverageDetails))];
   const contextPoints = gapPoints.length ? gapPoints : [...new Set((fixture
     ? fixture.contextPoints?.length ? fixture.contextPoints.flatMap(explanationParts) : explanationParts(fixture.detail)
     : ["Evidence belum cukup untuk menyusun konteks."]).map(point => point.trim()).filter(Boolean))];
+  const outcome = checkOutcome(active.result, active.traces);
+
+  if (outcome.kind !== "complete") {
+    const heading = outcome.kind === "error" ? "Pemeriksaan terhenti."
+      : outcome.kind === "needs_user_choice" ? "Konfirmasi saham diperlukan."
+      : "Belum ada klaim terdeteksi.";
+    return (
+      <div className="workspace-page result-view">
+        <div className="result-meta-line"><span>CHECK #{active.id.slice(0, 8).toUpperCase()}</span><span>DIAGNOSTIK PEMERIKSAAN</span></div>
+        <section className={`result-diagnostic ${outcome.kind}`}>
+          <div className="result-diagnostic-mark"><AlertTriangle size={24} /></div>
+          <div><span className="page-index">CHECK STATUS</span><h1>{heading}</h1><p>{outcome.message}</p></div>
+          <div className="result-diagnostic-actions">
+            {outcome.kind === "error" && <button type="button" className="primary-action" onClick={onRetry}>Coba lagi <ArrowRight size={16} /></button>}
+            <button type="button" onClick={onEdit}>{outcome.kind === "needs_user_choice" ? "Konfirmasi saham" : "Edit klaim"}</button>
+            <button type="button" onClick={reset}>Cek baru</button>
+          </div>
+        </section>
+        <section className="diagnostic-trace" aria-label="Tahap pemeriksaan"><ActualTrace traces={active.traces} /></section>
+      </div>
+    );
+  }
   return (
     <div className="workspace-page result-view">
       <div className="result-meta-line">
