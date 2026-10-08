@@ -244,3 +244,10 @@ describe('gateway B cache_only dan end-to-end hunter', () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 });
+
+it('does not ask the LLM to select from an empty hypothesis registry', async () => {
+  const opts = llm([]); const tools = gateway([]);
+  const out = await huntContext(claim, [], { registry: new Map(), llm: opts.llm, gateway: tools });
+  expect(out.results).toEqual([]); expect(out.creditsUsed).toBe(0);
+  expect(opts.provider.requests).toHaveLength(0); expect(tools.execute).not.toHaveBeenCalled();
+});

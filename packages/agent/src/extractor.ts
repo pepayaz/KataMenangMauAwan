@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { z } from 'zod';
-import { parseFinancialPeriod, lastFinancialPeriod, AssertedUnitSchema, ClaimSchema, ClaimTypeSchema, EntitySchema, extractNumbers,
+import { resolveAnnualFinancialRatio, parseFinancialPeriod, lastFinancialPeriod, AssertedUnitSchema, ClaimSchema, ClaimTypeSchema, EntitySchema, extractNumbers,
   type Claim, type Entity } from '@cek-dulu/shared';
 import { LlmAdapter } from './llm.js';
 
@@ -57,7 +57,7 @@ export function flowMetric(metric: string, quote: string): string {
  * menentukan; angka bertanda eksplisit (+/-) tidak diubah.
  */
 export function directionSign(quote: string, numberStart: number, raw: string): 1 | -1 {
-  if (/^[+\-−]/.test(raw.trim())) return 1;
+  if (/^[+\-âˆ’]/.test(raw.trim())) return 1;
   const before = quote.slice(0, numberStart);
   const last = (pattern: RegExp) => Math.max(-1, ...[...before.matchAll(pattern)].map((m) => m.index));
   const decline = last(DECLINE), rise = last(RISE);
@@ -165,7 +165,7 @@ export function validateExtractedClaims(
         ticker, type: candidate.type, inScope,
         asserted: { metric: candidate.type === 'foreign_flow' ? flowMetric(asserted.metric, quote) : transition && !/\(level\)/i.test(asserted.metric) ? `${asserted.metric} (level)` : asserted.metric,
           ...(matching && !matching.ambiguous ? { value: (matching.unit === '%' ? matching.value : matching.normalized)
-            * (SIGNED_TYPES.has(candidate.type) && !transition ? directionSign(quote, matching.span[0], matching.raw) : 1) } : {}),
+            * (SIGNED_TYPES.has(candidate.type) && matching.unit === '%' && !transition && (!resolveAnnualFinancialRatio(asserted.metric) || /pertumbuhan|perubahan|growth|change/i.test(asserted.metric)) ? directionSign(quote, matching.span[0], matching.raw) : 1) } : {}),
           ...(asserted.unit !== null ? { unit: asserted.unit } : {}),
           ...(asserted.window !== null ? { window: asserted.window } : {}),
           ...(period ? { period } : {}),

@@ -20,6 +20,9 @@ export const REL_TOLERANCE = {
  */
 export const GROWTH_ABS_FLOOR_PP = 0.5;
 
+/** Nominal laporan: allow rounding, not materially different amounts. */
+export const FINANCIAL_AMOUNT_REL_TOLERANCE = 0.01;
+
 /** Tipe 3: toleransi absolut dalam poin persen. */
 export const ABS_TOLERANCE_PP = {
   price_move: 3,

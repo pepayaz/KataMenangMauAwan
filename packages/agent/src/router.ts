@@ -1,4 +1,4 @@
-import { parseFinancialPeriod, unsupportedFinancialMetric, ClaimSchema, type Claim, type ClaimType, type ToolCall } from '@cek-dulu/shared';
+import { parseFinancialPeriod, resolveFinancialMetric, resolveAnnualFinancialRatio, ClaimSchema, type Claim, type ClaimType, type ToolCall } from '@cek-dulu/shared';
 import { ENDPOINTS, estimateCredits, splitWindow, parseWindowPhrase, normalizeWindowPhrase, sampledWindows, windowEndingToday,
   type DateWindow, type EndpointName, type ReportSection } from '@cek-dulu/sectors';
 
@@ -49,10 +49,10 @@ function unsupportedReason(claim: Claim): string | null {
   const { unit, value, metric, window } = claim.asserted;
   if (claim.type === 'price_move' && unit !== '%')
     return 'Klaim harga ini bukan persentase perubahan, jadi tidak dibandingkan dengan perubahan harga.';
-  if (claim.type === 'earnings_growth' && unsupportedFinancialMetric(metric))
-    return 'Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan.';
-  if (claim.type === 'earnings_growth' && unit !== '%')
-    return 'Klaim ini menyebut nilai laba, bukan persentase pertumbuhan; pemeriksaan saat ini membandingkan pertumbuhan YoY atau QoQ.';
+  if (claim.type === 'earnings_growth' && !resolveFinancialMetric(metric) && !resolveAnnualFinancialRatio(metric))
+    return 'Program belum memiliki pembanding dengan definisi yang sama untuk metrik ini. Nilai transaksi akuisisi dan jumlah nasabah tidak boleh diganti dengan total kredit atau laba; sumber transaksi khusus belum diperiksa.';
+  if (claim.type === 'earnings_growth' && unit !== '%' && unit !== 'IDR')
+    return 'Metrik keuangan memerlukan nominal rupiah atau angka persen dengan makna yang jelas.';
   if (claim.type === 'earnings_growth' && /\b(?:mom|month[ -]on[ -]month|bulanan|bulan ke bulan)\b/i.test(`${metric} ${window ?? ''}`))
     return 'Pertumbuhan bulanan tidak tersedia dari laporan kuartalan.';
   if (claim.type === 'safety' && value !== undefined)
@@ -82,6 +82,10 @@ export function routeClaim(input: Claim, options: RouterOptions): RoutePlan {
   };
   const unsupported = unsupportedReason(claim);
   if (unsupported) return { ...plan, status: 'unsupported', notes: [unsupported] };
+  if (claim.type === 'earnings_growth' && resolveAnnualFinancialRatio(claim.asserted.metric)) {
+    add('fetchCompanyReport', { symbol, sections: ['financials'] });
+    return plan;
+  }
   let window: DateWindow | null = null;
   if (spec.windowTool) {
     window = resolveWindow(claim, options, spec.defaultDays);
@@ -107,13 +111,14 @@ export function routeClaim(input: Claim, options: RouterOptions): RoutePlan {
       // "YoY"/"QoQ" adalah mode pertumbuhan yang sering tertukar ke period, bukan periode laporan.
       const rawPeriod = claim.asserted.period?.trim();
       const period = rawPeriod && GROWTH_MODE.test(rawPeriod) ? undefined : rawPeriod;
+      if (claim.asserted.unit === 'IDR' && !period) return { ...plan, status: 'needs_user_choice', tools: [], estimatedCredits: 0, notes: ['Nominal laporan memerlukan periode yang jelas; pilih kuartal atau semester.'] };
       let reportDate: string | undefined;
       const financialPeriod = period ? parseFinancialPeriod(period) : null;
       if (financialPeriod) reportDate = financialPeriod.reportDate;
       else if (period && validDate(period)) reportDate = period;
       else if (period) return { ...plan, status: 'needs_user_choice', notes: ['Periode laporan belum jelas.'], tools: [], estimatedCredits: 0 };
       if (reportDate && reportDate > options.today) return { ...plan, status: 'needs_user_choice', notes: ['Periode laporan belum selesai.'], tools: [], estimatedCredits: 0 };
-      add(tool, { symbol, n_quarters: financialPeriod?.kind === 'semester' ? financialPeriod.q + 4 : 5, ...(reportDate ? { report_date: reportDate } : {}) });
+      add(tool, { symbol, n_quarters: financialPeriod && financialPeriod.kind !== 'quarter' ? financialPeriod.q + 4 : 5, ...(reportDate ? { report_date: reportDate } : {}) });
     } else if (tool === 'fetchShareholdersComposition') {
       const firstYear = Number(window!.start.slice(0, 4)), lastYear = Number(window!.end.slice(0, 4));
       for (let year = firstYear; year <= lastYear; year += 1) add(tool, { symbol, year });

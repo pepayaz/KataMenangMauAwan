@@ -30,6 +30,6 @@ export function traceDetails(event: TraceEvent): string[] {
   }
   if (event.stage === 'verify') return [data.status === 'out_of_scope' ? 'Di luar cakupan pemeriksaan.'
     : data.status === 'needs_data_or_flag' ? 'Jenis klaim, periode, atau data belum dapat diproses.'
-    : `${Array.isArray(data.evidenceIds) ? data.evidenceIds.length : 0} bukti diperoleh`, `${event.credits ?? 0} kredit Sectors`];
+    : `${Array.isArray(data.evidenceIds) ? data.evidenceIds.length : 0} bukti diperoleh`, `${event.credits ?? 0} kredit Sectors`, ...(Array.isArray(data.sourceCalls) ? data.sourceCalls.map((source: { tool?: string; status?: string; cached?: boolean; code?: string }) => `${source.tool}: ${source.status === 'failed' ? `gagal (${source.code})` : source.status === 'reused' ? 'respons Sectors dipakai bersama dalam pemeriksaan ini' : source.cached ? 'data Sectors dari cache' : 'respons langsung Sectors'}`) : []), ...(typeof data.note === 'string' && data.note ? [data.note] : [])];
   return [];
 }

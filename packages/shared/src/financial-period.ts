@@ -1,7 +1,9 @@
-export type FinancialPeriod = { year: number; q: number; kind: 'quarter' | 'semester'; reportDate: string };
+export type FinancialPeriod = { year: number; q: number; kind: 'quarter' | 'semester' | 'year'; reportDate: string };
 const roman: Record<string, number> = { i: 1, ii: 2, iii: 3, iv: 4, satu: 1, pertama: 1, dua: 2, kedua: 2 };
 export function parseFinancialPeriod(raw: string): FinancialPeriod | null {
   const text = raw.trim().toLowerCase().replace(/[–—]/g, '-').replace(/\s+/g, ' ');
+  const annual = /^(?:tahun |fy ?)?(\d{4})$/.exec(text);
+  if (annual) return { year: Number(annual[1]), q: 4, kind: 'year', reportDate: `${annual[1]}-12-31` };
   const quarter = /^(?:q|kuartal|triwulan|quarter) ?(i{1,3}|iv|[1-4])(?: ?[-/,] ?| )(\d{4})$/.exec(text)
     ?? /^([1-4]) ?q ?(\d{2}|\d{4})$/.exec(text);
   const semester = /^(?:semester|sem) ?(i|ii|1|2|satu|dua|pertama|kedua)(?: ?[-/,] ?| )(\d{4})$/.exec(text)

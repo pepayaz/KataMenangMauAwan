@@ -1,17 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-/**
- * Feature flag (bab 2.1 dan bab 9.1).
- *
- * Gerbang Senin 28 September pukul 20:00: apa pun yang belum berfungsi utuh
- * dimatikan lewat flag, bukan dikirim setengah jadi. Nilai bawaan di bawah ini
- * sengaja `false` supaya fitur yang belum siap tidak pernah menyala hanya karena
- * basis data tidak bisa dihubungi.
- */
+/** Tested financial coverage is enabled by default; other extended features remain opt-in.
+ * Environment and database overrides still apply. */
 
 export const DEFAULT_FLAGS: Record<string, boolean> = {
   claim_types_ext: false,
-  earnings_growth: false,
+  earnings_growth: true,
   accounts: false,
   share_target: false,
 };

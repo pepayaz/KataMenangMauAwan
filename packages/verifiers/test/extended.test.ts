@@ -498,9 +498,9 @@ describe('period and metric safety', () => {
     expect(computeGrowth(QUARTERS, 'yoy', 'earnings', '2025-03-31')).toBeNull();
   });
   it('does not route NIM or interest income to earnings or total revenue', async () => {
-    for (const metric of ['NIM (level)', 'pendapatan bunga', 'provisi', 'portofolio kredit']) {
+    for (const metric of ['portofolio kredit', 'jumlah nasabah']) {
       const out = await verifyEarningsGrowth(makeClaim('earnings_growth', 'BBTN', { metric, value: 3.5, unit: '%' }), ctx(seededClient([])));
-      expect(out.matches).toBeNull(); expect(out.evidence).toEqual([]); expect(out.note).toContain('data khusus');
+      expect(out.matches).toBeNull(); expect(out.evidence).toEqual([]); expect(out.note).toContain('definisi yang sama');
     }
   });
   const half = { year: 2026, q: 2, kind: 'semester' as const, reportDate: '2026-06-30' };

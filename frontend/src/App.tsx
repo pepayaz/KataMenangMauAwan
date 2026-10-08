@@ -1114,9 +1114,21 @@ export function ResultView({
     <div className="result-meta-actions">{outcome.kind === 'error' && <button onClick={onRetry}>Coba lagi <ArrowRight size={14} /></button>}<button onClick={onEdit}>{outcome.kind === 'needs_user_choice' ? 'Konfirmasi saham' : 'Tinjau teks'}</button></div>
     <section className="collapsed-trace open"><ActualTrace traces={active.traces} /></section>
   </div>;
-  const contextPoints = fixture
+  const selectedClaimId = active.result.claims[claimIndex]?.claimId;
+  const coverageEvent = active.traces.find(event => event.stage === 'verify' && (event.data as { claimId?: string } | undefined)?.claimId === selectedClaimId);
+  const coverage = (coverageEvent?.data as { coverage?: Record<string, unknown>; note?: string } | undefined)?.coverage;
+  const gapPoints = coverage && coverage.status !== 'CHECKED' ? [
+    (coverageEvent?.data as { note?: string }).note,
+    coverage.requestedPeriod ? `Periode diminta: ${coverage.requestedPeriod}` : '',
+    coverage.field ? `Field pembanding: ${coverage.field}` : '',
+    Array.isArray(coverage.missingFields) ? `Data yang kurang: ${coverage.missingFields.join(', ')}` : '',
+    Array.isArray(coverage.availableDates) ? `Laporan tersedia: ${coverage.availableDates.join(', ')}` : '',
+    Array.isArray(coverage.availableYears) ? `Tahun tersedia: ${coverage.availableYears.join(', ')}` : '',
+    Array.isArray(coverage.missing) ? coverage.missing.map((item: { date: string; field: string; reason: string }) => `${item.date}: ${item.field} — ${({ REPORT_MISSING: 'laporan tidak ditemukan', DUPLICATE_REPORT: 'laporan duplikat', FIELD_NULL_OR_MISSING: 'nilai kosong atau tidak tersedia' } as Record<string, string>)[item.reason] ?? 'data belum lengkap'}`).join('; ') : '',
+  ].filter((value): value is string => typeof value === 'string' && value.length > 0) : [];
+  const contextPoints = gapPoints.length ? gapPoints : fixture
     ? [...new Set((fixture.contextPoints?.length ? fixture.contextPoints : [fixture.context, fixture.detail]).filter(Boolean))]
-    : ["Evidence belum cukup untuk menyusun konteks."];
+    : ['Evidence belum cukup untuk menyusun konteks.'];
   return (
     <div className="workspace-page result-view">
       <div className="result-meta-line">
@@ -1306,7 +1318,10 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
 
   const [claimIndex, setClaimIndex] = useState(0);
   // Rapor lain dibuka: mulai lagi dari klaim pertama.
-  useEffect(() => { setClaimIndex(0); }, [active?.id]);
+  useEffect(() => {
+    const firstCompared = active?.result.verdicts.findIndex(verdict => verdict.computed !== undefined) ?? -1;
+    setClaimIndex(Math.max(0, firstCompared));
+  }, [active?.id]);
   const activeFixture = useMemo(
     () => active ? resultFixture(active.result, claimIndex, active.text) : undefined,
     [active, claimIndex],

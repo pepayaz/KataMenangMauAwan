@@ -56,3 +56,20 @@ pertahankan nama metrik aslinya agar router dapat menjelaskan batas cakupannya.
 Label "Semester satu 2026" pada paragraf satu saham berlaku untuk klaim laporan
 keuangan berikutnya sampai paragraf atau periode lain, jika konteksnya jelas.
 Jangan menerapkan label laporan keuangan ke harga saham atau valuasi pada tanggal lain.
+
+Untuk laporan keuangan, tipe earnings_growth juga menampung nominal laba,
+pendapatan, pendapatan bunga, provisi, aset, dan simpanan. Gunakan IDR untuk
+nominal yang tertulis; gunakan % hanya untuk persentase yang tertulis.
+Jangan mengubah laba kotor/operasional/sebelum pajak menjadi laba bersih,
+atau pendapatan bunga bersih menjadi pendapatan bunga. Pertahankan periode
+kuartal, semester, atau tahun yang tertulis. Provisi berarti beban pencadangan,
+bukan saldo cadangan kerugian kredit. Akuisisi portofolio kredit pensiun adalah
+transaksi khusus, bukan total kredit bank.
+
+NIM dan rasio operasional bank memakai tipe earnings_growth dengan nama metrik
+asli; tipe valuation khusus untuk PER, PBV, PS, PCF, dan PEG.
+
+Rasio NIM, ROA, ROE, CASA, CAR dan margin harus mempertahankan periode laporan.
+Pisahkan level rasio (metric dengan suffix "(level)") dari pertumbuhan relatif
+rasio (metric "pertumbuhan NIM" bila angka perubahan relatif benar-benar tertulis).
+Jangan menukar persen dengan poin persentase.

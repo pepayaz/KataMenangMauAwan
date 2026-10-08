@@ -275,11 +275,11 @@ describe('kredit dan normalisasi', () => {
     test.deps.registry = () => { throw new Error('registry unavailable'); };
     expect((await test.run()).verdicts[0]?.verdict).toBe('refuted');
   });
-  it('periode valuasi yang belum didukung tidak memakai valuasi terbaru', async () => {
+  it('periode valuasi diteruskan ke verifier agar sumber historis dapat diperiksa', async () => {
     const text = 'ADRO PER 3x tahun 2024', test = setup(text, [{ ...candidate(text), asserted: { ...candidate(text).asserted, period: '2024' } }]);
-    const verifier = vi.fn(); test.deps.verifiers = { valuation: verifier };
+    const verifier = vi.fn(async () => ({ evidence: [], matches: null, tolerance: '-', note: 'Sumber historis belum tersedia.' })); test.deps.verifiers = { valuation: verifier };
     expect((await test.run()).verdicts[0]?.verdict).toBe('unverifiable');
-    expect(verifier).not.toHaveBeenCalled();
+    expect(verifier).toHaveBeenCalledWith(expect.objectContaining({ asserted: expect.objectContaining({ period: '2024' }) }), expect.anything());
   });
   it('cache miss verifier B dilaporkan dengan tool dan kredit', async () => {
     const test = setup('ADRO PER 3x'); test.deps.verifiers = undefined;
@@ -354,4 +354,21 @@ describe('pipeline cancellation', () => {
     expect(generate.mock.calls[0]).toBeDefined();
     expect(test.requests).toHaveLength(0);
   });
+});
+
+it('shares an identical Sectors request across claims and counts live credits once', async () => {
+  const text = 'ADRO PER 3x dan PBV 1x';
+  const pe = { ...candidate('ADRO PER 3x'), asserted: { metric: 'PER', value: 3, unit: 'x' as const, window: null, period: null } };
+  const pb = { ...candidate('PBV 1x'), asserted: { metric: 'PBV', value: 1, unit: 'x' as const, window: null, period: null } };
+  const test = setup(text, [pe, pb]);
+  const fetchReport = vi.spyOn(test.deps.client, 'fetchCompanyReport').mockResolvedValue({ endpoint: 'fetchCompanyReport', params: { symbol: 'ADRO', sections: ['valuation'] }, data: { symbol: 'ADRO', company_name: 'ADRO' }, credits: 1, cached: false, fetchedAt: now().toISOString() });
+  test.deps.registry = () => new Map();
+  test.deps.verifiers = { valuation: async (c, ctx) => {
+    const source = await ctx.client.fetchCompanyReport(c.ticker, ['valuation'], { checkId: ctx.checkId });
+    const evidence = { ...ev(c, c.asserted.value!, 'x'), tool: source.endpoint, credits: source.credits, cached: source.cached };
+    return { evidence: [evidence], computed: { value: c.asserted.value!, unit: 'x', evidenceId: evidence.evidenceId }, matches: true, tolerance: '10%', note: '' };
+  } };
+  const result = await test.run();
+  expect(result.claims).toHaveLength(2); expect(result.creditsUsed).toBe(1); expect(fetchReport).toHaveBeenCalledTimes(1);
+  expect(test.traces.some(event => event.stage === 'verify' && (event.data as { sourceCalls?: Array<{ status: string }> }).sourceCalls?.some(source => source.status === 'reused'))).toBe(true);
 });
