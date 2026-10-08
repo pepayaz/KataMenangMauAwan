@@ -1,4 +1,4 @@
-import { ClaimSchema, type Claim, type ClaimType, type ToolCall } from '@cek-dulu/shared';
+import { parseFinancialPeriod, unsupportedFinancialMetric, ClaimSchema, type Claim, type ClaimType, type ToolCall } from '@cek-dulu/shared';
 import { ENDPOINTS, estimateCredits, splitWindow, parseWindowPhrase, normalizeWindowPhrase, sampledWindows, windowEndingToday,
   type DateWindow, type EndpointName, type ReportSection } from '@cek-dulu/sectors';
 
@@ -49,6 +49,8 @@ function unsupportedReason(claim: Claim): string | null {
   const { unit, value, metric, window } = claim.asserted;
   if (claim.type === 'price_move' && unit !== '%')
     return 'Klaim harga ini bukan persentase perubahan, jadi tidak dibandingkan dengan perubahan harga.';
+  if (claim.type === 'earnings_growth' && unsupportedFinancialMetric(metric))
+    return 'Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan.';
   if (claim.type === 'earnings_growth' && unit !== '%')
     return 'Klaim ini menyebut nilai laba, bukan persentase pertumbuhan; pemeriksaan saat ini membandingkan pertumbuhan YoY atau QoQ.';
   if (claim.type === 'earnings_growth' && /\b(?:mom|month[ -]on[ -]month|bulanan|bulan ke bulan)\b/i.test(`${metric} ${window ?? ''}`))
@@ -60,17 +62,10 @@ function unsupportedReason(claim: Claim): string | null {
 
 const GROWTH_MODE = /^(?:yoy|qoq|y-o-y|q-o-q|year[ -]on[ -]year|quarter[ -]on[ -]quarter|tahunan|kuartalan|secara tahunan|secara kuartalan)$/i;
 
-const ROMAN: Record<string, number> = { i: 1, ii: 2, iii: 3, iv: 4 };
-/** "Q1 2026", "KUARTAL I - 2026", "Triwulan 1 2026", "1Q26", "1Q 2026". */
+/** Compatibility helper: a semester is not a single quarter. */
 export function parseQuarter(period: string): { q: number; year: number } | null {
-  const p = period.trim().toLowerCase().replace(/[–—]/g, '-').replace(/\s+/g, ' ');
-  const named = /^(?:q|kuartal|triwulan|quarter) ?(i{1,3}|iv|[1-4])(?: ?[-/,] ?| )(\d{4})$/.exec(p);
-  const compact = /^([1-4]) ?q ?(\d{2}|\d{4})$/.exec(p);
-  const match = named ?? compact;
-  if (!match) return null;
-  const q = ROMAN[match[1]!] ?? Number(match[1]);
-  const year = match[2]!.length === 2 ? 2000 + Number(match[2]) : Number(match[2]);
-  return q >= 1 && q <= 4 ? { q, year } : null;
+  const parsed = parseFinancialPeriod(period);
+  return parsed?.kind === 'quarter' ? { q: parsed.q, year: parsed.year } : null;
 }
 
 /** Murni: tanggal wajib disuntikkan agar rencana reproducible, tanpa LLM maupun fetch. */
@@ -113,12 +108,12 @@ export function routeClaim(input: Claim, options: RouterOptions): RoutePlan {
       const rawPeriod = claim.asserted.period?.trim();
       const period = rawPeriod && GROWTH_MODE.test(rawPeriod) ? undefined : rawPeriod;
       let reportDate: string | undefined;
-      const quarter = period ? parseQuarter(period) : null;
-      if (quarter) reportDate = `${quarter.year}-${['03-31', '06-30', '09-30', '12-31'][quarter.q - 1]}`;
+      const financialPeriod = period ? parseFinancialPeriod(period) : null;
+      if (financialPeriod) reportDate = financialPeriod.reportDate;
       else if (period && validDate(period)) reportDate = period;
       else if (period) return { ...plan, status: 'needs_user_choice', notes: ['Periode laporan belum jelas.'], tools: [], estimatedCredits: 0 };
       if (reportDate && reportDate > options.today) return { ...plan, status: 'needs_user_choice', notes: ['Periode laporan belum selesai.'], tools: [], estimatedCredits: 0 };
-      add(tool, { symbol, n_quarters: 5, ...(reportDate ? { report_date: reportDate } : {}) });
+      add(tool, { symbol, n_quarters: financialPeriod?.kind === 'semester' ? financialPeriod.q + 4 : 5, ...(reportDate ? { report_date: reportDate } : {}) });
     } else if (tool === 'fetchShareholdersComposition') {
       const firstYear = Number(window!.start.slice(0, 4)), lastYear = Number(window!.end.slice(0, 4));
       for (let year = firstYear; year <= lastYear; year += 1) add(tool, { symbol, year });

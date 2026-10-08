@@ -84,8 +84,8 @@ function resultFixture(result: CheckResult, index = 0, text = ""): DemoFixture |
     ticker: claim?.ticker ?? "—", category: claim?.type.replaceAll("_", " ").toUpperCase() ?? "UNRESOLVED",
     ...presentation, summary: verdict.explanation, claimed: claim?.asserted.value === undefined ? "—" : comparison.left,
     verified: verdict.computed ? comparison.right : "—", delta: "—", ...(quote ? { quote } : {}),
-    context: verdict.missingContext[0]?.summary ?? "Tidak ada konteks tambahan yang terpicu.",
-    contextPoints: verdict.missingContext.map(item => item.summary),
+    context: verdict.missingContext[0]?.summary ?? (verdict.verdict === "unverifiable" ? verdict.explanation : "Tidak ada konteks tambahan yang terpicu."),
+    contextPoints: verdict.missingContext.length ? verdict.missingContext.map(item => item.summary) : verdict.verdict === "unverifiable" ? [verdict.explanation] : [],
     detail: verdict.explanation, evidenceCount: evidence.length, duration: `${result.creditsUsed} kredit`,
     evidence: evidence.map(item => ({ label: item.label, value: formatEvidence(item), flag: item.cached ? "CACHE" : "EVIDENCE" })),
     hypotheses: verdict.missingContext.map(item => ({ code: item.hypId, status: "TRIGGERED" })),
@@ -1069,8 +1069,9 @@ function ActualTrace({ traces }: { traces: readonly TraceEvent[] }) {
   return <div className="trace-summary-grid">{['normalize', 'extract', 'verify', 'hunt', 'adjudicate'].map(stage => {
     const events = traces.filter(event => event.stage === stage);
     const error = traces.find(event => event.stage === 'error');
-    return <div key={stage}><span>{stage}</span>{events.length ? <Check size={13} /> : <MinusCircle size={13} />}
-      <b>{events.length ? 'Dijalankan' : 'Belum dijalankan'}</b><small>{events.at(-1)?.message || (error ? 'Proses berhenti sebelum tahap ini.' : 'Tidak ada event backend.')}</small>{events.flatMap(traceDetails).map((detail, index) => <small key={index}>{detail}</small>)}</div>;
+    const hasEvidence = stage !== 'verify' || events.some(event => Array.isArray((event.data as { evidenceIds?: unknown } | undefined)?.evidenceIds) && ((event.data as { evidenceIds: unknown[] }).evidenceIds.length > 0));
+    return <div key={stage}><span>{stage}</span>{events.length && hasEvidence ? <Check size={13} /> : <MinusCircle size={13} />}
+      <b>{events.length ? hasEvidence ? 'Dijalankan' : 'Belum ada bukti' : 'Belum dijalankan'}</b><small>{events.at(-1)?.message || (error ? 'Proses berhenti sebelum tahap ini.' : 'Tidak ada event backend.')}</small>{events.flatMap(traceDetails).map((detail, index) => <small key={index}>{detail}</small>)}</div>;
   })}{traces.filter(event => event.stage === 'error').map((event, index) => <div key={`error-${index}`} role="alert"><AlertTriangle size={15} /><b>Proses terhenti</b><small>{event.message}</small></div>)}</div>;
 }
 
@@ -1166,7 +1167,7 @@ export function ResultView({
         <div className="verdict-rings" />
         <div className="verdict-hero-top">
           <div><span>VERDICT</span><b><VerdictIcon tone={tone} size={17} /> {fixture?.status || "Tidak bisa diverifikasi"}</b></div>
-          <span>{fixture ? "GROUNDED IN BACKEND EVIDENCE" : "NO EVIDENCE AVAILABLE"}</span>
+          <span>{(fixture?.evidenceCount ?? 0) > 0 ? "BUKTI PEMBANDING TERSEDIA" : "BELUM ADA BUKTI PEMBANDING"}</span>
         </div>
         <div className="verdict-metrics">
           <div className="hero-metric"><span>CLAIMED</span><strong>{fixture?.claimed || "—"}</strong></div>

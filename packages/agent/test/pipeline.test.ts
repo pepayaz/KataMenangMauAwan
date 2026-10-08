@@ -51,8 +51,8 @@ describe('klaim harga tanpa jangka waktu', () => {
     expect(result.verdicts[0]?.verdict).toBe('unverifiable');
     expect(result.creditsUsed).toBe(0);
     expect(fetchImpl).not.toHaveBeenCalled();
-    const explainer = test.requests.find((r) => r.format.name === 'claim_explanation')!;
-    expect(JSON.parse(explainer.input).reason).toEqual(['Klaim tidak menyebut jangka waktu; pilih tanggal awal dan akhir.']);
+    expect(result.verdicts[0]?.explanation).toContain('Klaim tidak menyebut jangka waktu');
+    expect(test.requests.some(request => request.format.name === 'claim_explanation')).toBe(false);
   });
   it('jenis klaim yang dimatikan flag menjelaskan alasannya tanpa memanggil Sectors', async () => {
     const text = 'ADRO laba naik 12% YoY';
@@ -62,8 +62,8 @@ describe('klaim harga tanpa jangka waktu', () => {
     test.deps.flags = { claim_types_ext: false };
     const result = await test.run();
     expect(result.verdicts[0]?.verdict).toBe('unverifiable');
-    const explainer = test.requests.find((r) => r.format.name === 'claim_explanation')!;
-    expect(JSON.parse(explainer.input).reason).toEqual(['Pemeriksaan untuk jenis klaim ini belum diaktifkan.']);
+    expect(result.verdicts[0]?.explanation).toContain('Pemeriksaan untuk jenis klaim ini belum diaktifkan.');
+    expect(test.requests.some(request => request.format.name === 'claim_explanation')).toBe(false);
   });
   it('verifier harga menerima jendela router, cuplikan yang direncanakan tidak ditimpa', async () => {
     const text = 'ADRO turun -25% past 5 years';

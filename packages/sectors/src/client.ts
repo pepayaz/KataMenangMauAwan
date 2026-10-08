@@ -359,12 +359,15 @@ export class SectorsClient {
     params: { report_date?: string; n_quarters?: number; approx?: boolean } = {},
     opts: CallOptions = {},
   ): Promise<ToolResult<T.QuarterlyFinancialItem[]>> {
-    return this.call<T.QuarterlyFinancialItem[]>(
+    const result = await this.call<T.QuarterlyFinancialItem[]>(
       'fetchQuarterlyFinancials',
       { symbol: normalizeTicker(symbol) },
       { ...params },
       opts,
     );
+    // This endpoint supplies standalone quarterly income statements. Preserve explicit
+    // provider metadata if supplied; only earnings/revenue flow values are aggregated.
+    return { ...result, data: result.data.map(row => ({ ...row, period_basis: row.period_basis ?? 'quarterly' })) };
   }
 
   async fetchQuarterlyFinancialDates(

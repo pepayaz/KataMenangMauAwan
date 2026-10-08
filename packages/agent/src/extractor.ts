@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { z } from 'zod';
-import { AssertedUnitSchema, ClaimSchema, ClaimTypeSchema, EntitySchema, extractNumbers,
+import { parseFinancialPeriod, lastFinancialPeriod, AssertedUnitSchema, ClaimSchema, ClaimTypeSchema, EntitySchema, extractNumbers,
   type Claim, type Entity } from '@cek-dulu/shared';
 import { LlmAdapter } from './llm.js';
 
@@ -112,18 +112,34 @@ export function validateExtractedClaims(
       rejected.push({ candidateIndex, reason, ...(ticker ? { ticker } : {}) });
     };
     const hint = candidate.span;
-    if (!Number.isInteger(hint.start) || !Number.isInteger(hint.end) || hint.start < 0 || hint.end <= hint.start || hint.end > text.length) {
-      reject('INVALID_SPAN'); continue;
-    }
-    const anchored = anchorQuote(text, candidate.quote, hint.start);
+    // Offsets are hints. A unique literal quote safely repairs even an out-of-range hint.
+    const validHint = Number.isInteger(hint.start) && Number.isInteger(hint.end) && hint.start >= 0 && hint.end > hint.start && hint.end <= text.length;
+    const uniqueQuote = candidate.quote.length > 0 && text.indexOf(candidate.quote) >= 0 && text.indexOf(candidate.quote) === text.lastIndexOf(candidate.quote);
+    if (!validHint && !uniqueQuote) { reject('INVALID_SPAN'); continue; }
+    const anchored = anchorQuote(text, candidate.quote, validHint ? hint.start : 0);
     if (!anchored) { reject('INVALID_QUOTE'); continue; }
     const { start, end } = anchored;
     const quote = text.slice(start, end);
     if (candidate.tickers.length === 0) { reject('NO_TICKER'); continue; }
     const asserted = candidate.asserted;
-    // Periode boleh ditulis di judul atau awal kalimat yang sama, tetapi tetap harus literal.
+    const transition = /(?:dari|from)\s+[^\n;]+?\s+(?:ke|to|menjadi)\s+/i.test(quote);
+    // A single report label also applies to its preceding summary in the same paragraph.
+    const paragraphBoundary = text.lastIndexOf('\n\n', start);
+    const paragraphStart = paragraphBoundary < 0 ? 0 : paragraphBoundary + 2;
+    const nextBoundary = text.indexOf('\n\n', end);
+    const paragraph = text.slice(paragraphStart, nextBoundary < 0 ? text.length : nextBoundary);
+    const lastLabel = lastFinancialPeriod(paragraph);
+    const uniqueLabel = lastLabel && !lastFinancialPeriod(paragraph.slice(0, paragraph.lastIndexOf(lastLabel))) ? lastLabel : undefined;
+    const inheritedPeriod = new Set(entities.map(entity => entity.ticker)).size === 1 && candidate.type === 'earnings_growth'
+      ? lastFinancialPeriod(text.slice(paragraphStart, end)) ?? uniqueLabel : undefined;
     const context = text.slice(sentenceStart(text, start), end);
-    if ([asserted.window, asserted.period].some((period) => period !== null && (period.trim() === '' || !context.includes(period)))) {
+    const normalizedPeriod = asserted.period && parseFinancialPeriod(asserted.period);
+    const literalPeriod = inheritedPeriod && parseFinancialPeriod(inheritedPeriod);
+    const period = normalizedPeriod && literalPeriod && normalizedPeriod.reportDate === literalPeriod.reportDate
+      && normalizedPeriod.kind === literalPeriod.kind ? inheritedPeriod : asserted.period ?? inheritedPeriod;
+    const periodContext = inheritedPeriod ? paragraph : context;
+    if ((asserted.window !== null && (asserted.window.trim() === '' || !periodContext.includes(asserted.window)))
+      || (period !== undefined && period !== null && (period.trim() === '' || !periodContext.includes(period)))) {
       reject('PERIOD_NOT_WRITTEN'); continue;
     }
     const numbers = extractNumbers(quote);
@@ -147,12 +163,12 @@ export function validateExtractedClaims(
       const claim = ClaimSchema.parse({
         claimId: `${checkId}-c${claims.length + 1}`, checkId, span: [start, end],
         ticker, type: candidate.type, inScope,
-        asserted: { metric: candidate.type === 'foreign_flow' ? flowMetric(asserted.metric, quote) : asserted.metric,
+        asserted: { metric: candidate.type === 'foreign_flow' ? flowMetric(asserted.metric, quote) : transition && !/\(level\)/i.test(asserted.metric) ? `${asserted.metric} (level)` : asserted.metric,
           ...(matching && !matching.ambiguous ? { value: (matching.unit === '%' ? matching.value : matching.normalized)
-            * (SIGNED_TYPES.has(candidate.type) ? directionSign(quote, matching.span[0], matching.raw) : 1) } : {}),
+            * (SIGNED_TYPES.has(candidate.type) && !transition ? directionSign(quote, matching.span[0], matching.raw) : 1) } : {}),
           ...(asserted.unit !== null ? { unit: asserted.unit } : {}),
           ...(asserted.window !== null ? { window: asserted.window } : {}),
-          ...(asserted.period !== null ? { period: asserted.period } : {}),
+          ...(period ? { period } : {}),
         },
       });
       const fingerprint = JSON.stringify([claim.span, claim.ticker, claim.type, claim.asserted, claim.inScope]);

@@ -146,6 +146,7 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
       const unsupportedPeriod = claim.type === 'valuation' && !!claim.asserted.period
         || claim.type === 'accumulation' && plan.tools.filter((t) => t.tool === 'fetchShareholdersComposition').length > 1;
       const canVerify = claim.inScope && plan.status === 'ready' && enabled.has(claim.type) && !unsupportedPeriod;
+      if (unsupportedPeriod) reason.push('Periode historis klaim ini belum didukung oleh sumber pembanding yang digunakan.');
       if (claim.inScope && plan.status === 'ready' && !enabled.has(claim.type)) reason = ['Pemeriksaan untuk jenis klaim ini belum diaktifkan.'];
       if (canVerify) {
         const verifier = deps.verifiers?.[claim.type] ?? VERIFIERS[claim.type];
@@ -154,6 +155,7 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
         verified = verifierSchema.parse(await verifier(claim, { client: verifierClient(deps.client, plan, (cost) => { credits += cost; }),
           checkId: input.checkId, today, ...(window && claim.type === 'price_move' ? { window } : {}) }));
         evidence = normalizeVerifierEvidence(claim, verified.evidence);
+        if (verified.matches === null && verified.note && !/\d/.test(verified.note)) reason.push(verified.note);
         if (verified.computed && hasPercentagePoints(claim, verified.computed.unit))
           verified.computed = { ...verified.computed, value: verified.computed.value / 100 };
       }
@@ -200,7 +202,9 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
     const template = [deterministicExplanation(verdict), ...(verdict.verdict === 'unverifiable' ? reason : [])].join(' ');
     const displayEvidence = displayEvidenceValues(evidence);
     let usedTemplate = false;
-    const explanation = await withGrounding(async (feedback) => {
+    const noEvidence = verdict.verdict === 'unverifiable' && evidence.length === 0;
+    if (noEvidence) usedTemplate = true;
+    const explanation = noEvidence ? template : await withGrounding(async (feedback) => {
       try {
         const written = await deps.llm.generate({ schema: explanationSchema, name: 'claim_explanation', prompt,
           signal: deps.signal, input: JSON.stringify({ claimType: claim.type, verdict, displayEvidence, feedback,

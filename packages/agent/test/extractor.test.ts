@@ -182,9 +182,6 @@ describe('arah arus asing dari kalimat', () => {
 describe('penolakan sesudah LLM', () => {
   const text = 'ADRO yield 25,5%';
   it.each([
-    [{ span: { start: -1, end: text.length } }, 'INVALID_SPAN'],
-    [{ span: { start: 0, end: text.length + 1 } }, 'INVALID_SPAN'],
-    [{ span: { start: 1, end: 1 } }, 'INVALID_SPAN'],
     [{ quote: 'ADRO yield 30%' }, 'INVALID_QUOTE'],
     [{ tickers: ['BBCA'] }, 'UNKNOWN_TICKER'],
     [{ tickers: [] }, 'NO_TICKER'],
@@ -268,4 +265,44 @@ describe('adapter dan prompt dalam extractor', () => {
     expect(opts.provider.requests[0]?.prompt).toBe(prompt);
     expect(opts.provider.requests[0]?.prompt).not.toContain(text);
   });
+});
+
+describe('video BBTN regression', () => {
+  const bbtn: Entity[] = [{ surface: 'BBTN', ticker: 'BBTN', confidence: 0.95, method: 'explicit' }];
+  const make = (quote: string, metric: string, value: number, unit: '%' | 'x' = '%'): ExtractedClaim => ({ quote, span: { start: 0, end: quote.length }, tickers: ['BBTN'], type: unit === 'x' ? 'valuation' : 'earnings_growth', asserted: { metric, value, unit, window: null, period: null }, inScope: true });
+  it('NIM ending level remains positive rather than becoming a negative change', () => {
+    const text = 'BBTN NIM turun dari 4.4% ke 3.5% yoy';
+    const out = validateExtractedClaims(text, bbtn, [make(text, 'NIM', 3.5)], 'test');
+    expect(out.claims[0]?.asserted).toMatchObject({ value: 3.5, metric: 'NIM (level)' });
+  });
+  it('repairs unique literal PBV quote despite an invalid end offset', () => {
+    const text = 'BBTN PBV 0,47x'; const item = make(text, 'PBV', 0.47, 'x'); item.span.end = 999;
+    const out = validateExtractedClaims(text, bbtn, [item], 'test');
+    expect(out.rejected).toEqual([]); expect(out.claims[0]?.span).toEqual([0, text.length]);
+  });
+  it('does not repair an ambiguous repeated quote without a valid hint', () => {
+    const quote = 'BBTN PBV 0,47x'; const item = make(quote, 'PBV', 0.47, 'x'); item.span.end = 999;
+    expect(validateExtractedClaims(`${quote}. ${quote}`, bbtn, [item], 'test').rejected[0]?.reason).toBe('INVALID_SPAN');
+  });
+  it('carries the literal semester label within a single-stock paragraph', () => {
+    const quote = 'Laba naik 40,8%'; const text = `BBTN Semester satu 2026\n${quote}`;
+    const out = validateExtractedClaims(text, bbtn, [make(quote, 'pertumbuhan laba', 40.8)], 'test');
+    expect(out.claims[0]?.asserted.period).toBe('Semester satu 2026');
+  });
+  it('does not carry a semester across a paragraph boundary', () => {
+    const quote = 'Laba naik 40,8%'; const text = `BBTN Semester satu 2026\n\n${quote}`;
+    expect(validateExtractedClaims(text, bbtn, [make(quote, 'pertumbuhan laba', 40.8)], 'test').claims[0]?.asserted.period).toBeUndefined();
+  });
+  it('anchors a preceding summary and canonicalized semester to the unique report label', () => {
+    const quote = 'Laba naik 40,8%'; const text = `${quote}\nBBTN Semester satu 2026`;
+    const item = make(quote, 'pertumbuhan laba', 40.8); item.asserted.period = 'Semester I 2026';
+    const out = validateExtractedClaims(text, bbtn, [item], 'test');
+    expect(out.rejected).toEqual([]);
+    expect(out.claims[0]?.asserted.period).toBe('Semester satu 2026');
+  });
+  it('does not assign a following report label when the paragraph has multiple periods', () => {
+    const quote = 'Laba naik 40,8%'; const text = `${quote}\nBBTN Semester I 2025 dan Semester I 2026`;
+    expect(validateExtractedClaims(text, bbtn, [make(quote, 'pertumbuhan laba', 40.8)], 'test').claims[0]?.asserted.period).toBeUndefined();
+  });
+
 });

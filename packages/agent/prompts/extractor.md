@@ -46,3 +46,13 @@ item valuation dengan kedua ticker dan value 3. Jangan menggabungkan kedua metri
 
 Contoh larangan hitung: "BBRI harganya dari Rp100 menjadi Rp200."
 Tidak boleh mengisi pertumbuhan 100% karena angka persen itu tidak tertulis.
+
+Untuk rasio level seperti NIM: "NIM turun dari 4,4% ke 3,5%" menyebut
+level akhir 3,5%, bukan perubahan -3,5%. Jangan menghitung perubahan yang tidak
+tertulis. Gunakan metric "NIM (level)". Pendapatan bunga, provisi, portofolio
+kredit, dan jumlah nasabah adalah metrik khusus: jangan mengganti nama metriknya
+menjadi laba atau total pendapatan. Jika tipe khusus belum tersedia, tetap
+pertahankan nama metrik aslinya agar router dapat menjelaskan batas cakupannya.
+Label "Semester satu 2026" pada paragraf satu saham berlaku untuk klaim laporan
+keuangan berikutnya sampai paragraf atau periode lain, jika konteksnya jelas.
+Jangan menerapkan label laporan keuangan ke harga saham atau valuasi pada tanggal lain.

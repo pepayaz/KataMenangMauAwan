@@ -11,6 +11,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const DEFAULT_FLAGS: Record<string, boolean> = {
   claim_types_ext: false,
+  earnings_growth: false,
   accounts: false,
   share_target: false,
 };

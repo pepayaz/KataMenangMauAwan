@@ -1,4 +1,4 @@
-import type { Claim } from '@cek-dulu/shared';
+import { parseFinancialPeriod, unsupportedFinancialMetric, type Claim, type FinancialPeriod } from '@cek-dulu/shared';
 import type { QuarterlyFinancialItem } from '@cek-dulu/sectors';
 import { isMissingData } from '@cek-dulu/sectors';
 import { GROWTH_ABS_FLOOR_PP, REL_TOLERANCE, describeRelative, withinAbsolute, withinRelative } from './tolerance.js';
@@ -58,14 +58,19 @@ export function computeGrowth(
   rows: QuarterlyFinancialItem[],
   mode: GrowthMode,
   metric: GrowthMetric,
+  reportDate?: string,
 ): GrowthResult | null {
   const sorted = [...rows].sort((a, b) => b.date.localeCompare(a.date));
-  const current = sorted[0];
+  const current = reportDate ? sorted.find(row => row.date === reportDate) : sorted[0];
   if (!current) return null;
   const currentValue = numeric(current, metric);
   if (currentValue === null) return null;
 
-  const base = mode === 'qoq' ? sorted[1] : sorted[4];
+  const date = new Date(`${current.date}T00:00:00Z`);
+  if (!Number.isFinite(date.getTime())) return null;
+  const baseDate = mode === 'yoy' ? `${date.getUTCFullYear() - 1}${current.date.slice(4)}`
+    : new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 2, 0)).toISOString().slice(0, 10);
+  const base = sorted.find(row => row.date === baseDate);
   if (!base) return null;
   const baseValue = numeric(base, metric);
   if (baseValue === null) return null;
@@ -87,21 +92,60 @@ export function computeGrowth(
   };
 }
 
+/** Semester totals need an explicitly identified data basis; never assume quarter vs YTD. */
+export function computeSemesterGrowth(rows: QuarterlyFinancialItem[], metric: GrowthMetric, period: FinancialPeriod): GrowthResult | null {
+  const total = (year: number): number | null => {
+    const ending = `${year}-${period.q === 2 ? '06-30' : '12-31'}`;
+    const end = rows.filter(row => row.date === ending);
+    if (end.length !== 1) return null;
+    const basis = end[0]!.period_basis;
+    if (basis === 'cumulative') {
+      const value = numeric(end[0]!, metric);
+      if (period.q === 2) return value;
+      const first = rows.filter(row => row.date === `${year}-06-30` && row.period_basis === basis);
+      const before = first.length === 1 ? numeric(first[0]!, metric) : null;
+      return value === null || before === null ? null : value - before;
+    }
+    if (basis !== 'quarterly') return null;
+    const quarters = period.q === 2 ? ['03-31', '06-30'] : ['09-30', '12-31'];
+    let sum = 0;
+    for (const quarter of quarters) {
+      const matches = rows.filter(row => row.date === `${year}-${quarter}` && row.period_basis === basis);
+      const value = matches.length === 1 ? numeric(matches[0]!, metric) : null;
+      if (value === null) return null;
+      sum += value;
+    }
+    return sum;
+  };
+  const currentValue = total(period.year), baseValue = total(period.year - 1);
+  if (currentValue === null || baseValue === null) return null;
+  return { mode: 'yoy', metric, currentDate: period.reportDate, baseDate: `${period.year - 1}${period.reportDate.slice(4)}`,
+    currentValue, baseValue, baseDegenerate: baseValue <= 0,
+    growthPct: baseValue <= 0 ? Number.NaN : (currentValue - baseValue) / baseValue * 100 };
+}
+
 export const verifyEarningsGrowth: Verifier = async (claim: Claim, ctx): Promise<VerifierOutput> => {
   const tol = `${describeRelative(REL_TOLERANCE.earnings_growth)} atau ±${String(GROWTH_ABS_FLOOR_PP).replace('.', ',')} poin persen`;
   if (typeof claim.asserted.value !== 'number' || claim.asserted.unit !== '%') {
     return unverifiable('Klaim pertumbuhan laba tidak menyebut angka persen.', tol);
   }
 
+  if (unsupportedFinancialMetric(claim.asserted.metric))
+    return unverifiable('Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan.', tol);
+  const period = claim.asserted.period ? parseFinancialPeriod(claim.asserted.period) : null;
+  if (claim.asserted.period && !period && !/^(?:yoy|qoq|tahunan|kuartalan)$/i.test(claim.asserted.period) && !/^\d{4}-\d{2}-\d{2}$/.test(claim.asserted.period))
+    return unverifiable('Periode laporan belum dapat dipetakan ke data pembanding.', tol);
   const phrase = `${claim.asserted.metric} ${claim.asserted.window ?? ''} ${claim.asserted.period ?? ''}`;
   const mode = resolveGrowthMode(phrase);
   const metric = resolveGrowthMetric(phrase);
 
+  if (period?.kind === 'semester' && mode === 'qoq') return unverifiable('Klaim semester tidak boleh dibandingkan dengan pertumbuhan satu kuartal.', tol);
+  const reportDate = period?.reportDate ?? (claim.asserted.period && /^\d{4}-\d{2}-\d{2}$/.test(claim.asserted.period) ? claim.asserted.period : undefined);
   let quarterly;
   try {
     quarterly = await ctx.client.fetchQuarterlyFinancials(
       claim.ticker,
-      { n_quarters: QUARTERS_TO_FETCH },
+      { n_quarters: period?.kind === 'semester' ? period.q + 4 : QUARTERS_TO_FETCH, ...(reportDate ? { report_date: reportDate } : {}) },
       { checkId: ctx.checkId },
     );
   } catch (err) {
@@ -114,27 +158,29 @@ export const verifyEarningsGrowth: Verifier = async (claim: Claim, ctx): Promise
     throw err;
   }
 
-  const growth = computeGrowth(quarterly.data, mode, metric);
+  const growth = period?.kind === 'semester' ? computeSemesterGrowth(quarterly.data, metric, period) : computeGrowth(quarterly.data, mode, metric, reportDate);
   if (!growth) {
     return unverifiable(
-      `${claim.ticker} tidak punya cukup kuartal untuk menghitung pertumbuhan ${mode.toUpperCase()}.`,
+      period?.kind === 'semester' ? 'Basis kuartalan atau kumulatif dan data pembanding semester belum lengkap; pertumbuhan tidak dihitung dengan asumsi.' : 'Kuartal laporan dan kuartal pembanding yang sesuai belum lengkap.',
       tol,
     );
   }
 
   const metricLabel = metric === 'revenue' ? 'Pendapatan' : 'Laba';
+  const currentLabel = period?.kind === 'semester' ? `Semester ${period.q === 2 ? 'I' : 'II'} ${period.year}` : growth.currentDate;
+  const baseLabel = period?.kind === 'semester' ? `Semester ${period.q === 2 ? 'I' : 'II'} ${period.year - 1}` : growth.baseDate;
   const evidence = [
     makeEvidence(
       claim.claimId,
       quarterly,
-      `${metricLabel} ${claim.ticker} ${growth.currentDate}`,
+      `${metricLabel} ${claim.ticker} ${currentLabel}`,
       growth.currentValue,
       'IDR',
     ),
     makeEvidence(
       claim.claimId,
       quarterly,
-      `${metricLabel} ${claim.ticker} ${growth.baseDate}`,
+      `${metricLabel} ${claim.ticker} ${baseLabel}`,
       growth.baseValue,
       'IDR',
     ),

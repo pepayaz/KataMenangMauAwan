@@ -167,3 +167,13 @@ describe('periode pertumbuhan laba', () => {
       status: 'needs_user_choice', tools: [], estimatedCredits: 0 });
   });
 });
+
+describe('BBTN report routing', () => {
+  it.each(['Semester satu 2026', 'semester I 2026', 'H1 2026'])('maps %s to a semester rather than Q2', period => {
+    const plan = routeClaim(claim('earnings_growth', { metric: 'pertumbuhan laba', period, value: 40.8 }), { today });
+    expect(plan.status).toBe('ready'); expect(plan.tools[0]?.params).toMatchObject({ report_date: '2026-06-30', n_quarters: 6 });
+  });
+  it.each(['NIM (level)', 'pendapatan bunga', 'provisi', 'portofolio kredit', 'laba operasional'])('does not fetch total earnings for %s', metric => {
+    expect(routeClaim(claim('earnings_growth', { metric }), { today })).toMatchObject({ status: 'unsupported', tools: [], estimatedCredits: 0 });
+  });
+});
