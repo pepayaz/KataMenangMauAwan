@@ -8,10 +8,10 @@
  *     dibundel di `@cek-dulu/shared`.
  *
  *   npx tsx scripts/seed-aliases.ts          # dari cache bila ada, tanpa memanggil API
- *   npx tsx scripts/seed-aliases.ts --fetch  # tarik ulang daftar emiten (1 kredit)
+ *   npx tsx scripts/seed-aliases.ts --fetch  # tarik ulang daftar emiten berhalaman (1 kredit per halaman)
  */
 import { pathToFileURL } from 'node:url';
-import { MANUAL_ALIASES, normalizeTicker } from '@cek-dulu/shared';
+import { MANUAL_ALIASES, IDX_COMPANIES, normalizeTicker } from '@cek-dulu/shared';
 import { createSectorsClient } from '@cek-dulu/sectors';
 
 export type AliasRow = { alias: string; ticker: string; source: 'emiten' | 'manual'; weight: number };
@@ -96,15 +96,18 @@ async function main(): Promise<void> {
     config: shouldFetch ? { mode: 'live', member: 'B' } : { member: 'B' },
   });
 
-  let emitenRows: AliasRow[] = [];
-  try {
-    const companies = await client.fetchCompanies({ limit: 1200 });
-    const list = companies.data.companies ?? [];
-    console.log(`Daftar emiten: ${list.length} baris (${companies.cached ? 'cache' : 'API'}).`);
-    emitenRows = list.flatMap((c) => aliasesFromCompanyName(c.symbol, c.company_name));
-  } catch (err) {
-    console.warn(`Tidak bisa mengambil daftar emiten: ${String(err)}`);
-    console.warn('Melanjutkan hanya dengan alias manual.');
+  let emitenRows = IDX_COMPANIES.flatMap(c => aliasesFromCompanyName(c.symbol, c.company_name));
+  if (shouldFetch) {
+    const fetched: AliasRow[] = [];
+    let offset = 0;
+    for (let page = 0; page < 8; page++) {
+      const companies = await client.fetchCompanies({ limit: 200, offset });
+      fetched.push(...companies.data.companies.flatMap(c => aliasesFromCompanyName(c.symbol, c.company_name)));
+      const next = companies.data.pagination.next_offset;
+      if (next === null) { emitenRows = fetched; break; }
+      if (next <= offset || page === 7) throw new Error('Daftar emiten belum lengkap; alias tidak ditulis.');
+      offset = next;
+    }
   }
 
   const manualRows: AliasRow[] = MANUAL_ALIASES.map((m) => ({

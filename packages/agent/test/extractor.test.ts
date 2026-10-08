@@ -182,9 +182,6 @@ describe('arah arus asing dari kalimat', () => {
 describe('penolakan sesudah LLM', () => {
   const text = 'ADRO yield 25,5%';
   it.each([
-    [{ span: { start: -1, end: text.length } }, 'INVALID_SPAN'],
-    [{ span: { start: 0, end: text.length + 1 } }, 'INVALID_SPAN'],
-    [{ span: { start: 1, end: 1 } }, 'INVALID_SPAN'],
     [{ quote: 'ADRO yield 30%' }, 'INVALID_QUOTE'],
     [{ tickers: ['BBCA'] }, 'UNKNOWN_TICKER'],
     [{ tickers: [] }, 'NO_TICKER'],
@@ -268,4 +265,75 @@ describe('adapter dan prompt dalam extractor', () => {
     expect(opts.provider.requests[0]?.prompt).toBe(prompt);
     expect(opts.provider.requests[0]?.prompt).not.toContain(text);
   });
+});
+
+describe('video BBTN regression', () => {
+  const bbtn: Entity[] = [{ surface: 'BBTN', ticker: 'BBTN', confidence: 0.95, method: 'explicit' }];
+  const make = (quote: string, metric: string, value: number, unit: '%' | 'x' = '%'): ExtractedClaim => ({ quote, span: { start: 0, end: quote.length }, tickers: ['BBTN'], type: unit === 'x' ? 'valuation' : 'earnings_growth', asserted: { metric, value, unit, window: null, period: null }, inScope: true });
+  it('NIM ending level remains positive rather than becoming a negative change', () => {
+    const text = 'BBTN NIM turun dari 4.4% ke 3.5% yoy';
+    const out = validateExtractedClaims(text, bbtn, [make(text, 'NIM', 3.5)], 'test');
+    expect(out.claims[0]?.asserted).toMatchObject({ value: 3.5, metric: 'NIM (level)' });
+  });
+  it('repairs unique literal PBV quote despite an invalid end offset', () => {
+    const text = 'BBTN PBV 0,47x'; const item = make(text, 'PBV', 0.47, 'x'); item.span.end = 999;
+    const out = validateExtractedClaims(text, bbtn, [item], 'test');
+    expect(out.rejected).toEqual([]); expect(out.claims[0]?.span).toEqual([0, text.length]);
+  });
+  it('does not repair an ambiguous repeated quote without a valid hint', () => {
+    const quote = 'BBTN PBV 0,47x'; const item = make(quote, 'PBV', 0.47, 'x'); item.span.end = 999;
+    expect(validateExtractedClaims(`${quote}. ${quote}`, bbtn, [item], 'test').rejected[0]?.reason).toBe('INVALID_SPAN');
+  });
+  it('carries the literal semester label within a single-stock paragraph', () => {
+    const quote = 'Laba naik 40,8%'; const text = `BBTN Semester satu 2026\n${quote}`;
+    const out = validateExtractedClaims(text, bbtn, [make(quote, 'pertumbuhan laba', 40.8)], 'test');
+    expect(out.claims[0]?.asserted.period).toBe('Semester satu 2026');
+  });
+  it('does not carry a semester across a paragraph boundary', () => {
+    const quote = 'Laba naik 40,8%'; const text = `BBTN Semester satu 2026\n\n${quote}`;
+    expect(validateExtractedClaims(text, bbtn, [make(quote, 'pertumbuhan laba', 40.8)], 'test').claims[0]?.asserted.period).toBeUndefined();
+  });
+  it('anchors a preceding summary and canonicalized semester to the unique report label', () => {
+    const quote = 'Laba naik 40,8%'; const text = `${quote}\nBBTN Semester satu 2026`;
+    const item = make(quote, 'pertumbuhan laba', 40.8); item.asserted.period = 'Semester I 2026';
+    const out = validateExtractedClaims(text, bbtn, [item], 'test');
+    expect(out.rejected).toEqual([]);
+    expect(out.claims[0]?.asserted.period).toBe('Semester satu 2026');
+  });
+  it('does not assign a following report label when the paragraph has multiple periods', () => {
+    const quote = 'Laba naik 40,8%'; const text = `${quote}\nBBTN Semester I 2025 dan Semester I 2026`;
+    expect(validateExtractedClaims(text, bbtn, [make(quote, 'pertumbuhan laba', 40.8)], 'test').claims[0]?.asserted.period).toBeUndefined();
+  });
+
+});
+
+describe('video period and repeated claims regressions',()=>{
+ it('inherits graph date and removes duplicate PBV at different spans',()=>{
+  const text='Current Price to Book Value 19 Jul 2026 0,47x\nvaluasi BTN PBV 0,47x';
+  const quotes=['Current Price to Book Value 19 Jul 2026 0,47x','valuasi BTN PBV 0,47x'];
+  const candidates=quotes.map(quote=>candidate(quote,{type:'valuation',tickers:['BBTN'],asserted:{metric:'PBV',value:0.47,unit:'x',window:null,period:null}}));
+  const out=validateExtractedClaims(text,[{surface:'BBTN',ticker:'BBTN',confidence:0.95,method:'explicit'}],candidates,'video');
+  expect(out.claims).toHaveLength(1);
+  expect(out.claims[0]?.asserted.period).toBe('19 Jul 2026');
+  expect(out.rejected.some(x=>x.reason==='DUPLICATE_CLAIM')).toBe(true);
+ });
+ it('retains cumulative prefix when the LLM supplies only Q3',()=>{
+  const text='UNVR laba bersih Rp3,33 triliun hingga kuartal tiga 2025. Penjualan Rp27,61 triliun.';
+  const quote='Penjualan Rp27,61 triliun';
+  const c=candidate(quote,{type:'earnings_growth',tickers:['UNVR'],asserted:{metric:'penjualan bersih',value:27.61,unit:'IDR',window:null,period:'kuartal tiga 2025'}});
+  const out=validateExtractedClaims(text,[{surface:'UNVR',ticker:'UNVR',confidence:0.95,method:'explicit'}],[c],'video');
+  expect(out.claims[0]?.asserted.period).toBe('hingga kuartal tiga 2025');
+ });
+});
+
+it('retains a literal PBV inequality in the persisted claim',()=>{
+ const text='PBV < 1x';const c=candidate(text,{type:'valuation',asserted:{metric:'PBV',value:1,unit:'x',window:null,period:null}});
+ const out=validateExtractedClaims(text,[{surface:'ADRO',ticker:'ADRO',confidence:0.95,method:'explicit'}],[c],'bound');
+ expect(out.claims[0]?.asserted.comparison).toBe('lt');
+});
+it('uses the unique report period for a preceding relative-year summary',()=>{
+ const text='BBTN laba naik 40% dibanding tahun lalu\nSemester satu 2026 laba Rp2,4 triliun';
+ const c=candidate('BBTN laba naik 40% dibanding tahun lalu',{type:'earnings_growth',tickers:['BBTN'],asserted:{metric:'laba',value:40,unit:'%',window:null,period:'tahun lalu'}});
+ const out=validateExtractedClaims(text,[{surface:'BBTN',ticker:'BBTN',confidence:0.95,method:'explicit'}],[c],'period');
+ expect(out.claims[0]?.asserted.period).toBe('Semester satu 2026');
 });

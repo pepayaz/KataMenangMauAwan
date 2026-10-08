@@ -318,7 +318,7 @@ describe('LLM cost controls', () => {
     expect(body.generationConfig).toMatchObject({ thinkingConfig, maxOutputTokens: 4096 });
   });
 
-  it('keeps extraction reasoning unchanged and records usage without input or keys', async () => {
+  it('bounds extraction reasoning and records usage without input or keys', async () => {
     const onUsage = vi.fn();
     const network = vi.fn(async (_url: unknown, _init?: RequestInit) => new Response(JSON.stringify({
       usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 20, thoughtsTokenCount: 30 },
@@ -326,7 +326,7 @@ describe('LLM cost controls', () => {
     const adapter = new LlmAdapter({ env: { LLM_PROVIDER: 'gemini', LLM_MODEL: 'gemini-3.5-flash', LLM_API_KEY: 'dummy-unit-test' }, fetchImpl: network, onUsage });
     await adapter.generate({ ...request, name: 'extracted_claims' });
     const body = JSON.parse(String(network.mock.calls[0]?.[1]?.body));
-    expect(body.generationConfig.thinkingConfig).toBeUndefined();
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'low' });
     expect(body.generationConfig.maxOutputTokens).toBeUndefined();
     expect(onUsage).toHaveBeenCalledWith({ stage: 'extracted_claims', model: 'gemini-3.5-flash', attempt: 1,
       inputTokens: 100, outputTokens: 20, thinkingTokens: 30 });

@@ -6,7 +6,7 @@ import { parseQuarter, routeClaim } from '../src/router.js';
 const today = '2026-09-26';
 function claim(type: ClaimType, asserted: Partial<Claim['asserted']> = {}): Claim {
   return { claimId: 'c1', checkId: 'check1', span: [0, 10], type, ticker: 'ADRO',
-    asserted: { metric: 'metric', ...(type === 'safety' ? {} : { value: 3 }),
+    asserted: { metric: type === 'earnings_growth' ? 'pertumbuhan laba' : 'metric', ...(type === 'safety' ? {} : { value: 3 }),
       ...(type === 'price_move' || type === 'earnings_growth' ? { unit: '%' as const } : {}), ...asserted }, inScope: true };
 }
 
@@ -82,7 +82,7 @@ describe('price_move tidak menebak jendela', () => {
 
 describe('klaim yang tidak bisa dinilai tidak memakai kredit', () => {
   it.each([
-    ['laba dalam rupiah', claim('earnings_growth', { metric: 'laba bersih', value: 15.5e12, unit: 'IDR' }), 'nilai laba'],
+    ['laba dengan satuan saham', claim('earnings_growth', { metric: 'laba bersih', value: 15, unit: 'shares' }), 'angka persen'],
     ['pertumbuhan MoM', claim('earnings_growth', { metric: 'pertumbuhan laba', window: 'MoM' }), 'bulanan'],
     ['rasio angka di tipe safety', claim('safety', { metric: 'CASA', value: 85.2, unit: '%' }), 'pernyataan umum'],
   ] as const)('%s', (_label, input, note) => {
@@ -166,4 +166,20 @@ describe('periode pertumbuhan laba', () => {
     expect(routeClaim(claim('earnings_growth', { period }), { today })).toMatchObject({
       status: 'needs_user_choice', tools: [], estimatedCredits: 0 });
   });
+});
+
+describe('BBTN report routing', () => {
+  it.each(['Semester satu 2026', 'semester I 2026', 'H1 2026'])('maps %s to a semester rather than Q2', period => {
+    const plan = routeClaim(claim('earnings_growth', { metric: 'pertumbuhan laba', period, value: 40.8 }), { today });
+    expect(plan.status).toBe('ready'); expect(plan.tools[0]?.params).toMatchObject({ report_date: '2026-06-30', n_quarters: 6 });
+  });
+  it.each(['portofolio kredit', 'jumlah nasabah', 'rasio yang tidak dikenal'])('does not fetch total earnings for %s', metric => {
+    expect(routeClaim(claim('earnings_growth', { metric }), { today })).toMatchObject({ status: 'unsupported', tools: [], estimatedCredits: 0 });
+  });
+});
+
+it('routes reported NIM to the financials section instead of assuming total earnings', () => {
+  const out = routeClaim(claim('earnings_growth', { metric: 'NIM (level)', period: '2025' }), { today });
+  expect(out.tools).toEqual([{ tool: 'fetchCompanyReport', params: { symbol: 'ADRO', sections: ['financials'] } }]);
+  expect(out.estimatedCredits).toBe(1);
 });

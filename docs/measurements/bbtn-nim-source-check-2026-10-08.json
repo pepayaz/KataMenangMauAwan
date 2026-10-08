@@ -1,0 +1,92 @@
+{
+  "checkId": "5246c8b0-d2ef-4aaa-a3bf-e871f9a5592d",
+  "note": "Real Sectors financials source, cached after the live audit; verifier called directly without another LLM/video request",
+  "results": [
+    {
+      "period": "Semester I 2026",
+      "result": {
+        "evidence": [],
+        "matches": null,
+        "tolerance": "±0,1 poin persen untuk level rasio",
+        "note": "NIM tersedia sebagai rasio tahunan. Data tahun terbaru tidak dipakai menggantikan rasio kuartal atau semester pada klaim.",
+        "details": {
+          "coverage": {
+            "endpoint": "fetchCompanyReport",
+            "field": "financials.historical_financial_ratio.profitability.net_interest_margin",
+            "requestedPeriod": "Semester I 2026",
+            "metric": "NIM",
+            "availableYears": [
+              2018,
+              2019,
+              2020,
+              2021,
+              2022,
+              2023,
+              2024,
+              2025
+            ],
+            "sourceCached": true,
+            "status": "PERIOD_GRANULARITY_MISMATCH",
+            "missingFields": [
+              "NIM untuk periode klaim"
+            ],
+            "reportGranularity": "annual"
+          }
+        }
+      }
+    },
+    {
+      "period": "2025",
+      "result": {
+        "evidence": [
+          {
+            "evidenceId": "5246c8b0-d2ef-4aaa-a3bf-e871f9a5592d-nim-audit:nim-bbtn-tahun-2025",
+            "claimId": "5246c8b0-d2ef-4aaa-a3bf-e871f9a5592d-nim-audit",
+            "tool": "fetchCompanyReport",
+            "params": {
+              "symbol": "BBTN",
+              "sections": [
+                "financials"
+              ]
+            },
+            "credits": 0,
+            "cached": true,
+            "fetchedAt": "2026-10-08T10:07:19.911+00:00",
+            "label": "NIM BBTN tahun 2025",
+            "value": 3.563185582805318,
+            "unit": "%"
+          }
+        ],
+        "computed": {
+          "value": 3.563185582805318,
+          "unit": "%",
+          "evidenceId": "5246c8b0-d2ef-4aaa-a3bf-e871f9a5592d-nim-audit:nim-bbtn-tahun-2025"
+        },
+        "matches": true,
+        "tolerance": "±0,1 poin persen untuk level rasio",
+        "note": "NIM dibandingkan langsung dengan field rasio tahunan yang dilaporkan.",
+        "details": {
+          "coverage": {
+            "endpoint": "fetchCompanyReport",
+            "field": "financials.historical_financial_ratio.profitability.net_interest_margin",
+            "requestedPeriod": "2025",
+            "metric": "NIM",
+            "availableYears": [
+              2018,
+              2019,
+              2020,
+              2021,
+              2022,
+              2023,
+              2024,
+              2025
+            ],
+            "sourceCached": true,
+            "status": "CHECKED",
+            "formula": "reported_ratio * 100"
+          }
+        }
+      }
+    }
+  ]
+}

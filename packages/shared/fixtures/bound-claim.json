@@ -1,0 +1,1 @@
+{"claimId":"synthetic-bound","checkId":"synthetic","span":[0,8],"ticker":"GJTL","type":"valuation","inScope":true,"asserted":{"metric":"PBV","value":1,"unit":"x","comparison":"lt"}}

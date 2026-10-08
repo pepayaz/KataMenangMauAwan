@@ -20,6 +20,9 @@ export const REL_TOLERANCE = {
  */
 export const GROWTH_ABS_FLOOR_PP = 0.5;
 
+/** Nominal laporan: allow rounding, not materially different amounts. */
+export const FINANCIAL_AMOUNT_REL_TOLERANCE = 0.01;
+
 /** Tipe 3: toleransi absolut dalam poin persen. */
 export const ABS_TOLERANCE_PP = {
   price_move: 3,
@@ -33,7 +36,7 @@ export const FLOW_TOLERANCE = 0.25;
  * Nilai resmi nol ditangani terpisah supaya tidak membagi dengan nol.
  */
 export function withinRelative(claimed: number, actual: number, tolerance: number): boolean {
-  if (actual === 0) return Math.abs(claimed) <= tolerance;
+  if (actual === 0) return claimed === 0;
   return Math.abs(claimed - actual) / Math.abs(actual) <= tolerance;
 }
 

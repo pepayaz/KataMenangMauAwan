@@ -43,6 +43,7 @@ import { HistoryItemSchema, formatEvidence, readableClaimType, readableSourceTex
 import { readTickerChoices, type UiTickerChoice } from "../../apps/web/lib/ticker-choices";
 import { downloadReportPdf } from "../../apps/web/lib/report-pdf";
 import { comparisonFor, explanationParts } from "../../apps/web/lib/report-presentation";
+import { checkOutcome, traceDetails } from '../../apps/web/lib/check-outcome';
 import { cleanText } from "../../packages/agent/src/clean-text";
 
 type Page = "landing" | "check" | "history" | "saved";
@@ -81,8 +82,8 @@ function resultFixture(result: CheckResult, index = 0, text = ""): DemoFixture |
     ticker: claim?.ticker ?? "—", category: claim ? readableClaimType(claim.type) : "Klaim belum dikenali",
     ...presentation, summary: verdict.explanation, claimed: claim?.asserted.value === undefined ? "—" : comparison.left,
     verified: verdict.computed ? comparison.right : "—", delta: "—", ...(quote ? { quote } : {}),
-    context: verdict.missingContext[0]?.summary ?? "Tidak ada konteks tambahan yang terpicu.",
-    contextPoints: verdict.missingContext.map(item => item.summary),
+    context: verdict.missingContext[0]?.summary ?? (verdict.verdict === "unverifiable" ? verdict.explanation : "Tidak ada konteks tambahan yang terpicu."),
+    contextPoints: verdict.missingContext.length ? verdict.missingContext.map(item => item.summary) : verdict.verdict === "unverifiable" ? [verdict.explanation] : [],
     detail: verdict.explanation, evidenceCount: evidence.length, duration: `${result.creditsUsed} kredit`,
     evidence: evidence.map(item => ({ evidenceId: item.evidenceId, label: readableSourceText(item.label), value: formatEvidence(item) })),
     hypotheses: verdict.missingContext.map(item => ({ code: item.hypId, status: "TRIGGERED" })),
@@ -1084,7 +1085,39 @@ function VerdictSeal({ fixture }: { fixture?: DemoFixture }) {
   );
 }
 
-function ResultView({
+function ActualTrace({ traces }: { traces: readonly TraceEvent[] }) {
+  const stages = [
+    { id: 'normalize', title: 'Kenali saham' },
+    { id: 'extract', title: 'Ambil klaim' },
+    { id: 'verify', title: 'Cek data' },
+    { id: 'hunt', title: 'Cari konteks' },
+    { id: 'adjudicate', title: 'Tentukan hasil' },
+  ];
+  const errors = traces.filter(event => event.stage === 'error');
+  return <>
+    <div className="trace-summary-grid">{stages.map((stage, index) => {
+      const events = traces.filter(event => event.stage === stage.id);
+      const hasEvidence = stage.id !== 'verify' || events.some(event => Array.isArray((event.data as { evidenceIds?: unknown } | undefined)?.evidenceIds) && ((event.data as { evidenceIds: unknown[] }).evidenceIds.length > 0));
+      const status = !events.length ? 'Belum dijalankan' : !hasEvidence ? 'Belum ada bukti' : 'Dijalankan';
+      return <div key={stage.id}><span>{String(index + 1).padStart(2, '0')}</span>
+        {events.length && hasEvidence ? <Check size={13} /> : <MinusCircle size={13} />}
+        <b>{stage.title}</b><small>{status}</small></div>;
+    })}</div>
+    {errors.map((event, index) => <p className="trace-error-note" role="alert" key={index}><AlertTriangle size={15} />{event.message}</p>)}
+    {traces.length > 0 && <details className="trace-detail-disclosure">
+      <summary>Detail teknis pemeriksaan</summary>
+      <div className="trace-detail-list">{stages.map(stage => {
+        const events = traces.filter(event => event.stage === stage.id);
+        if (!events.length) return null;
+        const details = [...new Set(events.flatMap(traceDetails))];
+        return <section key={stage.id}><b>{stage.title}</b><p>{events.at(-1)?.message}</p>
+          {details.length > 0 && <ul>{details.map(detail => <li key={detail}>{detail}</li>)}</ul>}</section>;
+      })}</div>
+    </details>}
+  </>;
+}
+
+export function ResultView({
   active,
   fixture,
   onSave,
@@ -1095,6 +1128,8 @@ function ResultView({
   traceOpen,
   setTraceOpen,
   reset,
+  onRetry,
+  onEdit,
 }: {
   active: HistoryItem;
   fixture?: DemoFixture;
@@ -1106,12 +1141,34 @@ function ResultView({
   traceOpen: boolean;
   setTraceOpen: (open: boolean) => void;
   reset: () => void;
+  onRetry: () => void;
+  onEdit: () => void;
 }) {
   const tone = fixture?.tone || "violet";
   const [claimQuery, setClaimQuery] = useState("");
   const [evidenceQuery, setEvidenceQuery] = useState("");
   useEffect(() => setClaimQuery(""), [active.id]);
   useEffect(() => setEvidenceQuery(""), [active.id, claimIndex]);
+  const outcome = checkOutcome(active.result, active.traces);
+  if (outcome.kind !== 'complete') return <div className="workspace-page result-view">
+    <div className="result-heading"><div><span className="page-index">PEMERIKSAAN BELUM SELESAI</span>
+      <h1>{outcome.kind === 'error' ? 'Pemeriksaan terhenti.' : outcome.kind === 'needs_user_choice' ? 'Konfirmasi saham diperlukan.' : 'Belum ada klaim terdeteksi.'}</h1>
+      <p role={outcome.kind === 'error' ? 'alert' : 'status'}>{outcome.message}</p></div></div>
+    <div className="result-meta-actions">{outcome.kind === 'error' && <button onClick={onRetry}>Coba lagi <ArrowRight size={14} /></button>}<button onClick={onEdit}>{outcome.kind === 'needs_user_choice' ? 'Konfirmasi saham' : 'Tinjau teks'}</button></div>
+    <section className="collapsed-trace open"><ActualTrace traces={active.traces} /></section>
+  </div>;
+  const selectedClaimId = active.result.claims[claimIndex]?.claimId;
+  const coverageEvent = active.traces.find(event => event.stage === 'verify' && (event.data as { claimId?: string } | undefined)?.claimId === selectedClaimId);
+  const coverage = (coverageEvent?.data as { coverage?: Record<string, unknown>; note?: string } | undefined)?.coverage;
+  const gapPoints = coverage && coverage.status !== 'CHECKED' ? [
+    (coverageEvent?.data as { note?: string }).note,
+    coverage.requestedPeriod ? `Periode diminta: ${coverage.requestedPeriod}` : '',
+    coverage.field ? `Field pembanding: ${coverage.field}` : '',
+    Array.isArray(coverage.missingFields) ? `Data yang kurang: ${coverage.missingFields.join(', ')}` : '',
+    Array.isArray(coverage.availableDates) ? `Laporan tersedia: ${coverage.availableDates.join(', ')}` : '',
+    Array.isArray(coverage.availableYears) ? `Tahun tersedia: ${coverage.availableYears.join(', ')}` : '',
+    Array.isArray(coverage.missing) ? coverage.missing.map((item: { date: string; field: string; reason: string }) => `${item.date}: ${item.field} — ${({ REPORT_MISSING: 'laporan tidak ditemukan', DUPLICATE_REPORT: 'laporan duplikat', FIELD_NULL_OR_MISSING: 'nilai kosong atau tidak tersedia' } as Record<string, string>)[item.reason] ?? 'data belum lengkap'}`).join('; ') : '',
+  ].filter((value): value is string => typeof value === 'string' && value.length > 0) : [];
   const normalizedClaimQuery = claimQuery.trim().toLocaleLowerCase("id-ID");
   const claimRows = active.result.verdicts.map((verdict, index) => ({
     verdict,
@@ -1124,7 +1181,7 @@ function ResultView({
   const normalizedEvidenceQuery = evidenceQuery.trim().toLocaleLowerCase("id-ID");
   const filteredEvidence = fixture?.evidence.filter(row => !normalizedEvidenceQuery
     || `${row.label} ${row.value}`.toLocaleLowerCase("id-ID").includes(normalizedEvidenceQuery)) ?? [];
-  const contextPoints = [...new Set((fixture
+  const contextPoints = gapPoints.length ? gapPoints : [...new Set((fixture
     ? fixture.contextPoints?.length ? fixture.contextPoints.flatMap(explanationParts) : explanationParts(fixture.detail)
     : ["Evidence belum cukup untuk menyusun konteks."]).map(point => point.trim()).filter(Boolean))];
   return (
@@ -1182,7 +1239,7 @@ function ResultView({
         <div className="verdict-rings" />
         <div className="verdict-hero-top">
           <div><span>VERDICT</span><b><VerdictIcon tone={tone} size={17} /> {fixture?.status || "Tidak bisa diverifikasi"}</b></div>
-          <span>{fixture ? "BERDASARKAN DATA TERSEDIA" : "DATA BELUM TERSEDIA"}</span>
+          <span>{(fixture?.evidenceCount ?? 0) > 0 ? "BUKTI PEMBANDING TERSEDIA" : "BELUM ADA BUKTI PEMBANDING"}</span>
         </div>
         <div className="verdict-metrics">
           <div className="hero-metric"><span>CLAIMED</span><strong>{fixture?.claimed || "—"}</strong></div>
@@ -1242,16 +1299,12 @@ function ResultView({
 
       <section className={`collapsed-trace ${traceOpen ? "open" : ""}`}>
         <button onClick={() => setTraceOpen(!traceOpen)} aria-expanded={traceOpen} aria-controls="trace-summary">
-          <span><CheckCircle2 size={16} /> Pemeriksaan selesai {fixture ? `· ${fixture.duration}` : ""}</span>
+          <span><CheckCircle2 size={16} /> Jejak pemeriksaan {fixture ? `· ${fixture.duration}` : ""}</span>
           <span>Lihat jejak kerja <ChevronDown size={15} /></span>
         </button>
         <div id="trace-summary" className="trace-summary-reveal" aria-hidden={!traceOpen}>
           <div className="trace-summary-content">
-            <div className="trace-summary-grid">
-              {investigationSteps.map((stage, index) => (
-                <div key={stage.id}><span>0{index + 1}</span><Check size={13} /><b>{stage.title}</b><small>{stage.meta}</small></div>
-              ))}
-            </div>
+            <ActualTrace traces={active.traces} />
           </div>
         </div>
       </section>
@@ -1327,7 +1380,10 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
 
   const [claimIndex, setClaimIndex] = useState(0);
   // Rapor lain dibuka: mulai lagi dari klaim pertama.
-  useEffect(() => { setClaimIndex(0); }, [active?.id]);
+  useEffect(() => {
+    const firstCompared = active?.result.verdicts.findIndex(verdict => verdict.computed !== undefined) ?? -1;
+    setClaimIndex(Math.max(0, firstCompared));
+  }, [active?.id]);
   const activeFixture = useMemo(
     () => active ? resultFixture(active.result, claimIndex, active.text) : undefined,
     [active, claimIndex],
@@ -1428,6 +1484,11 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
     clearTimers();
     setActive(item);
     setInput(item.text);
+    setInputSource(item.source ?? "paste");
+    setInputUrl(item.url);
+    const normalization = item.traces.find(event => event.stage === "normalize");
+    setChoices(normalization ? readTickerChoices(normalization) : []);
+    setSelections({});
     setPhase("result");
     setPage("check");
     setTraceOpen(false);
@@ -1540,6 +1601,8 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
                 traceOpen={traceOpen}
                 setTraceOpen={setTraceOpen}
                 reset={resetCheck}
+                onRetry={startCheck}
+                onEdit={() => { setActive(null); setPhase("idle"); }}
               />
             )}
             {page === "history" && (

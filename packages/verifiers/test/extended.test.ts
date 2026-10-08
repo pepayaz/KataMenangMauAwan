@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { enabledClaimTypes } from '../src/registry.js';
 import { windowEndingToday } from '@cek-dulu/sectors';
 import {
+  computeSemesterGrowth,
   computeGrowth,
   resolveGrowthMetric,
   resolveGrowthMode,
@@ -487,4 +489,72 @@ describe('verifySafety', () => {
     expect(out.note.toLowerCase()).toContain('free float 11,0%');
     expect(out.evidence.map((e) => e.label)).toContain('Free float AMAR');
   });
+});
+
+describe('period and metric safety', () => {
+  it('does not use a different year when the matching quarter is missing', () => {
+    const rows = [QUARTERS[0]!, QUARTERS[1]!, QUARTERS[2]!, QUARTERS[3]!, { ...QUARTERS[4]!, date: '2024-06-30' }];
+    expect(computeGrowth(rows, 'yoy', 'earnings')).toBeNull();
+    expect(computeGrowth(QUARTERS, 'yoy', 'earnings', '2025-03-31')).toBeNull();
+  });
+  it('does not route NIM or interest income to earnings or total revenue', async () => {
+    for (const metric of ['portofolio kredit', 'jumlah nasabah']) {
+      const out = await verifyEarningsGrowth(makeClaim('earnings_growth', 'BBTN', { metric, value: 3.5, unit: '%' }), ctx(seededClient([])));
+      expect(out.matches).toBeNull(); expect(out.evidence).toEqual([]); expect(out.note).toContain('definisi yang sama');
+    }
+  });
+  const half = { year: 2026, q: 2, kind: 'semester' as const, reportDate: '2026-06-30' };
+  it('sums only explicitly quarterly data, without substituting Q2 for H1', () => {
+    const rows = [
+      { symbol: 'BBTN', date: '2026-03-31', earnings: 100, revenue: 200, period_basis: 'quarterly' },
+      { symbol: 'BBTN', date: '2026-06-30', earnings: 140, revenue: 300, period_basis: 'quarterly' },
+      { symbol: 'BBTN', date: '2025-03-31', earnings: 60, revenue: 100, period_basis: 'quarterly' },
+      { symbol: 'BBTN', date: '2025-06-30', earnings: 100, revenue: 200, period_basis: 'quarterly' },
+    ];
+    expect(computeSemesterGrowth(rows, 'earnings', half)?.growthPct).toBeCloseTo(50);
+    expect(computeSemesterGrowth(rows.slice(1), 'earnings', half)).toBeNull();
+    expect(computeSemesterGrowth(rows.map(({ period_basis, ...row }) => row), 'earnings', half)).toBeNull();
+  });
+  it('compares H1 cumulative data directly without adding Q1 again', () => {
+    const rows = [{ symbol: 'BBTN', date: '2026-06-30', earnings: 240, revenue: 500, period_basis: 'cumulative' },
+      { symbol: 'BBTN', date: '2025-06-30', earnings: 160, revenue: 300, period_basis: 'cumulative' }];
+    expect(computeSemesterGrowth(rows, 'earnings', half)?.growthPct).toBeCloseTo(50);
+  });
+});
+
+
+describe('BBTN semester regression', () => {
+  it('verifies H1 profit growth by summing standalone quarters from both years', async () => {
+    const rows = [
+      { symbol: 'BBTN', date: '2026-06-30', earnings: 1294233000000 },
+      { symbol: 'BBTN', date: '2026-03-31', earnings: 1107979000000 },
+      { symbol: 'BBTN', date: '2025-12-31', earnings: 1198474000000 },
+      { symbol: 'BBTN', date: '2025-09-30', earnings: 596291000000 },
+      { symbol: 'BBTN', date: '2025-06-30', earnings: 802679000000 },
+      { symbol: 'BBTN', date: '2025-03-31', earnings: 903710000000 },
+    ];
+    const client = seededClient([{ endpoint: 'fetchQuarterlyFinancials', params: { symbol: 'BBTN', n_quarters: 6, report_date: '2026-06-30' }, response: rows }]);
+    const claim = makeClaim('earnings_growth', 'BBTN', { metric: 'pertumbuhan laba bersih yoy', value: 40.8, unit: '%', period: 'Semester satu 2026' });
+    const out = await verifyEarningsGrowth(claim, ctx(client));
+    expect(out.matches).toBe(true);
+    expect(out.computed?.value).toBeCloseTo(40.78);
+    expect(out.evidence).toHaveLength(3);
+    expect(out.evidence.map(item => item.value)).toContain(2402212000000);
+    expect(out.evidence.map(item => item.value)).toContain(1706389000000);
+  });
+  it('preserves explicit cumulative provider metadata instead of summing it again', async () => {
+    const client = seededClient([{ endpoint: 'fetchQuarterlyFinancials', params: { symbol: 'BBTN', n_quarters: 6, report_date: '2026-06-30' }, response: [
+      { symbol: 'BBTN', date: '2026-06-30', earnings: 240, period_basis: 'cumulative' },
+      { symbol: 'BBTN', date: '2025-06-30', earnings: 160, period_basis: 'cumulative' },
+    ] }]);
+    const out = await verifyEarningsGrowth(makeClaim('earnings_growth', 'BBTN', { metric: 'pertumbuhan laba', value: 50, unit: '%', period: 'Semester I 2026' }), ctx(client));
+    expect(out.matches).toBe(true);
+    expect(out.computed?.value).toBe(50);
+  });
+});
+
+it('enables profit growth independently of other extended claim types', () => {
+  expect(enabledClaimTypes({ earnings_growth: true, claim_types_ext: false })).toEqual(['valuation', 'dividend', 'price_move', 'earnings_growth']);
+  expect(enabledClaimTypes({})).toEqual(['valuation', 'dividend', 'price_move']);
+  expect(enabledClaimTypes({ claim_types_ext: true })).toContain('foreign_flow');
 });

@@ -38,5 +38,5 @@ export const EXTENDED_CLAIM_TYPES: ClaimType[] = [
 export function enabledClaimTypes(flags: Record<string, boolean>): ClaimType[] {
   return flags.claim_types_ext === true
     ? [...CORE_CLAIM_TYPES, ...EXTENDED_CLAIM_TYPES]
-    : [...CORE_CLAIM_TYPES];
+    : [...CORE_CLAIM_TYPES, ...(flags.earnings_growth === true ? ['earnings_growth' as const] : [])];
 }

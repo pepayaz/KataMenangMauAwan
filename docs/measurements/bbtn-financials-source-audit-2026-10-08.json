@@ -1,0 +1,361 @@
+{
+  "endpoint": "fetchCompanyReport",
+  "params": {
+    "symbol": "BBTN",
+    "sections": [
+      "financials"
+    ]
+  },
+  "cached": true,
+  "credits": 0,
+  "fetchedAt": "2026-10-08T10:07:19.911+00:00",
+  "availableKeys": [
+    "eps",
+    "historical_eps",
+    "historical_financials",
+    "yoy_ttm_revenue_growth",
+    "yoy_ttm_earnings_growth",
+    "historical_financial_ratio",
+    "yoy_quarter_revenue_growth",
+    "yoy_quarter_earnings_growth"
+  ],
+  "historicalKeys": [
+    "tax",
+    "ebit",
+    "year",
+    "ebitda",
+    "revenue",
+    "earnings",
+    "net_debt",
+    "net_loan",
+    "cash_only",
+    "provision",
+    "credit_rwa",
+    "gross_loan",
+    "market_rwa",
+    "total_debt",
+    "cash_inflow",
+    "cash_outflow",
+    "fixed_assets",
+    "gross_profit",
+    "time_deposit",
+    "total_assets",
+    "total_equity",
+    "net_cash_flow",
+    "operating_pnl",
+    "total_capital",
+    "total_deposit",
+    "free_cash_flow",
+    "long_term_debt",
+    "premium_income",
+    "prepaid_assets",
+    "cost_of_revenue",
+    "current_account",
+    "interest_income",
+    "non_loan_assets",
+    "operational_rwa",
+    "premium_expense",
+    "savings_account",
+    "short_term_debt",
+    "interest_expense",
+    "end_cash_position",
+    "operating_expense",
+    "retained_earnings",
+    "total_liabilities",
+    "core_capital_tier1",
+    "industry_breakdown",
+    "net_premium_income",
+    "outstanding_shares",
+    "allowance_for_loans",
+    "current_liabilities",
+    "earnings_before_tax",
+    "financing_cash_flow",
+    "investing_cash_flow",
+    "net_interest_income",
+    "non_interest_income",
+    "operating_cash_flow",
+    "cash_and_equivalents",
+    "net_increased_decreased",
+    "non_loan_earning_assets",
+    "high_quality_liquid_asset",
+    "total_risk_weighted_asset",
+    "non_loan_non_earning_assets",
+    "supplementary_capital_tier2",
+    "non_operating_income_or_loss",
+    "total_cash_and_due_from_banks",
+    "interest_expense_non_operating",
+    "non_interest_bearing_liabilities",
+    "realized_capital_goods_investment",
+    "other_interest_bearing_liabilities"
+  ],
+  "historicalRatios": [
+    {
+      "year": "2018",
+      "capital": {
+        "capital_adequacy_ratio": null
+      },
+      "leverage": {
+        "debt_to_asset_ratio": 0.14061192458225089,
+        "debt_to_equity_ratio": 11.853625653343427
+      },
+      "liquidity": {
+        "casa_ratio": null,
+        "leverage_ratio": null,
+        "loan_to_deposit_ratio": null,
+        "liquidity_coverage_ratio": null,
+        "operating_cash_flow_margin": 0.3198031184096583
+      },
+      "efficiency": {
+        "total_asset_turnover": 0.03911976860018043
+      },
+      "profitability": {
+        "roa": 0.009163157143245292,
+        "roe": 0.11777979172203476,
+        "efficiency_ratio": 0.009163157143245292,
+        "net_profit_margin": 0.23423341883476856,
+        "net_interest_margin": null,
+        "cost_to_income_ratio": null,
+        "operating_profit_margin": 0.30024133877746323
+      }
+    },
+    {
+      "year": "2019",
+      "capital": {
+        "capital_adequacy_ratio": null
+      },
+      "leverage": {
+        "debt_to_asset_ratio": 0.17225310920156003,
+        "debt_to_equity_ratio": 12.07997471911939
+      },
+      "liquidity": {
+        "casa_ratio": null,
+        "leverage_ratio": null,
+        "loan_to_deposit_ratio": null,
+        "liquidity_coverage_ratio": null,
+        "operating_cash_flow_margin": 0.2457994162627465
+      },
+      "efficiency": {
+        "total_asset_turnover": 0.035075544485300876
+      },
+      "profitability": {
+        "roa": 0.0006711948458209344,
+        "roe": 0.008779211614941058,
+        "efficiency_ratio": 0.0006711948458209344,
+        "net_profit_margin": 0.019135692850105645,
+        "net_interest_margin": null,
+        "cost_to_income_ratio": null,
+        "operating_profit_margin": 0.04838309096904444
+      }
+    },
+    {
+      "year": "2020",
+      "capital": {
+        "capital_adequacy_ratio": null
+      },
+      "leverage": {
+        "debt_to_asset_ratio": 0.13857752524175754,
+        "debt_to_equity_ratio": 16.078578856299917
+      },
+      "liquidity": {
+        "casa_ratio": 0.42052480034939715,
+        "leverage_ratio": null,
+        "loan_to_deposit_ratio": 0.9688216284785937,
+        "liquidity_coverage_ratio": null,
+        "operating_cash_flow_margin": 0.6708972198420077
+      },
+      "efficiency": {
+        "total_asset_turnover": 0.1094887476123687
+      },
+      "profitability": {
+        "roa": 0.0044361038485909434,
+        "roe": 0.08016662126407324,
+        "efficiency_ratio": 0.0044361038485909434,
+        "net_profit_margin": 0.04051652745445969,
+        "net_interest_margin": null,
+        "cost_to_income_ratio": 2.933504700068876,
+        "operating_profit_margin": 0.058922572970095066
+      }
+    },
+    {
+      "year": "2021",
+      "capital": {
+        "capital_adequacy_ratio": null
+      },
+      "leverage": {
+        "debt_to_asset_ratio": 0.1166705974040364,
+        "debt_to_equity_ratio": 15.308029884362554
+      },
+      "liquidity": {
+        "casa_ratio": 0.45058116295016243,
+        "leverage_ratio": null,
+        "loan_to_deposit_ratio": 0.8778949366615472,
+        "liquidity_coverage_ratio": null,
+        "operating_cash_flow_margin": 0.6536789927413879
+      },
+      "efficiency": {
+        "total_asset_turnover": 0.039295020758033886
+      },
+      "profitability": {
+        "roa": 0.006389969055470284,
+        "roe": 0.11100416613587359,
+        "efficiency_ratio": 0.006389969055470284,
+        "net_profit_margin": 0.16261523552354537,
+        "net_interest_margin": null,
+        "cost_to_income_ratio": 2.862326924900686,
+        "operating_profit_margin": 0.20782322182410998
+      }
+    },
+    {
+      "year": "2022",
+      "capital": {
+        "capital_adequacy_ratio": null
+      },
+      "leverage": {
+        "debt_to_asset_ratio": 0.1067653990301966,
+        "debt_to_equity_ratio": 13.56176935171753
+      },
+      "liquidity": {
+        "casa_ratio": 0.491097957884996,
+        "leverage_ratio": null,
+        "loan_to_deposit_ratio": 0.8791128202807956,
+        "liquidity_coverage_ratio": null,
+        "operating_cash_flow_margin": 0.07347774371408039
+      },
+      "efficiency": {
+        "total_asset_turnover": 0.04281278942680232
+      },
+      "profitability": {
+        "roa": 0.007572014873955258,
+        "roe": 0.11752793990926984,
+        "efficiency_ratio": 0.007572014873955258,
+        "net_profit_margin": 0.17686338534192564,
+        "net_interest_margin": null,
+        "cost_to_income_ratio": 2.4742771776157246,
+        "operating_profit_margin": 0.22157070552743202
+      }
+    },
+    {
+      "year": "2023",
+      "capital": {
+        "capital_adequacy_ratio": null
+      },
+      "leverage": {
+        "debt_to_asset_ratio": 0.11700000202393285,
+        "debt_to_equity_ratio": 12.505744549585893
+      },
+      "liquidity": {
+        "casa_ratio": 0.542883514783372,
+        "leverage_ratio": null,
+        "loan_to_deposit_ratio": 0.9174983852612926,
+        "liquidity_coverage_ratio": null,
+        "operating_cash_flow_margin": 0.39557128031036326
+      },
+      "efficiency": {
+        "total_asset_turnover": 0.0382258326874526
+      },
+      "profitability": {
+        "roa": 0.007979464630378718,
+        "roe": 0.11486500674296975,
+        "efficiency_ratio": 0.007979464630378718,
+        "net_profit_margin": 0.2087453449509271,
+        "net_interest_margin": null,
+        "cost_to_income_ratio": 1.9863410348943737,
+        "operating_profit_margin": 0.27067996122486776
+      }
+    },
+    {
+      "year": "2024",
+      "capital": {
+        "capital_adequacy_ratio": 0.1849922935903672
+      },
+      "leverage": {
+        "debt_to_asset_ratio": 0.09672490693228208,
+        "debt_to_equity_ratio": 13.417785287184296
+      },
+      "liquidity": {
+        "casa_ratio": 0.5650026467105599,
+        "leverage_ratio": 0.06352970547745138,
+        "loan_to_deposit_ratio": 0.978657959420207,
+        "liquidity_coverage_ratio": null,
+        "operating_cash_flow_margin": -0.5448907684448107
+      },
+      "efficiency": {
+        "total_asset_turnover": 0.034216513611839014
+      },
+      "profitability": {
+        "roa": 0.00640382268263087,
+        "roe": 0.09232894045537242,
+        "efficiency_ratio": 0.00640382268263087,
+        "net_profit_margin": 0.1871559082634044,
+        "net_interest_margin": 0.02531718544232781,
+        "cost_to_income_ratio": 2.6832230287605894,
+        "operating_profit_margin": 0.23802446402981323
+      }
+    },
+    {
+      "year": "2025",
+      "capital": {
+        "capital_adequacy_ratio": 0.1902433158450498
+      },
+      "leverage": {
+        "debt_to_asset_ratio": 0.09022422257556754,
+        "debt_to_equity_ratio": 13.575784294261304
+      },
+      "liquidity": {
+        "casa_ratio": 0.5040156191866869,
+        "leverage_ratio": 0.05475653144747428,
+        "loan_to_deposit_ratio": 0.9500915081988057,
+        "liquidity_coverage_ratio": 1.929814170582163,
+        "operating_cash_flow_margin": 1.0918019454106367
+      },
+      "efficiency": {
+        "total_asset_turnover": 0.042212756271194134
+      },
+      "profitability": {
+        "roa": 0.006633568868668351,
+        "roe": 0.09668946893083688,
+        "efficiency_ratio": 0.006633568868668351,
+        "net_profit_margin": 0.15714607276651774,
+        "net_interest_margin": 0.03563185582805318,
+        "cost_to_income_ratio": 2.7311870832970344,
+        "operating_profit_margin": 0.19372076223040657
+      }
+    }
+  ],
+  "historicalYears": [
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "nimCandidates": [
+    "\"non_loan_earning_assets\":null",
+    "\"non_loan_non_earning_assets\":null",
+    "\"non_loan_earning_assets\":null",
+    "\"non_loan_non_earning_assets\":null",
+    "\"non_loan_earning_assets\":null",
+    "\"non_loan_non_earning_assets\":null",
+    "\"non_loan_earning_assets\":null",
+    "\"non_loan_non_earning_assets\":null",
+    "\"non_loan_earning_assets\":null",
+    "\"non_loan_non_earning_assets\":null",
+    "\"non_loan_earning_assets\":null",
+    "\"non_loan_non_earning_assets\":null",
+    "\"non_loan_earning_assets\":453946669000000",
+    "\"non_loan_non_earning_assets\":null",
+    "\"non_loan_earning_assets\":511299470000000",
+    "\"non_loan_non_earning_assets\":null",
+    "\"net_interest_margin\":null",
+    "\"net_interest_margin\":null",
+    "\"net_interest_margin\":null",
+    "\"net_interest_margin\":null",
+    "\"net_interest_margin\":null",
+    "\"net_interest_margin\":null",
+    "\"net_interest_margin\":0.02531718544232781",
+    "\"net_interest_margin\":0.03563185582805318"
+  ]
+}

@@ -24,6 +24,7 @@ export const CONFIDENCE_THRESHOLD = 0.7;
  * ada di daftar emiten resmi.
  */
 const EXPLICIT_MARKED = /[$#]([A-Za-z]{4})\b/g;
+const COMMON_TICKER_WORDS = new Set(['BANK', 'LABA', 'NAIK', 'SATU', 'PADA', 'DATA', 'AMAN', 'AKAN', 'ASET', 'MAIN', 'CASH', 'UANG']);
 const BARE_FOUR_CAPS = /\b([A-Z]{4})\b/g;
 
 export type ResolveOptions = {
@@ -53,6 +54,7 @@ export function resolveEntities(text: string, opts: ResolveOptions): Entity[] {
     const ticker = normalizeTicker(m[1] ?? '');
     if (ticker === '') continue;
     if (known && !known.has(ticker)) continue;
+    if (COMMON_TICKER_WORDS.has(ticker) && !/\b[Ss]aham\s+$/.test(text.slice(0, m.index))) continue;
     consider({
       surface: m[0],
       ticker,
@@ -70,6 +72,7 @@ export function resolveEntities(text: string, opts: ResolveOptions): Entity[] {
   const consumed: Array<[number, number]> = [];
 
   for (const entry of sorted) {
+    if (COMMON_TICKER_WORDS.has(entry.alias.toUpperCase()) && !new RegExp(`(?:[$#]${entry.ticker}\\b|\\b[Ss]aham\\s+${entry.ticker}\\b)`).test(text)) continue;
     const needle = ` ${entry.alias.toLowerCase()} `;
     const at = haystack.indexOf(needle);
     if (at === -1) continue;

@@ -1,0 +1,1066 @@
+{
+  "input": "Saved original video transcript; no repeat video processing",
+  "seconds": 8.214,
+  "frames": [
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:55.148Z",
+        "stage": "normalize",
+        "message": "Resolusi saham selesai.",
+        "data": {
+          "status": "ready",
+          "entities": [
+            {
+              "surface": "BBTN",
+              "ticker": "BBTN",
+              "confidence": 0.95,
+              "method": "explicit"
+            }
+          ],
+          "choices": []
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.028Z",
+        "stage": "extract",
+        "message": "Ekstraksi klaim selesai.",
+        "data": {
+          "claimIds": [
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c2",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c4",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c5",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c6",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c7",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c8"
+          ],
+          "rejected": [
+            {
+              "candidateIndex": 0,
+              "reason": "PERIOD_NOT_WRITTEN"
+            },
+            {
+              "candidateIndex": 1,
+              "reason": "PERIOD_NOT_WRITTEN"
+            },
+            {
+              "candidateIndex": 8,
+              "reason": "VALUE_NOT_WRITTEN"
+            }
+          ]
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.033Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+          "tools": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              }
+            }
+          ],
+          "estimatedCredits": 6,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.034Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c2",
+          "tools": [],
+          "estimatedCredits": 0,
+          "status": "unsupported",
+          "notes": [
+            "Klaim ini menyebut nilai laba, bukan persentase pertumbuhan; pemeriksaan saat ini membandingkan pertumbuhan YoY atau QoQ."
+          ]
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.038Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c2",
+          "status": "needs_data_or_flag",
+          "unsupportedPeriod": false,
+          "evidenceIds": []
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.040Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c2"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.041Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c2",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.044Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c2",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.060Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+          "tools": [
+            {
+              "tool": "fetchQuarterlyFinancials",
+              "params": {
+                "symbol": "BBTN",
+                "n_quarters": 6,
+                "report_date": "2026-06-30"
+              }
+            }
+          ],
+          "estimatedCredits": 6,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.298Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+          "status": "verified",
+          "unsupportedPeriod": false,
+          "evidenceIds": [
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c3:pertumbuhan-laba-yoy-bbtn",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c3:laba-bbtn-2026-06-30",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c3:laba-bbtn-2025-06-30"
+          ]
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.301Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+          "results": [],
+          "skipped": [],
+          "pendingTools": [],
+          "selectionSource": "llm"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.302Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+          "verdict": "supported"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.312Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+          "status": "verified",
+          "unsupportedPeriod": false,
+          "evidenceIds": [
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c1:pertumbuhan-laba-yoy-bbtn",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c1:laba-bbtn-2026-06-30",
+            "88cc4b59-11df-461b-87eb-b69e51d62a55-c1:laba-bbtn-2025-06-30"
+          ]
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.314Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+          "results": [],
+          "skipped": [],
+          "pendingTools": [],
+          "selectionSource": "llm"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:36:59.315Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+          "verdict": "supported"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.026Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+          "step": "grounding",
+          "usedTemplate": false
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.028Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c4",
+          "tools": [],
+          "estimatedCredits": 0,
+          "status": "unsupported",
+          "notes": [
+            "Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan."
+          ]
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.028Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c4",
+          "status": "needs_data_or_flag",
+          "unsupportedPeriod": false,
+          "evidenceIds": []
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.029Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c4"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.029Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c4",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.032Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c4",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.034Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c5",
+          "tools": [],
+          "estimatedCredits": 0,
+          "status": "unsupported",
+          "notes": [
+            "Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan."
+          ]
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.036Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c5",
+          "status": "needs_data_or_flag",
+          "unsupportedPeriod": false,
+          "evidenceIds": []
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.038Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c5"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.040Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c5",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.045Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c5",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.049Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c6",
+          "tools": [],
+          "estimatedCredits": 0,
+          "status": "unsupported",
+          "notes": [
+            "Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan."
+          ]
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.051Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c6",
+          "status": "needs_data_or_flag",
+          "unsupportedPeriod": false,
+          "evidenceIds": []
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.053Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c6"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.056Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c6",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.060Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c6",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.067Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c7",
+          "tools": [],
+          "estimatedCredits": 0,
+          "status": "unsupported",
+          "notes": [
+            "Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan."
+          ]
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.072Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c7",
+          "status": "needs_data_or_flag",
+          "unsupportedPeriod": false,
+          "evidenceIds": []
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.075Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c7"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.080Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c7",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.085Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c7",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.090Z",
+        "stage": "route",
+        "message": "Rencana verifikasi selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c8",
+          "tools": [
+            {
+              "tool": "fetchCompanyReport",
+              "params": {
+                "symbol": "BBTN",
+                "sections": [
+                  "valuation"
+                ]
+              }
+            }
+          ],
+          "estimatedCredits": 1,
+          "status": "ready",
+          "notes": []
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.093Z",
+        "stage": "verify",
+        "message": "Verifikasi angka selesai.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c8",
+          "status": "needs_data_or_flag",
+          "unsupportedPeriod": true,
+          "evidenceIds": []
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.097Z",
+        "stage": "hunt",
+        "message": "Pemeriksaan konteks tidak memerlukan panggilan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c8"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.100Z",
+        "stage": "adjudicate",
+        "message": "Status klaim ditentukan oleh aturan.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c8",
+          "verdict": "unverifiable"
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.103Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c8",
+          "step": "grounding",
+          "usedTemplate": true
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.170Z",
+        "stage": "adjudicate",
+        "message": "Penjelasan lolos pemeriksaan angka dan kata terlarang.",
+        "data": {
+          "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+          "step": "grounding",
+          "usedTemplate": false
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "trace",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "ts": "2026-10-08T09:37:01.172Z",
+        "stage": "done",
+        "message": "Pemeriksaan selesai.",
+        "data": {
+          "claimCount": 8,
+          "creditsUsed": 0
+        },
+        "credits": 0
+      }
+    },
+    {
+      "event": "result",
+      "data": {
+        "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+        "entities": [
+          {
+            "surface": "BBTN",
+            "ticker": "BBTN",
+            "confidence": 0.95,
+            "method": "explicit"
+          }
+        ],
+        "claims": [
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+            "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+            "span": [
+              23,
+              57
+            ],
+            "type": "earnings_growth",
+            "ticker": "BBTN",
+            "asserted": {
+              "metric": "pertumbuhan laba bersih",
+              "value": 40,
+              "unit": "%",
+              "window": "yoy",
+              "period": "Semester satu 2026"
+            },
+            "inScope": true
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c2",
+            "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+            "span": [
+              58,
+              150
+            ],
+            "type": "earnings_growth",
+            "ticker": "BBTN",
+            "asserted": {
+              "metric": "laba bersih",
+              "value": 2400000000000,
+              "unit": "IDR",
+              "period": "Semester satu 2026"
+            },
+            "inScope": true
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+            "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+            "span": [
+              58,
+              150
+            ],
+            "type": "earnings_growth",
+            "ticker": "BBTN",
+            "asserted": {
+              "metric": "pertumbuhan laba bersih",
+              "value": 40.8,
+              "unit": "%",
+              "window": "yoy",
+              "period": "Semester satu 2026"
+            },
+            "inScope": true
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c4",
+            "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+            "span": [
+              151,
+              185
+            ],
+            "type": "earnings_growth",
+            "ticker": "BBTN",
+            "asserted": {
+              "metric": "pendapatan bunga",
+              "value": -22,
+              "unit": "%",
+              "window": "yoy",
+              "period": "Semester satu 2026"
+            },
+            "inScope": true
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c5",
+            "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+            "span": [
+              186,
+              217
+            ],
+            "type": "earnings_growth",
+            "ticker": "BBTN",
+            "asserted": {
+              "metric": "NIM (level)",
+              "value": 3.5,
+              "unit": "%",
+              "window": "yoy",
+              "period": "Semester satu 2026"
+            },
+            "inScope": true
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c6",
+            "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+            "span": [
+              218,
+              274
+            ],
+            "type": "earnings_growth",
+            "ticker": "BBTN",
+            "asserted": {
+              "metric": "provisi",
+              "value": -81,
+              "unit": "%",
+              "window": "yoy",
+              "period": "Semester satu 2026"
+            },
+            "inScope": true
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c7",
+            "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+            "span": [
+              351,
+              429
+            ],
+            "type": "earnings_growth",
+            "ticker": "BBTN",
+            "asserted": {
+              "metric": "portofolio kredit",
+              "value": 7340000000000,
+              "unit": "IDR",
+              "period": "Semester satu 2026"
+            },
+            "inScope": true
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c8",
+            "checkId": "88cc4b59-11df-461b-87eb-b69e51d62a55",
+            "span": [
+              430,
+              516
+            ],
+            "type": "valuation",
+            "ticker": "BBTN",
+            "asserted": {
+              "metric": "PBV",
+              "value": 0.47,
+              "unit": "x",
+              "period": "19 Jul 2026"
+            },
+            "inScope": true
+          }
+        ],
+        "evidence": [
+          {
+            "evidenceId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1:pertumbuhan-laba-yoy-bbtn",
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+            "tool": "fetchQuarterlyFinancials",
+            "params": {
+              "symbol": "BBTN",
+              "n_quarters": 6,
+              "report_date": "2026-06-30"
+            },
+            "credits": 0,
+            "cached": true,
+            "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+            "label": "Pertumbuhan laba YOY BBTN",
+            "value": 0.4078,
+            "unit": "%"
+          },
+          {
+            "evidenceId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1:laba-bbtn-2026-06-30",
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+            "tool": "fetchQuarterlyFinancials",
+            "params": {
+              "symbol": "BBTN",
+              "n_quarters": 6,
+              "report_date": "2026-06-30"
+            },
+            "credits": 0,
+            "cached": true,
+            "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+            "label": "Laba BBTN 2026-06-30",
+            "value": 2402212000000,
+            "unit": "IDR"
+          },
+          {
+            "evidenceId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1:laba-bbtn-2025-06-30",
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+            "tool": "fetchQuarterlyFinancials",
+            "params": {
+              "symbol": "BBTN",
+              "n_quarters": 6,
+              "report_date": "2026-06-30"
+            },
+            "credits": 0,
+            "cached": true,
+            "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+            "label": "Laba BBTN 2025-06-30",
+            "value": 1706389000000,
+            "unit": "IDR"
+          },
+          {
+            "evidenceId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3:pertumbuhan-laba-yoy-bbtn",
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+            "tool": "fetchQuarterlyFinancials",
+            "params": {
+              "symbol": "BBTN",
+              "n_quarters": 6,
+              "report_date": "2026-06-30"
+            },
+            "credits": 0,
+            "cached": true,
+            "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+            "label": "Pertumbuhan laba YOY BBTN",
+            "value": 0.4078,
+            "unit": "%"
+          },
+          {
+            "evidenceId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3:laba-bbtn-2026-06-30",
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+            "tool": "fetchQuarterlyFinancials",
+            "params": {
+              "symbol": "BBTN",
+              "n_quarters": 6,
+              "report_date": "2026-06-30"
+            },
+            "credits": 0,
+            "cached": true,
+            "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+            "label": "Laba BBTN 2026-06-30",
+            "value": 2402212000000,
+            "unit": "IDR"
+          },
+          {
+            "evidenceId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3:laba-bbtn-2025-06-30",
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+            "tool": "fetchQuarterlyFinancials",
+            "params": {
+              "symbol": "BBTN",
+              "n_quarters": 6,
+              "report_date": "2026-06-30"
+            },
+            "credits": 0,
+            "cached": true,
+            "fetchedAt": "2026-10-08T09:25:05.449+00:00",
+            "label": "Laba BBTN 2025-06-30",
+            "value": 1706389000000,
+            "unit": "IDR"
+          }
+        ],
+        "hypothesisRuns": [],
+        "verdicts": [
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1",
+            "verdict": "supported",
+            "computed": {
+              "value": 0.4078,
+              "unit": "%",
+              "evidenceId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c1:pertumbuhan-laba-yoy-bbtn"
+            },
+            "missingContext": [],
+            "explanation": "Klaim mengenai pertumbuhan laba BBTN terbukti sesuai dengan data laporan keuangan. Laba bersih BBTN per 30 Juni 2025 tercatat sebesar Rp1.706.389.000.000, kemudian mengalami peningkatan menjadi Rp2.402.212.000.000 per 30 Juni 2026. Kenaikan tersebut menunjukkan adanya pertumbuhan laba year-over-year (YOY) sebesar 40,78%.",
+            "evidenceIds": [
+              "88cc4b59-11df-461b-87eb-b69e51d62a55-c1:pertumbuhan-laba-yoy-bbtn",
+              "88cc4b59-11df-461b-87eb-b69e51d62a55-c1:laba-bbtn-2026-06-30",
+              "88cc4b59-11df-461b-87eb-b69e51d62a55-c1:laba-bbtn-2025-06-30"
+            ]
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c2",
+            "verdict": "unverifiable",
+            "missingContext": [],
+            "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Klaim ini menyebut nilai laba, bukan persentase pertumbuhan; pemeriksaan saat ini membandingkan pertumbuhan YoY atau QoQ.",
+            "evidenceIds": []
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3",
+            "verdict": "supported",
+            "computed": {
+              "value": 0.4078,
+              "unit": "%",
+              "evidenceId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c3:pertumbuhan-laba-yoy-bbtn"
+            },
+            "missingContext": [],
+            "explanation": "Klaim mengenai pertumbuhan laba BBTN terbukti sesuai dengan data laporan keuangan. Laba bersih BBTN meningkat dari Rp1706389000000 pada tanggal 30 Juni 2025 menjadi Rp2402212000000 pada tanggal 30 Juni 2026. Berdasarkan data historis tersebut, pertumbuhan laba tahun ke tahun (YOY) untuk BBTN tercatat sebesar 40,78%.",
+            "evidenceIds": [
+              "88cc4b59-11df-461b-87eb-b69e51d62a55-c3:pertumbuhan-laba-yoy-bbtn",
+              "88cc4b59-11df-461b-87eb-b69e51d62a55-c3:laba-bbtn-2026-06-30",
+              "88cc4b59-11df-461b-87eb-b69e51d62a55-c3:laba-bbtn-2025-06-30"
+            ]
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c4",
+            "verdict": "unverifiable",
+            "missingContext": [],
+            "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan.",
+            "evidenceIds": []
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c5",
+            "verdict": "unverifiable",
+            "missingContext": [],
+            "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan.",
+            "evidenceIds": []
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c6",
+            "verdict": "unverifiable",
+            "missingContext": [],
+            "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan.",
+            "evidenceIds": []
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c7",
+            "verdict": "unverifiable",
+            "missingContext": [],
+            "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Metrik ini memerlukan data khusus dan tidak boleh dibandingkan dengan total laba atau pendapatan.",
+            "evidenceIds": []
+          },
+          {
+            "claimId": "88cc4b59-11df-461b-87eb-b69e51d62a55-c8",
+            "verdict": "unverifiable",
+            "missingContext": [],
+            "explanation": "Data atau konteks yang tersedia belum cukup untuk memeriksa klaim ini secara lengkap. Periode historis klaim ini belum didukung oleh sumber pembanding yang digunakan.",
+            "evidenceIds": []
+          }
+        ],
+        "creditsUsed": 0,
+        "finishedAt": "2026-10-08T09:37:01.172Z"
+      }
+    }
+  ]
+}

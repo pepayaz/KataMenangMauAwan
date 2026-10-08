@@ -129,6 +129,7 @@ export async function executeHypotheses(input: Claim, initialEvidence: readonly 
 export async function huntContext(claim: Claim, evidence: readonly Evidence[], options: {
   registry: HypothesisRegistry; llm: Pick<LlmAdapter, 'generate'>; gateway: HunterToolGateway;
 }): Promise<HunterOutput> {
+  if (options.registry.size === 0) return { ...await executeHypotheses(claim, evidence, [], options.registry, options.gateway), selectionSource: 'fallback' };
   let selection: HypothesisSelection[];
   let selectionSource: 'llm' | 'fallback' = 'llm';
   try {

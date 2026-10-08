@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { z } from 'zod';
-import { AssertedUnitSchema, ClaimSchema, ClaimTypeSchema, EntitySchema, extractNumbers,
+import { literalBound, resolveAnnualFinancialRatio, parseFinancialPeriod, lastFinancialPeriod, AssertedUnitSchema, ClaimSchema, ClaimTypeSchema, EntitySchema, extractNumbers,
   type Claim, type Entity } from '@cek-dulu/shared';
 import { LlmAdapter } from './llm.js';
 
@@ -57,7 +57,7 @@ export function flowMetric(metric: string, quote: string): string {
  * menentukan; angka bertanda eksplisit (+/-) tidak diubah.
  */
 export function directionSign(quote: string, numberStart: number, raw: string): 1 | -1 {
-  if (/^[+\-−]/.test(raw.trim())) return 1;
+  if (/^[+\-âˆ’]/.test(raw.trim())) return 1;
   const before = quote.slice(0, numberStart);
   const last = (pattern: RegExp) => Math.max(-1, ...[...before.matchAll(pattern)].map((m) => m.index));
   const decline = last(DECLINE), rise = last(RISE);
@@ -112,18 +112,39 @@ export function validateExtractedClaims(
       rejected.push({ candidateIndex, reason, ...(ticker ? { ticker } : {}) });
     };
     const hint = candidate.span;
-    if (!Number.isInteger(hint.start) || !Number.isInteger(hint.end) || hint.start < 0 || hint.end <= hint.start || hint.end > text.length) {
-      reject('INVALID_SPAN'); continue;
-    }
-    const anchored = anchorQuote(text, candidate.quote, hint.start);
+    // Offsets are hints. A unique literal quote safely repairs even an out-of-range hint.
+    const validHint = Number.isInteger(hint.start) && Number.isInteger(hint.end) && hint.start >= 0 && hint.end > hint.start && hint.end <= text.length;
+    const uniqueQuote = candidate.quote.length > 0 && text.indexOf(candidate.quote) >= 0 && text.indexOf(candidate.quote) === text.lastIndexOf(candidate.quote);
+    if (!validHint && !uniqueQuote) { reject('INVALID_SPAN'); continue; }
+    const anchored = anchorQuote(text, candidate.quote, validHint ? hint.start : 0);
     if (!anchored) { reject('INVALID_QUOTE'); continue; }
     const { start, end } = anchored;
     const quote = text.slice(start, end);
     if (candidate.tickers.length === 0) { reject('NO_TICKER'); continue; }
     const asserted = candidate.asserted;
-    // Periode boleh ditulis di judul atau awal kalimat yang sama, tetapi tetap harus literal.
+    const transition = /(?:dari|from)\s+[^\n;]+?\s+(?:ke|to|menjadi)\s+/i.test(quote);
+    // A single report label also applies to its preceding summary in the same paragraph.
+    const paragraphBoundary = text.lastIndexOf('\n\n', start);
+    const paragraphStart = paragraphBoundary < 0 ? 0 : paragraphBoundary + 2;
+    const nextBoundary = text.indexOf('\n\n', end);
+    const paragraph = text.slice(paragraphStart, nextBoundary < 0 ? text.length : nextBoundary);
+    const lastLabel = lastFinancialPeriod(paragraph);
+    const uniqueLabel = lastLabel && !lastFinancialPeriod(paragraph.slice(0, paragraph.lastIndexOf(lastLabel))) ? lastLabel : undefined;
+    let inheritedPeriod = new Set(entities.map(entity => entity.ticker)).size === 1 && candidate.type === 'earnings_growth'
+      ? lastFinancialPeriod(text.slice(paragraphStart, end)) ?? uniqueLabel : undefined;
+    // A unique graph date applies to repeated valuation statements in this single-stock paragraph.
+    if (candidate.type === 'valuation' && new Set(entities.map(entity => entity.ticker)).size === 1) {
+      const dates = [...new Set([...paragraph.matchAll(/\b(?:\d{1,2}\s+(?:Jan(?:uari)?|Feb(?:ruari)?|Mar(?:et)?|Apr(?:il)?|Mei|Jun(?:i)?|Jul(?:i)?|Agu(?:stus)?|Sep(?:tember)?|Okt(?:ober)?|Nov(?:ember)?|Des(?:ember)?)\s+\d{4}|\d{4}-\d{2}-\d{2})\b/gi)].map(match => match[0]))];
+      if (dates.length === 1) inheritedPeriod = dates[0];
+    }
     const context = text.slice(sentenceStart(text, start), end);
-    if ([asserted.window, asserted.period].some((period) => period !== null && (period.trim() === '' || !context.includes(period)))) {
+    const normalizedPeriod = asserted.period && parseFinancialPeriod(asserted.period);
+    const literalPeriod = inheritedPeriod && parseFinancialPeriod(inheritedPeriod);
+    const period = normalizedPeriod && literalPeriod && normalizedPeriod.reportDate === literalPeriod.reportDate
+      && normalizedPeriod.kind === literalPeriod.kind ? inheritedPeriod : normalizedPeriod && literalPeriod && normalizedPeriod.reportDate === literalPeriod.reportDate && literalPeriod.kind === 'ytd' ? inheritedPeriod : inheritedPeriod && /^(?:tahun lalu|yoy|year[ -]on[ -]year)$/i.test(asserted.period ?? '') ? inheritedPeriod : asserted.period ?? inheritedPeriod;
+    const periodContext = inheritedPeriod ? paragraph : context;
+    if ((asserted.window !== null && (asserted.window.trim() === '' || !periodContext.includes(asserted.window)))
+      || (period !== undefined && period !== null && (period.trim() === '' || !periodContext.includes(period)))) {
       reject('PERIOD_NOT_WRITTEN'); continue;
     }
     const numbers = extractNumbers(quote);
@@ -147,15 +168,16 @@ export function validateExtractedClaims(
       const claim = ClaimSchema.parse({
         claimId: `${checkId}-c${claims.length + 1}`, checkId, span: [start, end],
         ticker, type: candidate.type, inScope,
-        asserted: { metric: candidate.type === 'foreign_flow' ? flowMetric(asserted.metric, quote) : asserted.metric,
+        asserted: { metric: candidate.type === 'foreign_flow' ? flowMetric(asserted.metric, quote) : transition && !/\(level\)/i.test(asserted.metric) ? `${asserted.metric} (level)` : asserted.metric,
           ...(matching && !matching.ambiguous ? { value: (matching.unit === '%' ? matching.value : matching.normalized)
-            * (SIGNED_TYPES.has(candidate.type) ? directionSign(quote, matching.span[0], matching.raw) : 1) } : {}),
+            * (SIGNED_TYPES.has(candidate.type) && matching.unit === '%' && !transition && (!resolveAnnualFinancialRatio(asserted.metric) || /pertumbuhan|perubahan|growth|change/i.test(asserted.metric)) ? directionSign(quote, matching.span[0], matching.raw) : 1) } : {}),
           ...(asserted.unit !== null ? { unit: asserted.unit } : {}),
+          ...(matching && literalBound(quote.slice(Math.max(0, matching.span[0] - 30), matching.span[0])) ? { comparison: literalBound(quote.slice(Math.max(0, matching.span[0] - 30), matching.span[0])) } : {}),
           ...(asserted.window !== null ? { window: asserted.window } : {}),
-          ...(asserted.period !== null ? { period: asserted.period } : {}),
+          ...(period ? { period } : {}),
         },
       });
-      const fingerprint = JSON.stringify([claim.span, claim.ticker, claim.type, claim.asserted, claim.inScope]);
+      const fingerprint = JSON.stringify([claim.ticker, claim.type, claim.asserted.metric.toLowerCase().replace(/\s+/g, ' ').trim(), claim.asserted.value, claim.type === 'valuation' ? claim.asserted.unit ?? 'x' : claim.asserted.unit, claim.asserted.window, claim.asserted.period, claim.asserted.comparison, claim.inScope]);
       if (seen.has(fingerprint)) { reject('DUPLICATE_CLAIM', ticker); continue; }
       seen.add(fingerprint);
       claims.push(claim);

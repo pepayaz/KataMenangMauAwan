@@ -65,7 +65,7 @@ export function displayEvidenceValues(evidence: readonly Evidence[]): Array<{ ev
 }
 
 /** Wrapper B: hormati rencana tanggal router dan hitung per panggilan, bukan per Evidence. */
-function verifierClient(client: SectorsClient, plan: RoutePlan, onCredit: (credits: number) => void): SectorsClient {
+function verifierClient(client: SectorsClient, plan: RoutePlan, onCredit: (credits: number) => void, onSource: (source: Record<string, unknown>) => void, sharedCalls: Map<string, Promise<unknown>>): SectorsClient {
   return new Proxy(client, { get(target, property) {
     const value: unknown = Reflect.get(target, property, target);
     if (typeof value !== 'function') return value;
@@ -81,13 +81,22 @@ function verifierClient(client: SectorsClient, plan: RoutePlan, onCredit: (credi
       if (property === 'fetchQuarterlyFinancials' && calls.length) {
         const { symbol: _symbol, ...params } = calls[0]!.params; args[1] = params;
       }
+      const key = JSON.stringify([property, args]);
+      let pending = sharedCalls.get(key);
+      const owner = pending === undefined;
+      if (!pending) {
+        pending = Promise.resolve().then(() => Reflect.apply(value, target, args));
+        sharedCalls.set(key, pending);
+      }
       try {
-        const output: unknown = await Reflect.apply(value, target, args);
+        const output: unknown = await pending;
         const result = z.object({ credits: z.number().int().nonnegative(), cached: z.boolean() }).parse(output);
-        onCredit(result.credits);
-        return output;
+        if (owner) onCredit(result.credits);
+        onSource({ tool: property, params: calls[0]?.params ?? args[1], status: owner ? 'received' : 'reused', cached: owner ? result.cached : true, credits: owner ? result.credits : 0 });
+        return owner ? output : { ...structuredClone(output as Record<string, unknown>), credits: 0, cached: true };
       } catch (error) {
-        if (error instanceof SectorsError && error.code === 'NOT_FOUND') onCredit(1);
+        onSource({ tool: property, params: calls[0]?.params ?? args[1], status: 'failed', code: error instanceof SectorsError ? error.code : 'UNKNOWN' });
+        if (owner && error instanceof SectorsError && error.code === 'NOT_FOUND') onCredit(1);
         throw error;
       }
     };
@@ -130,11 +139,13 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
   }
   const prompt = deps.prompts?.explainer ?? await readFile(new URL('../prompts/explainer.md', import.meta.url), 'utf8');
   const enabled = new Set(enabledClaimTypes(deps.flags ?? {}));
+  const sharedCalls = new Map<string, Promise<unknown>>();
   const results: Array<{ verdict: ClaimVerdict; evidence: Evidence[]; hypotheses: CheckResult['hypothesisRuns']; credits: number }> = [];
   const processClaim = async (claim: Claim) => {
     deps.signal?.throwIfAborted();
     let credits = 0, reportedCredits = 0, evidence: Evidence[] = [], hypotheses: CheckResult['hypothesisRuns'] = [];
     let verdict: AdjudicatedVerdict;
+    const sourceCalls: Record<string, unknown>[] = [];
     // Alasan router tanpa angka, supaya penjelasan "tidak bisa diverifikasi" tidak generik.
     let reason: string[] = [];
     try {
@@ -143,28 +154,32 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
       await trace('route', 'Rencana verifikasi selesai.', plan);
       let verified: VerifierOutput = { evidence: [], matches: null, tolerance: '-', note: '' };
       // B valuation selalu memakai tahun terbaru; composition B hanya tahun kini.
-      const unsupportedPeriod = claim.type === 'valuation' && !!claim.asserted.period
-        || claim.type === 'accumulation' && plan.tools.filter((t) => t.tool === 'fetchShareholdersComposition').length > 1;
-      const canVerify = claim.inScope && plan.status === 'ready' && enabled.has(claim.type) && !unsupportedPeriod;
+      const unsupportedPeriod = claim.type === 'accumulation' && plan.tools.filter((t) => t.tool === 'fetchShareholdersComposition').length > 1;
+      const unsupportedBound = claim.asserted.comparison && !['dividend', 'valuation', 'earnings_growth'].includes(claim.type);
+      if (unsupportedBound) reason.push('Pemeriksaan batas untuk jenis metrik ini belum didukung; angka batas tidak diperlakukan sebagai nilai persis.');
+      const canVerify = !unsupportedBound && claim.inScope && plan.status === 'ready' && enabled.has(claim.type) && !unsupportedPeriod;
+      if (unsupportedPeriod) reason.push('Periode historis klaim ini belum didukung oleh sumber pembanding yang digunakan.');
       if (claim.inScope && plan.status === 'ready' && !enabled.has(claim.type)) reason = ['Pemeriksaan untuk jenis klaim ini belum diaktifkan.'];
       if (canVerify) {
         const verifier = deps.verifiers?.[claim.type] ?? VERIFIERS[claim.type];
         const windowCalls = plan.tools.filter((t) => typeof t.params.start === 'string' && typeof t.params.end === 'string');
         const window = windowCalls.length ? { start: windowCalls[0]!.params.start as string, end: windowCalls.at(-1)!.params.end as string } : undefined;
-        verified = verifierSchema.parse(await verifier(claim, { client: verifierClient(deps.client, plan, (cost) => { credits += cost; }),
+        verified = verifierSchema.parse(await verifier(claim, { client: verifierClient(deps.client, plan, (cost) => { credits += cost; }, source => { sourceCalls.push(source); }, sharedCalls),
           checkId: input.checkId, today, ...(window && claim.type === 'price_move' ? { window } : {}) }));
         evidence = normalizeVerifierEvidence(claim, verified.evidence);
+        if (verified.matches === null && verified.note && !/\d/.test(verified.note)) reason.push(verified.note);
         if (verified.computed && hasPercentagePoints(claim, verified.computed.unit))
           verified.computed = { ...verified.computed, value: verified.computed.value / 100 };
       }
       await trace('verify', 'Verifikasi angka selesai.', { claimId: claim.claimId,
-        status: canVerify ? 'verified' : claim.inScope ? 'needs_data_or_flag' : 'out_of_scope', unsupportedPeriod,
-        ...(canVerify && !evidence.length ? { pendingTools: plan.tools.map((call) => ({ call,
+        status: canVerify ? verified.matches === null ? 'missing_evidence' : 'compared' : claim.inScope ? 'needs_data_or_flag' : 'out_of_scope', unsupportedPeriod,
+        note: verified.note || reason.join(' '), coverage: verified.details?.coverage ?? (!canVerify && claim.inScope ? { status: plan.status === 'unsupported' ? 'VERIFIER_UNAVAILABLE' : 'CONFIGURATION_OR_PERIOD', metric: claim.asserted.metric, requestedPeriod: claim.asserted.period, sourceQueried: false, reason: reason.join(' ') } : undefined), sourceCalls,
+        ...(canVerify && !evidence.length && sourceCalls.some(source => source.code === 'CACHE_MISS' || source.code === 'REPLAY_MISS') ? { pendingTools: plan.tools.map((call) => ({ call,
           estimatedCredits: estimateCredits(call.tool as EndpointName, call.params) })) } : {}),
         evidenceIds: evidence.map((e) => e.evidenceId) }, credits);
       reportedCredits = credits;
       let hunterCredits = 0;
-      if (canVerify && typeof verified.matches === 'boolean') {
+      if (canVerify && typeof verified.matches === 'boolean' && !(claim.type === 'valuation' && claim.asserted.period)) {
         try {
           const registry = deps.registry?.(claim, today) ?? createHypothesisRegistry(claim, { today });
           const gateway = deps.hunterGateway?.(claim) ?? createSectorsHunterGateway(deps.client, today);
@@ -189,18 +204,23 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
         }
       } else await trace('hunt', 'Pemeriksaan konteks tidak memerlukan panggilan.', { claimId: claim.claimId });
       verdict = adjudicate(claim, { ...verified, evidence }, hypotheses);
-    } catch {
-      await trace('error', 'Klaim ini tidak dapat diselesaikan; klaim lain tetap diproses.', { claimId: claim.claimId, code: 'CLAIM_FAILED' }, credits - reportedCredits);
+    } catch (error) {
+      if (error instanceof SectorsError) reason.push({ UNAUTHORIZED: 'Konfigurasi akses Sectors belum valid.', RATE_LIMIT: 'Batas permintaan Sectors tercapai.', BUDGET_EXCEEDED: 'Anggaran kredit pemeriksaan tercapai sebelum data dapat dibaca.', NETWORK: 'Koneksi ke Sectors gagal.', SERVER_ERROR: 'Sectors mengalami gangguan server.', BAD_REQUEST: 'Permintaan periode atau parameter ditolak oleh Sectors.', NOT_FOUND: 'Sectors tidak menemukan sumber untuk parameter klaim.', CACHE_MISS: 'Data belum tersimpan pada mode cache.', REPLAY_MISS: 'Rekaman data untuk klaim belum tersedia.' }[error.code]);
+      await trace('error', 'Klaim ini tidak dapat diselesaikan; klaim lain tetap diproses.', { claimId: claim.claimId, code: 'CLAIM_FAILED', sourceCalls }, credits - reportedCredits);
       verdict = adjudicate(claim, { evidence, matches: null, tolerance: '-' }, []);
     }
     verdict.missingContext = verdict.missingContext.map((context) => ({ ...context, summary: isOutputAllowed(context.summary)
       && validateGrounding(context.summary, evidence.filter((e) => context.evidenceIds.includes(e.evidenceId))).ok
       ? context.summary : 'Ada konteks penting yang didukung data pembanding.' }));
     await trace('adjudicate', 'Status klaim ditentukan oleh aturan.', { claimId: claim.claimId, verdict: verdict.verdict });
-    const template = [deterministicExplanation(verdict), ...(verdict.verdict === 'unverifiable' ? reason : [])].join(' ');
     const displayEvidence = displayEvidenceValues(evidence);
+    const primary = displayEvidence.find(item => item.evidenceId === verdict.computed?.evidenceId);
+    const template = [deterministicExplanation(verdict), ...(primary ? [`Pembanding: ${primary.text}.`] : []), ...(verdict.verdict === 'unverifiable' ? reason : [])].join(' ');
     let usedTemplate = false;
-    const explanation = await withGrounding(async (feedback) => {
+    // Nominal dividend explanations do not reinterpret ex/event dates as payment dates.
+    const noEvidence = (verdict.verdict === 'unverifiable' && evidence.length === 0) || (claim.type === 'dividend' && claim.asserted.unit === 'IDR');
+    if (noEvidence) usedTemplate = true;
+    const explanation = noEvidence ? template : await withGrounding(async (feedback) => {
       try {
         const written = await deps.llm.generate({ schema: explanationSchema, name: 'claim_explanation', prompt,
           signal: deps.signal, input: JSON.stringify({ claimType: claim.type, verdict, displayEvidence, feedback,
