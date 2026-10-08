@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ExternalLink, Search, X } from 'lucide-react';
 import type { Claim, ClaimVerdict, Evidence } from '@cek-dulu/shared/schemas';
-import { formatEvidence, readableSourceText } from '../lib/check-view';
+import { formatEvidence, readableSourceText, readableToolName } from '../lib/check-view';
 import { sourceCharts } from '../lib/report-presentation';
 import SourceChart from './source-chart';
 import VerdictBadge from './verdict-badge';
@@ -13,7 +13,7 @@ function EvidenceDetails({ record, demo }: { record: Evidence; demo: boolean }) 
   const params = { ...(hunter && typeof hunter === 'object' && !Array.isArray(hunter) ? hunter : {}), ...record.params };
   return <dl><div><dt>Nilai lengkap</dt><dd>{formatEvidence(record, 20)}</dd></div>
     <div><dt>Diambil</dt><dd>{new Date(record.fetchedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' })} WIB</dd></div>
-    <div><dt>Asal</dt><dd>{demo || record.tool.startsWith('fixture:') ? 'Fixture contoh, bukan data pasar terkini' : record.cached ? 'Sectors · data tersimpan' : 'Sectors API'}</dd></div>
+    <div><dt>Asal</dt><dd>{demo || record.tool.startsWith('fixture:') ? 'Data contoh, bukan data pasar terkini' : `Sectors · ${readableToolName(record.tool)}`}</dd></div>
     {Object.entries(params).filter(([key, value]) => key in sourceParamLabels && (typeof value === 'string' || typeof value === 'number')).map(([key, value]) => <div key={key}><dt>{sourceParamLabels[key]}</dt><dd>{readableSourceText(String(value))}</dd></div>)}
   </dl>;
 }

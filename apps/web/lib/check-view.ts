@@ -38,6 +38,39 @@ export function formatEvidence(evidence: Pick<Evidence, 'value' | 'unit'>, maxim
   return evidence.unit === 'IDR' ? `Rp${text}` : `${text}${evidence.unit === 'x' ? '×' : evidence.unit ? ` ${evidence.unit}` : ''}`;
 }
 
+/** Mengubah nama alat internal menjadi nama sumber yang layak ditampilkan. */
+export function readableToolName(tool: string): string {
+  const labels: Record<string, string> = {
+    fetchCompanyReport: 'Laporan perusahaan',
+    fetchQuarterlyFinancials: 'Laporan keuangan kuartalan',
+    fetchQuarterlyFinancialDates: 'Jadwal laporan keuangan',
+    fetchDailyPrice: 'Harga dan transaksi harian',
+    fetchForeignFlow: 'Arus dana asing',
+    fetchCorporateActions: 'Aksi korporasi',
+    fetchShareholdersComposition: 'Komposisi pemegang saham',
+    fetchFreeFloat: 'Saham publik',
+    fetchBrokerSummary: 'Ringkasan transaksi broker',
+    fetchSuspensions: 'Informasi suspensi',
+    fetchListingPerformance: 'Kinerja sejak pencatatan',
+    fetchCompanies: 'Daftar perusahaan',
+  };
+  return labels[tool] ?? 'Data pendukung';
+}
+
+/** Nama tipe klaim untuk UI; nilai kontrak tetap memakai identifier internal. */
+export function readableClaimType(type: string): string {
+  const labels: Record<string, string> = {
+    valuation: 'Valuasi',
+    dividend: 'Dividen',
+    price_move: 'Pergerakan harga',
+    earnings_growth: 'Pertumbuhan laba',
+    foreign_flow: 'Arus dana asing',
+    accumulation: 'Akumulasi',
+    safety: 'Risiko saham',
+  };
+  return labels[type] ?? 'Klaim saham';
+}
+
 /** Present documented fixture field names as prose without changing evidence or values. */
 export function readableSourceText(text: string): string {
   const labels: Record<string, string> = {
@@ -53,8 +86,10 @@ export function readableSourceText(text: string): string {
     'dividend.avg_period': 'Periode rata-rata dividen', 'dividend.cash_payout_ratio': 'Rasio pembayaran dividen terhadap kas',
     'dividend.total': 'Total dividen', 'dividend.payment': 'Pembayaran dividen',
     'dividend.year_coverage': 'Ketersediaan data dividen', 'dividend.actions_coverage': 'Ketersediaan aksi korporasi dividen',
-    'valuation.year': 'Tahun valuasi', 'valuation.pe': 'PER', 'valuation.pb': 'PBV', 'valuation.peg': 'PEG',
-    'peer.pe': 'PER pembanding', 'daily.close': 'Harga penutupan', 'daily.volume': 'Volume transaksi',
+    'valuation.year': 'Tahun data', 'valuation.pe': 'Rasio harga terhadap laba (PER)',
+    'valuation.pb': 'Rasio harga terhadap nilai buku (PBV)',
+    'valuation.peg': 'Rasio harga terhadap pertumbuhan laba (PEG)',
+    'peer.pe': 'PER perusahaan pembanding', 'daily.close': 'Harga penutupan', 'daily.volume': 'Volume transaksi',
   };
   const [metric, ...context] = text.split(' ');
   return metric && metrics[metric] ? [metrics[metric], ...context].join(' ') : text;

@@ -1,6 +1,6 @@
 import type { CheckSource, ClaimType, Verdict } from '@cek-dulu/shared/schemas';
 import { cleanText } from '../../../packages/agent/src/clean-text';
-import { formatEvidence, readableSourceText, verdictLabels, type HistoryItem } from './check-view';
+import { formatEvidence, readableSourceText, readableToolName, verdictLabels, type HistoryItem } from './check-view';
 import { comparisonFor, contextTitles, verdictSummaries } from './report-presentation';
 
 /**
@@ -93,7 +93,7 @@ export function buildReportDocument(item: HistoryItem): ReportDocument {
       evidence: evidence.map(record => ({
         label: readableSourceText(record.label).replace(/[.\s]+$/, ''),
         value: formatEvidence(record),
-        source: `Sectors ${record.tool} · ${record.cached ? 'cache' : 'langsung'} · ${dateOnly(record.fetchedAt)}`,
+        source: `Sectors · ${readableToolName(record.tool)} · ${dateOnly(record.fetchedAt)}`,
       })),
     };
   });
