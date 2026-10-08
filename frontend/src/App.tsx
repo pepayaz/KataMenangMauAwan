@@ -1086,13 +1086,35 @@ function VerdictSeal({ fixture }: { fixture?: DemoFixture }) {
 }
 
 function ActualTrace({ traces }: { traces: readonly TraceEvent[] }) {
-  return <div className="trace-summary-grid">{['normalize', 'extract', 'verify', 'hunt', 'adjudicate'].map(stage => {
-    const events = traces.filter(event => event.stage === stage);
-    const error = traces.find(event => event.stage === 'error');
-    const hasEvidence = stage !== 'verify' || events.some(event => Array.isArray((event.data as { evidenceIds?: unknown } | undefined)?.evidenceIds) && ((event.data as { evidenceIds: unknown[] }).evidenceIds.length > 0));
-    return <div key={stage}><span>{stage}</span>{events.length && hasEvidence ? <Check size={13} /> : <MinusCircle size={13} />}
-      <b>{events.length ? hasEvidence ? 'Dijalankan' : 'Belum ada bukti' : 'Belum dijalankan'}</b><small>{events.at(-1)?.message || (error ? 'Proses berhenti sebelum tahap ini.' : 'Tidak ada event backend.')}</small>{events.flatMap(traceDetails).map((detail, index) => <small key={index}>{detail}</small>)}</div>;
-  })}{traces.filter(event => event.stage === 'error').map((event, index) => <div key={`error-${index}`} role="alert"><AlertTriangle size={15} /><b>Proses terhenti</b><small>{event.message}</small></div>)}</div>;
+  const stages = [
+    { id: 'normalize', title: 'Kenali saham' },
+    { id: 'extract', title: 'Ambil klaim' },
+    { id: 'verify', title: 'Cek data' },
+    { id: 'hunt', title: 'Cari konteks' },
+    { id: 'adjudicate', title: 'Tentukan hasil' },
+  ];
+  const errors = traces.filter(event => event.stage === 'error');
+  return <>
+    <div className="trace-summary-grid">{stages.map((stage, index) => {
+      const events = traces.filter(event => event.stage === stage.id);
+      const hasEvidence = stage.id !== 'verify' || events.some(event => Array.isArray((event.data as { evidenceIds?: unknown } | undefined)?.evidenceIds) && ((event.data as { evidenceIds: unknown[] }).evidenceIds.length > 0));
+      const status = !events.length ? 'Belum dijalankan' : !hasEvidence ? 'Belum ada bukti' : 'Dijalankan';
+      return <div key={stage.id}><span>{String(index + 1).padStart(2, '0')}</span>
+        {events.length && hasEvidence ? <Check size={13} /> : <MinusCircle size={13} />}
+        <b>{stage.title}</b><small>{status}</small></div>;
+    })}</div>
+    {errors.map((event, index) => <p className="trace-error-note" role="alert" key={index}><AlertTriangle size={15} />{event.message}</p>)}
+    {traces.length > 0 && <details className="trace-detail-disclosure">
+      <summary>Detail teknis pemeriksaan</summary>
+      <div className="trace-detail-list">{stages.map(stage => {
+        const events = traces.filter(event => event.stage === stage.id);
+        if (!events.length) return null;
+        const details = [...new Set(events.flatMap(traceDetails))];
+        return <section key={stage.id}><b>{stage.title}</b><p>{events.at(-1)?.message}</p>
+          {details.length > 0 && <ul>{details.map(detail => <li key={detail}>{detail}</li>)}</ul>}</section>;
+      })}</div>
+    </details>}
+  </>;
 }
 
 export function ResultView({

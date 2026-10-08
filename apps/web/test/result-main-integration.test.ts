@@ -37,3 +37,19 @@ it('can switch between completed and interrupted reports without changing hook o
   view.rerender(createElement(ResultView, props));
   expect(screen.queryByText('Pemeriksaan terhenti.')).toBeNull();
 });
+
+it('keeps repeated backend diagnostics out of the compact stage cards', () => {
+  const traces: HistoryItem['traces'] = Array.from({ length: 20 }, (_, index) => ({
+    checkId: active.id, ts: active.createdAt, stage: 'verify', message: 'Verifikasi angka selesai.',
+    data: { evidenceIds: [], note: `Periode klaim ${index} belum tersedia.` },
+  }));
+  const { container } = render(createElement(ResultView, { ...props, active: { ...active, traces } }));
+  const grid = container.querySelector('.trace-summary-grid')!;
+  expect(grid.children).toHaveLength(5);
+  expect(grid.textContent).not.toContain('Periode klaim');
+  expect(grid.textContent).toContain('Cek data');
+  expect(grid.textContent).toContain('Belum ada bukti');
+  const disclosure = container.querySelector('details')!;
+  expect(disclosure.hasAttribute('open')).toBe(false);
+  expect(disclosure.textContent).toContain('Periode klaim 19 belum tersedia.');
+});
