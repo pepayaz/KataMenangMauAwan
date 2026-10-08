@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import type { CheckResult, TraceEvent } from '@cek-dulu/shared';
-import { readTickerChoices, type UiTickerChoice } from '../lib/ticker-choices';
+import { readTickerChoices, tickerSelections, type UiTickerChoice } from '../lib/ticker-choices';
 import { readCheckStream } from '../lib/check-stream';
 
 const labels = { supported: 'Sesuai data', refuted: 'Tidak sesuai data', misleading: 'Benar tapi menyesatkan',
@@ -19,7 +19,7 @@ export default function CheckForm({ fixtureDemo, demoText }: { fixtureDemo: bool
     event.preventDefault(); setChoices([]); setBusy(true); setTraces([]); setResult(null); setError('');
     try {
       const response = await fetch('/api/check', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, userSelections: Object.entries(selections).filter(([, ticker]) => ticker).map(([surface, ticker]) => ({ surface, ticker })), source: 'paste', demo }) });
+        body: JSON.stringify({ text, userSelections: tickerSelections(choices, selections), source: 'paste', demo }) });
       await readCheckStream(response, event => {
         if (event.kind === 'trace') {
           setTraces(previous => [...previous, event.value]);
@@ -41,20 +41,20 @@ export default function CheckForm({ fixtureDemo, demoText }: { fixtureDemo: bool
         Demo fixture offline (bukan cache API asli)
       </label>}
       {choices.length > 0 && <fieldset disabled={busy}>
-        <legend>Pilih saham yang dimaksud, lalu cek kembali</legend>
+        <legend>Konfirmasi saham (opsional)</legend>
         {choices.map(choice => <label key={choice.surface} style={{ display: 'block', margin: '1rem 0' }}>
           Sebutan “{choice.surface}”{' '}
           {choice.candidates.length ? <select aria-label={`Saham untuk ${choice.surface}`}
             value={selections[choice.surface] ?? ''}
             onChange={event => setSelections(previous => ({ ...previous, [choice.surface]: event.target.value }))}>
-            <option value="">Pilih saham</option>
+            <option value="">Lewati sebutan ini</option>
             {choice.candidates.map(candidate => <option key={candidate.ticker} value={candidate.ticker}>
               {candidate.ticker} — {candidate.label}
             </option>)}
           </select> : <span>Tidak ada kandidat. Perbaiki teks dengan kode saham yang benar.</span>}
         </label>)}
       </fieldset>}
-      <button disabled={busy || !text.trim() || choices.some(choice => !selections[choice.surface])} type="submit">{busy ? 'Memeriksa…' : 'Cek klaim'}</button>
+      <button disabled={busy || !text.trim()} type="submit">{busy ? 'Memeriksa…' : 'Cek klaim'}</button>
     </form>
     {demo && <p>Mode contoh · menggunakan data tersimpan · tanpa mengambil data baru.</p>}
     {error && <p role="alert">{error}</p>}

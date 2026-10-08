@@ -64,7 +64,7 @@ export function createFixtureTickerDirectory(options: {
 export const FUZZY_MIN_SCORE = 0.8;
 
 // Kata umum klaim bukan sebutan saham. Alias/explicit yang sudah cocok tetap didahulukan.
-const NON_ENTITY_WORDS = new Set(['bakal', 'akan', 'pasti', 'menurut', 'saya', 'harga', 'saham',
+const NON_ENTITY_WORDS = new Set(['bukan', 'massa', 'bakal', 'akan', 'pasti', 'menurut', 'saya', 'harga', 'saham',
   'dividen', 'yield', 'laba', 'rugi', 'naik', 'turun', 'tahun', 'bulan', 'hari', 'murah', 'mahal',
   'bank', 'utang', 'hutang', 'uang', 'satu', 'dua', 'tiga', 'pada', 'data', 'aset', 'main', 'cash', 'persen', 'miliar', 'triliun', 'setahun', 'sebulan', 'kuartal', 'aman', 'cuan', 'cuma', 'perusahaan']);
 
@@ -123,7 +123,10 @@ export async function normalizeText(raw: string, options: {
 
   // TODO(B): seed fuzzy mengenali token tunggal; caller dapat memberi surface multi-kata.
   const surfaces = options.unresolvedSurfaces ?? [...text.matchAll(/\b[\p{L}]{4,}\b/gu)].map((m) => m[0]);
-  for (const surface of new Set(surfaces)) {
+  const seenSurfaces = new Set<string>();
+  for (const surface of surfaces) {
+    if (seenSurfaces.has(key(surface))) continue;
+    seenSurfaces.add(key(surface));
     if (NON_ENTITY_WORDS.has(key(surface)) || !key(surface) || !haystack.includes(` ${key(surface)} `) || occupied.has(key(surface))) continue;
     // Jangan fuzzy-resolve kata di dalam alias panjang yang sudah diketahui.
     if (resolved.some((e) => ` ${key(e.surface)} `.includes(` ${key(surface)} `))) continue;
@@ -151,6 +154,9 @@ export async function normalizeText(raw: string, options: {
     const index = choices.findIndex(choice => key(choice.surface) === key(selection.surface));
     const choice = choices[index];
     // Hitung ulang kandidat dari teks/directory server, bukan percaya daftar kiriman UI.
+    // A previous UI may still show a common word now excluded from fuzzy search.
+    if (!choice && selection.ticker === null && NON_ENTITY_WORDS.has(key(selection.surface))
+      && haystack.includes(` ${key(selection.surface)} `)) continue;
     if (!choice) throw new UserTickerSelectionError();
     if (selection.ticker === null) { choices.splice(index, 1); continue; }
     if (!choice.candidates.some(candidate => candidate.ticker === selection.ticker))
