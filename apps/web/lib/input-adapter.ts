@@ -158,13 +158,17 @@ export async function adaptInputRequest(request: Request): Promise<InputAdaptati
 }
 /** Pesan per penyebab LLM; tanpa pesan mentah provider. */
 const LLM_FAILURE_MESSAGES: Partial<Record<LlmError['code'], string>> = {
+  TIMEOUT: 'Pembacaan oleh LLM melewati batas waktu. Coba lagi atau unggah potongan video yang lebih pendek.',
+  INVALID_OUTPUT: 'Pembaca LLM belum menghasilkan transkripsi yang valid. Coba lagi atau tempel teks klaim.',
+  INCOMPLETE: 'Jawaban pembaca LLM terpotong. Gunakan video lebih pendek atau tempel teks klaim.',
+  REFUSED: 'Layanan LLM menolak memproses input ini. Gunakan screenshot atau teks klaim.',
   QUOTA: 'Kuota layanan pembaca (LLM) sedang habis. Coba lagi nanti, atau tempel teks klaim secara manual.',
   UNAVAILABLE: 'Layanan pembaca (LLM) sedang sibuk. Coba lagi sebentar lagi, atau tempel teks klaim.',
   CONFIG: 'Pembaca screenshot/video belum dikonfigurasi di server. Tempel teks klaim secara manual.',
 };
 export function inputFailure(cause: unknown): Response {
   const llmMessage = cause instanceof LlmError ? LLM_FAILURE_MESSAGES[cause.code] : undefined;
-  return Response.json({ error: cause instanceof InputError ? cause.message
+  return Response.json({ code: cause instanceof LlmError ? `LLM_${cause.code}` : cause instanceof InputError ? 'INPUT_INVALID' : 'INPUT_UNAVAILABLE', error: cause instanceof InputError ? cause.message
     : llmMessage ?? 'Input belum dapat dibaca. Coba lagi, atau tempel teks klaim.' },
     { status: cause instanceof InputError ? cause.status : cause instanceof z.ZodError || cause instanceof SyntaxError ? 400 : 503,
       headers: { 'Cache-Control': 'no-store' } });

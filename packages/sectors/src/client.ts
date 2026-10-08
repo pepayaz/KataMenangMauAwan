@@ -359,14 +359,48 @@ export class SectorsClient {
     params: { report_date?: string; n_quarters?: number; approx?: boolean } = {},
     opts: CallOptions = {},
   ): Promise<ToolResult<T.QuarterlyFinancialItem[]>> {
-    const result = await this.call<T.QuarterlyFinancialItem[]>(
-      'fetchQuarterlyFinancials',
-      { symbol: normalizeTicker(symbol) },
-      { ...params },
-      opts,
-    );
-    // This endpoint supplies standalone quarterly income statements. Preserve explicit
-    // provider metadata if supplied; only earnings/revenue flow values are aggregated.
+    const endpoint = 'fetchQuarterlyFinancials' as const;
+    const normalized = normalizeTicker(symbol);
+    const allParams = { symbol: normalized, ...params };
+    // n_quarters means most recent quarters at Sectors, even when report_date is
+    // supplied. Historical windows must therefore request each exact quarter.
+    if (params.report_date && params.n_quarters !== undefined && this.mode === 'live') {
+      const count = params.n_quarters;
+      const end = new Date(`${params.report_date}T00:00:00Z`);
+      if (!Number.isInteger(count) || count < 1 || count > 40 || !Number.isFinite(end.getTime())
+        || !['03-31', '06-30', '09-30', '12-31'].includes(params.report_date.slice(5))) {
+        throw new SectorsError('BAD_REQUEST', 'Historical financial window requires a quarter-end date and 1-40 quarters.', { endpoint });
+      }
+      const key = cacheKey(endpoint, allParams);
+      const hit = opts.forceRefresh ? null : await this.cache.get(key);
+      const existing = hit && isFresh(hit) && Array.isArray(hit.response) ? hit.response as T.QuarterlyFinancialItem[] : [];
+      const dates = Array.from({ length: count }, (_, i) =>
+        new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1 - i * 3, 0)).toISOString().slice(0, 10));
+      const data: T.QuarterlyFinancialItem[] = [];
+      let credits = 0, cached = true;
+      const stamps: string[] = [];
+      for (const date of dates) {
+        const matches = existing.filter(row => row.date === date);
+        if (matches.length === 1) { data.push(matches[0]!); stamps.push(hit!.fetchedAt); continue; }
+        try {
+          const quarter = await this.call<T.QuarterlyFinancialItem[]>(endpoint, { symbol: normalized }, { report_date: date, approx: false }, opts);
+          credits += quarter.credits; cached &&= quarter.cached; stamps.push(quarter.fetchedAt);
+          // An approximate or unrelated returned date must never enter the window.
+          data.push(...quarter.data.filter(row => row.date === date));
+        } catch (error) {
+          if (!(error instanceof SectorsError) || error.code !== 'NOT_FOUND') throw error;
+          credits += 1; cached = false;
+        }
+      }
+      if (existing.length && cached) await this.ledger.record({ endpoint, params: allParams, credits: 0, cached: true,
+        checkId: opts.checkId ?? null, member: this.config.member, ts: new Date().toISOString() });
+      const fetchedAt = stamps.sort()[0] ?? new Date().toISOString();
+      if (data.length === count) await this.cache.set({ key, endpoint, params: allParams, response: data,
+        fetchedAt, ttlSeconds: ENDPOINTS[endpoint].ttlSeconds });
+      return { endpoint, params: allParams, credits, cached, fetchedAt,
+        data: data.map(row => ({ ...row, period_basis: row.period_basis ?? 'quarterly' })) };
+    }
+    const result = await this.call<T.QuarterlyFinancialItem[]>(endpoint, { symbol: normalized }, { ...params }, opts);
     return { ...result, data: result.data.map(row => ({ ...row, period_basis: row.period_basis ?? 'quarterly' })) };
   }
 
@@ -532,16 +566,17 @@ export class SectorsClient {
     params: { limit?: number; offset?: number; order_by?: string } = {},
     opts: CallOptions = {},
   ): Promise<ToolResult<T.CompaniesResponse>> {
-    return this.call<T.CompaniesResponse>(
+    const result = await this.call<T.CompaniesResponse & { results?: T.CompanyListItem[] }>(
       'fetchCompanies',
       {},
       {
-        limit: params.limit ?? 1000,
+        limit: params.limit ?? 200,
         offset: params.offset ?? 0,
         order_by: params.order_by ?? 'symbol',
       },
       opts,
     );
+    return { ...result, data: { ...result.data, companies: result.data.companies ?? result.data.results ?? [] } };
   }
 }
 

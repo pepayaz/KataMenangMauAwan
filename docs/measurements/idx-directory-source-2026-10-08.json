@@ -1,0 +1,102 @@
+[
+  {
+    "params": {
+      "limit": 200,
+      "offset": 0,
+      "order_by": "symbol"
+    },
+    "fetchedAt": "2026-10-08T10:40:44.81+00:00",
+    "cached": true,
+    "credits": 0,
+    "pagination": {
+      "limit": 200,
+      "offset": 0,
+      "showing": 200,
+      "has_next": true,
+      "next_offset": 200,
+      "total_count": 962,
+      "has_previous": false,
+      "previous_offset": null
+    }
+  },
+  {
+    "params": {
+      "limit": 200,
+      "offset": 200,
+      "order_by": "symbol"
+    },
+    "fetchedAt": "2026-10-08T10:41:19.712Z",
+    "cached": false,
+    "credits": 1,
+    "pagination": {
+      "total_count": 962,
+      "showing": 200,
+      "limit": 200,
+      "offset": 200,
+      "has_next": true,
+      "has_previous": true,
+      "next_offset": 400,
+      "previous_offset": 0
+    }
+  },
+  {
+    "params": {
+      "limit": 200,
+      "offset": 400,
+      "order_by": "symbol"
+    },
+    "fetchedAt": "2026-10-08T10:41:20.131Z",
+    "cached": false,
+    "credits": 1,
+    "pagination": {
+      "total_count": 962,
+      "showing": 200,
+      "limit": 200,
+      "offset": 400,
+      "has_next": true,
+      "has_previous": true,
+      "next_offset": 600,
+      "previous_offset": 200
+    }
+  },
+  {
+    "params": {
+      "limit": 200,
+      "offset": 600,
+      "order_by": "symbol"
+    },
+    "fetchedAt": "2026-10-08T10:41:20.455Z",
+    "cached": false,
+    "credits": 1,
+    "pagination": {
+      "total_count": 962,
+      "showing": 200,
+      "limit": 200,
+      "offset": 600,
+      "has_next": true,
+      "has_previous": true,
+      "next_offset": 800,
+      "previous_offset": 400
+    }
+  },
+  {
+    "params": {
+      "limit": 200,
+      "offset": 800,
+      "order_by": "symbol"
+    },
+    "fetchedAt": "2026-10-08T10:41:20.785Z",
+    "cached": false,
+    "credits": 1,
+    "pagination": {
+      "total_count": 962,
+      "showing": 162,
+      "limit": 200,
+      "offset": 800,
+      "has_next": false,
+      "has_previous": true,
+      "next_offset": null,
+      "previous_offset": 600
+    }
+  }
+]

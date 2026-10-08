@@ -8,3 +8,5 @@ Skrip ini menguji aplikasi yang sudah berjalan, tidak mengganti provider, flag, 
 - independent-reference.py menghitung jumlah dan pertumbuhan dari JSON sumber mentah menggunakan Python, tanpa verifier aplikasi.
 
 Hasil 8 Oktober 2026 ada pada docs/measurements/video-content-audit-2026-10-08.md. Jangan menganggap ready atau HTTP 200 sebagai bukti pemeriksaan berhasil; periksa entities, claims, trace error, sourceCalls, coverage, dan verdicts. Biaya Gemini belum diukur. Jangan menjalankan pengujian berbayar berulang tanpa kebutuhan.
+
+- fixed-replay.mts --execute menguji ulang transkripsi dan kandidat ekstraksi yang direkam sebelumnya dengan kode baru dan Sectors aktual. Tidak memanggil Gemini dan bukan pengujian ulang pembacaan video. Direktori dan normalisasi diuji untuk dua video yang belum menghasilkan kandidat; hasil verifikasi kedua video tersebut belum diulang.

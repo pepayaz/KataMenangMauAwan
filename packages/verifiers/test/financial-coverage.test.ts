@@ -123,3 +123,20 @@ it.each([
   expect(out.matches).toBe(true); expect(out.computed?.value).toBeCloseTo(value * 100);
   expect(out.details?.coverage).toMatchObject({ field: `financials.historical_financial_ratio.${group}.${field}` });
 });
+
+describe('nine-month flows',()=>{
+ it('sums three standalone quarters, and compares the same nine months last year',async()=>{
+  const source=[{date:'2025-09-30',earnings:130},{date:'2025-06-30',earnings:110},{date:'2025-03-31',earnings:90},{date:'2024-12-31',earnings:999},{date:'2024-09-30',earnings:100},{date:'2024-06-30',earnings:100},{date:'2024-03-31',earnings:100}];
+  const client=seededClient([{endpoint:'fetchQuarterlyFinancials',params:{symbol:'UNVR',n_quarters:7,report_date:'2025-09-30'},response:source}]);
+  const c=makeClaim('earnings_growth','UNVR',{metric:'laba bersih',value:10,unit:'%',period:'hingga kuartal tiga 2025'});
+  const out=await verifyEarningsGrowth(c,ctx(client));
+  expect(out.matches).toBe(true);expect(out.computed?.value).toBe(10);
+  expect(out.evidence.map(e=>e.value)).toContain(330);
+  expect(out.evidence.map(e=>e.value)).toContain(300);
+ });
+ it('uses explicit cumulative Q3 once, never sums it with Q1 and Q2',async()=>{
+  const client=seededClient([{endpoint:'fetchQuarterlyFinancials',params:{symbol:'UNVR',n_quarters:7,report_date:'2025-09-30'},response:[{date:'2025-09-30',earnings:330,period_basis:'cumulative'},{date:'2024-09-30',earnings:300,period_basis:'cumulative'}]}]);
+  const out=await verifyEarningsGrowth(makeClaim('earnings_growth','UNVR',{metric:'laba bersih',value:10,unit:'%',period:'9M 2025'}),ctx(client));
+  expect(out.computed?.value).toBe(10);expect(out.matches).toBe(true);
+ });
+});

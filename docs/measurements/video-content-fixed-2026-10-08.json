@@ -1,0 +1,78 @@
+{
+  "startedAt": "2026-10-08T10:48:09.637638+00:00",
+  "base": "http://localhost:3024",
+  "cases": [
+    {
+      "id": "unvr-news",
+      "title": "UNVR: berita dividen dan laba 2025",
+      "url": "https://www.tiktok.com/@idxchannel/video/7581460698346097936",
+      "startedAt": "2026-10-08T10:48:17.587463+00:00",
+      "transcriptReview": "No manual correction; automatic transcript tested as returned. Independent video fidelity not established.",
+      "input": {
+        "httpStatus": 503,
+        "seconds": 7.752,
+        "body": {
+          "code": "LLM_QUOTA",
+          "error": "Kuota layanan pembaca (LLM) sedang habis. Coba lagi nanti, atau tempel teks klaim secara manual."
+        }
+      },
+      "failure": "INPUT_NOT_READY"
+    },
+    {
+      "id": "bbtn-h1",
+      "title": "BBTN: laporan semester I 2026",
+      "url": "https://www.tiktok.com/@olivia.louise04/video/7664241348140272917",
+      "startedAt": "2026-10-08T10:48:25.342802+00:00",
+      "transcriptReview": "No manual correction; automatic transcript tested as returned. Independent video fidelity not established.",
+      "input": {
+        "httpStatus": 503,
+        "seconds": 8.333,
+        "body": {
+          "code": "LLM_QUOTA",
+          "error": "Kuota layanan pembaca (LLM) sedang habis. Coba lagi nanti, atau tempel teks klaim secara manual."
+        }
+      },
+      "failure": "INPUT_NOT_READY"
+    },
+    {
+      "id": "dividend-yield",
+      "title": "Saham nonbank: dividend yield",
+      "url": "https://www.tiktok.com/@olivia.louise04/video/7663503114313534740",
+      "startedAt": "2026-10-08T10:48:33.678494+00:00",
+      "transcriptReview": "No manual correction; automatic transcript tested as returned. Independent video fidelity not established.",
+      "input": {
+        "httpStatus": 503,
+        "seconds": 5.962,
+        "body": {
+          "code": "LLM_QUOTA",
+          "error": "Kuota layanan pembaca (LLM) sedang habis. Coba lagi nanti, atau tempel teks klaim secara manual."
+        }
+      },
+      "failure": "INPUT_NOT_READY"
+    },
+    {
+      "id": "financial-quality",
+      "title": "Kualitas perusahaan dan dividen",
+      "url": "https://www.tiktok.com/@olivia.louise04/video/7669806798244744469",
+      "startedAt": "2026-10-08T10:48:39.642593+00:00",
+      "transcriptReview": "No manual correction; automatic transcript tested as returned. Independent video fidelity not established.",
+      "input": {
+        "httpStatus": 503,
+        "seconds": 19.866,
+        "body": {
+          "code": "LLM_QUOTA",
+          "error": "Kuota layanan pembaca (LLM) sedang habis. Coba lagi nanti, atau tempel teks klaim secara manual."
+        }
+      },
+      "failure": "INPUT_NOT_READY"
+    }
+  ],
+  "health": {
+    "ok": true,
+    "mode": "live",
+    "database": "supabase",
+    "pipeline": "agent",
+    "fixtureDemo": false,
+    "llmConfigured": true
+  }
+}

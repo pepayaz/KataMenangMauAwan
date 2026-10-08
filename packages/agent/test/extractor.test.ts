@@ -306,3 +306,22 @@ describe('video BBTN regression', () => {
   });
 
 });
+
+describe('video period and repeated claims regressions',()=>{
+ it('inherits graph date and removes duplicate PBV at different spans',()=>{
+  const text='Current Price to Book Value 19 Jul 2026 0,47x\nvaluasi BTN PBV 0,47x';
+  const quotes=['Current Price to Book Value 19 Jul 2026 0,47x','valuasi BTN PBV 0,47x'];
+  const candidates=quotes.map(quote=>candidate(quote,{type:'valuation',tickers:['BBTN'],asserted:{metric:'PBV',value:0.47,unit:'x',window:null,period:null}}));
+  const out=validateExtractedClaims(text,[{surface:'BBTN',ticker:'BBTN',confidence:0.95,method:'explicit'}],candidates,'video');
+  expect(out.claims).toHaveLength(1);
+  expect(out.claims[0]?.asserted.period).toBe('19 Jul 2026');
+  expect(out.rejected.some(x=>x.reason==='DUPLICATE_CLAIM')).toBe(true);
+ });
+ it('retains cumulative prefix when the LLM supplies only Q3',()=>{
+  const text='UNVR laba bersih Rp3,33 triliun hingga kuartal tiga 2025. Penjualan Rp27,61 triliun.';
+  const quote='Penjualan Rp27,61 triliun';
+  const c=candidate(quote,{type:'earnings_growth',tickers:['UNVR'],asserted:{metric:'penjualan bersih',value:27.61,unit:'IDR',window:null,period:'kuartal tiga 2025'}});
+  const out=validateExtractedClaims(text,[{surface:'UNVR',ticker:'UNVR',confidence:0.95,method:'explicit'}],[c],'video');
+  expect(out.claims[0]?.asserted.period).toBe('hingga kuartal tiga 2025');
+ });
+});

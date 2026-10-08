@@ -372,3 +372,17 @@ it('shares an identical Sectors request across claims and counts live credits on
   expect(result.claims).toHaveLength(2); expect(result.creditsUsed).toBe(1); expect(fetchReport).toHaveBeenCalledTimes(1);
   expect(test.traces.some(event => event.stage === 'verify' && (event.data as { sourceCalls?: Array<{ status: string }> }).sourceCalls?.some(source => source.status === 'reused'))).toBe(true);
 });
+
+describe('numeric explanations without reinterpreted dates',()=>{
+ it('explains nominal dividends without generating payment dates',async()=>{
+  const text='ADRO dividen Rp87 per saham';
+  const c={...candidate(text),type:'dividend' as const,asserted:{metric:'dividen per saham',value:87,unit:'IDR' as const,period:null,window:null}};
+  const test=setup(text,[c]);
+  test.deps.registry=()=>new Map();
+  test.deps.verifiers={dividend:async claim=>({evidence:[ev(claim,87,'IDR')],computed:{value:87,unit:'IDR',evidenceId:ev(claim).evidenceId},matches:true,tolerance:'2%',note:''})};
+  const out=await test.run();
+  expect(out.verdicts[0]?.explanation).toContain('Rp87');
+  expect(out.verdicts[0]?.explanation).not.toMatch(/dibayarkan|pembayaran/);
+  expect(test.requests.some(r=>r.format.name==='claim_explanation')).toBe(false);
+ });
+});

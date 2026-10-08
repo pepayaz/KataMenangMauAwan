@@ -129,10 +129,10 @@ export function dividendAmountBases(dividend: DividendSection, ticker: string, p
     if (!inPeriod) continue;
     for (const payment of row.breakdown ?? []) {
       if (typeof payment.total !== 'number' || !Number.isFinite(payment.total)) continue;
-      out.push({ kind: 'payment', label: `Dividen per saham ${ticker} ${payment.date}`, value: payment.total, date: payment.date });
+      out.push({ kind: 'payment', label: `Dividen per saham ${ticker}; tanggal data ${payment.date} (bukan tanggal pembayaran)`, value: payment.total, date: payment.date });
     }
     if ((!Number.isFinite(year) || rowYear === year) && typeof row.total_dividend === 'number' && Number.isFinite(row.total_dividend)) {
-      out.push({ kind: 'year_total', label: `Total dividen per saham ${ticker} ${rowYear}`, value: row.total_dividend, year: rowYear });
+      out.push({ kind: 'year_total', label: `Total dividen per saham ${ticker} pada tahun kalender ${rowYear} (bukan total tahun buku)`, value: row.total_dividend, year: rowYear });
     }
   }
   if (!Number.isFinite(year) && typeof dividend.dividend_ttm === 'number' && Number.isFinite(dividend.dividend_ttm)) {
@@ -156,7 +156,7 @@ function verifyDividendAmount(claim: Claim, report: Parameters<typeof makeEviden
   const tol = describeRelative(DIVIDEND_AMOUNT_TOLERANCE);
   const claimed = claim.asserted.value!;
   if (claimed > MAX_DIVIDEND_PER_SHARE_IDR) {
-    return unverifiable('Sectors hanya menyediakan dividen per saham; total nilai dividen perusahaan tidak dapat diverifikasi.', tol);
+    return unverifiable('Sumber dividen yang diperiksa memuat nominal per saham, bukan total pembayaran perusahaan. Total dividen perusahaan belum dapat diverifikasi dari sumber ini.', tol);
   }
   const bases = dividendAmountBases(dividend, claim.ticker, claim.asserted.period);
   if (!bases.length) {

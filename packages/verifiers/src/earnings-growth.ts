@@ -1,4 +1,4 @@
-import { parseFinancialPeriod, resolveFinancialMetric, resolveAnnualFinancialRatio, financialField, type Claim, type FinancialPeriod } from '@cek-dulu/shared';
+import { parseFinancialPeriod, financialQuarterEnds, resolveFinancialMetric, resolveAnnualFinancialRatio, financialField, type Claim, type FinancialPeriod } from '@cek-dulu/shared';
 import { verifyFinancialRatio } from './financial-ratio.js';
 import type { QuarterlyFinancialItem } from '@cek-dulu/sectors';
 import { SectorsError, isMissingData } from '@cek-dulu/sectors';
@@ -98,19 +98,19 @@ export function computeGrowth(
 /** Semester totals need an explicitly identified data basis; never assume quarter vs YTD. */
 export function computeSemesterGrowth(rows: QuarterlyFinancialItem[], metric: GrowthMetric, period: FinancialPeriod): GrowthResult | null {
   const total = (year: number): number | null => {
-    const ending = `${year}-${period.q === 2 ? '06-30' : '12-31'}`;
+    const ending = `${year}${period.reportDate.slice(4)}`;
     const end = rows.filter(row => row.date === ending);
     if (end.length !== 1) return null;
     const basis = end[0]!.period_basis;
     if (basis === 'cumulative') {
       const value = numeric(end[0]!, metric);
-      if (period.q === 2 || period.kind === 'year') return value;
+      if (period.kind !== 'semester' || period.q === 2) return value;
       const first = rows.filter(row => row.date === `${year}-06-30` && row.period_basis === basis);
       const before = first.length === 1 ? numeric(first[0]!, metric) : null;
       return value === null || before === null ? null : value - before;
     }
     if (basis !== 'quarterly') return null;
-    const quarters = period.kind === 'year' ? ['03-31', '06-30', '09-30', '12-31'] : period.q === 2 ? ['03-31', '06-30'] : ['09-30', '12-31'];
+    const quarters = financialQuarterEnds(period);
     let sum = 0;
     for (const quarter of quarters) {
       const matches = rows.filter(row => row.date === `${year}-${quarter}` && row.period_basis === basis);
@@ -169,7 +169,7 @@ export const verifyEarningsGrowth: Verifier = async (claim: Claim, ctx): Promise
   const currentDate = reportDate ?? [...rows].sort((a, b) => b.date.localeCompare(a.date))[0]?.date;
   if (!currentDate) return gap('REPORT_MISSING', 'Respons Sectors tidak memuat laporan keuangan.');
   const neededDates = period && period.kind !== 'quarter' && metric?.basis !== 'stock'
-    ? (period.kind === 'year' ? ['03-31', '06-30', '09-30', '12-31'] : period.q === 2 ? ['03-31', '06-30'] : ['09-30', '12-31']).map(day => `${period.year}-${day}`) : [currentDate];
+    ? (financialQuarterEnds(period)).map(day => `${period.year}-${day}`) : [currentDate];
   const collect = (yearOffset: number): number | null => {
     const dates = neededDates.map(date => `${Number(date.slice(0, 4)) + yearOffset}${date.slice(4)}`);
     const selected = dates.map(date => rows.filter(row => row.date === date));
@@ -179,7 +179,7 @@ export const verifyEarningsGrowth: Verifier = async (claim: Claim, ctx): Promise
     if (metric.basis === 'stock') return financialField(ending[0]!, metric);
     if (period && period.kind !== 'quarter' && ending[0]!.period_basis === 'cumulative') {
       const value = financialField(ending[0]!, metric);
-      if (period.q === 2 || period.kind === 'year') return value;
+      if (period.kind !== 'semester' || period.q === 2) return value;
       const first = rows.filter(row => row.date === `${period.year + yearOffset}-06-30` && row.period_basis === 'cumulative');
       const before = first.length === 1 ? financialField(first[0]!, metric) : null;
       return value === null || before === null ? null : value - before;
@@ -199,7 +199,7 @@ export const verifyEarningsGrowth: Verifier = async (claim: Claim, ctx): Promise
       : financialField(matches[0]!, metric) === null ? [{ date, field: metric.path.join('.'), reason: 'FIELD_NULL_OR_MISSING' }] : [];
   });
   if (currentValue === null) return gap('CURRENT_DATA_MISSING', `Field ${metric.path.join('.')} atau basis laporan yang diperlukan belum lengkap pada periode klaim.`, { missing: missing(neededDates) });
-  const currentLabel = period?.kind === 'year' && metric.basis === 'flow' ? `Tahun ${period.year}` : period?.kind === 'semester' && metric.basis === 'flow' ? `Semester ${period.q === 2 ? 'I' : 'II'} ${period.year}` : currentDate;
+  const currentLabel = period?.kind === 'ytd' && metric.basis === 'flow' ? `Kumulatif hingga Q${period.q} ${period.year}` : period?.kind === 'year' && metric.basis === 'flow' ? `Tahun ${period.year}` : period?.kind === 'semester' && metric.basis === 'flow' ? `Semester ${period.q === 2 ? 'I' : 'II'} ${period.year}` : currentDate;
   const currentEvidence = makeEvidence(claim.claimId, quarterly, `${metric.label} ${claim.ticker} ${currentLabel}`, currentValue, 'IDR');
   if (nominal) return {
     evidence: [currentEvidence], computed: { value: currentValue, unit: 'IDR', evidenceId: currentEvidence.evidenceId },
@@ -217,7 +217,7 @@ export const verifyEarningsGrowth: Verifier = async (claim: Claim, ctx): Promise
       : [new Date(Date.UTC(Number(currentDate.slice(0, 4)), Number(currentDate.slice(5, 7)) - 3, 0)).toISOString().slice(0, 10)];
     return gap('COMPARISON_DATA_MISSING', `Field ${metric.path.join('.')} untuk periode pembanding belum lengkap; angka pertumbuhan tidak dihitung dengan asumsi.`, { missing: missing(baseDates), neededDates: baseDates }, [currentEvidence]);
   }
-  const baseLabel = period?.kind === 'year' && metric.basis === 'flow' ? `Tahun ${period.year - 1}` : period?.kind === 'semester' && metric.basis === 'flow' ? `Semester ${period.q === 2 ? 'I' : 'II'} ${period.year - 1}` : growth.baseDate;
+  const baseLabel = period?.kind === 'ytd' && metric.basis === 'flow' ? `Kumulatif hingga Q${period.q} ${period.year - 1}` : period?.kind === 'year' && metric.basis === 'flow' ? `Tahun ${period.year - 1}` : period?.kind === 'semester' && metric.basis === 'flow' ? `Semester ${period.q === 2 ? 'I' : 'II'} ${period.year - 1}` : growth.baseDate;
   const baseEvidence = makeEvidence(claim.claimId, quarterly, `${metric.label} ${claim.ticker} ${baseLabel}`, growth.baseValue, 'IDR');
   if (growth.baseDegenerate) return gap('BASE_NOT_POSITIVE', 'Nilai pembanding nol atau negatif; persentase pertumbuhan biasa tidak bermakna.', {}, [currentEvidence, baseEvidence]);
   const growthEvidence = makeEvidence(claim.claimId, quarterly, `Pertumbuhan ${metric.label.toLowerCase()} ${mode.toUpperCase()} ${claim.ticker}`, round2(growth.growthPct), '%');

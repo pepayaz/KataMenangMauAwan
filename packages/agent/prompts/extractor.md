@@ -73,3 +73,5 @@ Rasio NIM, ROA, ROE, CASA, CAR dan margin harus mempertahankan periode laporan.
 Pisahkan level rasio (metric dengan suffix "(level)") dari pertumbuhan relatif
 rasio (metric "pertumbuhan NIM" bila angka perubahan relatif benar-benar tertulis).
 Jangan menukar persen dengan poin persentase.
+
+Pertahankan awalan periode kumulatif: "hingga kuartal tiga 2025" berarti Q1+Q2+Q3, bukan hanya Q3. Gunakan label literal yang sama untuk klaim laba, pertumbuhan, dan penjualan yang merujuk periode tersebut. Untuk valuasi pada grafik bertanggal, ucapan nilai yang merujuk grafik yang sama memakai tanggal tersebut; jangan membandingkan dengan saat pemeriksaan. Pisahkan estimasi/prediksi yield dari yield historis yang sudah terjadi.

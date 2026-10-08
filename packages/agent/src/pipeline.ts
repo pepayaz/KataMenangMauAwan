@@ -211,10 +211,12 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
       && validateGrounding(context.summary, evidence.filter((e) => context.evidenceIds.includes(e.evidenceId))).ok
       ? context.summary : 'Ada konteks penting yang didukung data pembanding.' }));
     await trace('adjudicate', 'Status klaim ditentukan oleh aturan.', { claimId: claim.claimId, verdict: verdict.verdict });
-    const template = [deterministicExplanation(verdict), ...(verdict.verdict === 'unverifiable' ? reason : [])].join(' ');
     const displayEvidence = displayEvidenceValues(evidence);
+    const primary = displayEvidence.find(item => item.evidenceId === verdict.computed?.evidenceId);
+    const template = [deterministicExplanation(verdict), ...(primary ? [`Pembanding: ${primary.text}.`] : []), ...(verdict.verdict === 'unverifiable' ? reason : [])].join(' ');
     let usedTemplate = false;
-    const noEvidence = verdict.verdict === 'unverifiable' && evidence.length === 0;
+    // Nominal dividend explanations do not reinterpret ex/event dates as payment dates.
+    const noEvidence = (verdict.verdict === 'unverifiable' && evidence.length === 0) || (claim.type === 'dividend' && claim.asserted.unit === 'IDR');
     if (noEvidence) usedTemplate = true;
     const explanation = noEvidence ? template : await withGrounding(async (feedback) => {
       try {

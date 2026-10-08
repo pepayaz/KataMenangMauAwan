@@ -7,3 +7,5 @@ export * from './resolve-ticker.js';
 
 export * from './financial-period.js';
 export * from './financial-metric.js';
+
+export { IDX_COMPANIES } from './idx-companies.js';

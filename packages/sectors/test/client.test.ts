@@ -358,3 +358,42 @@ describe('SectorsClient — jendela kanonik 90 hari', () => {
     expect(flow.data.data).toHaveLength(20);
   });
 });
+
+describe('official company list response',()=>{
+ it('normalizes results and uses the supported 200 limit',async()=>{
+  const network=vi.fn(async(_url: Parameters<typeof fetch>[0])=>jsonResponse({results:[{symbol:'ULTJ.JK',company_name:'Ultrajaya'}],pagination:{next_offset:null}}));
+  const {client}=makeClient({fetchImpl:network});
+  const result=await client.fetchCompanies();
+  expect(result.data.companies[0]?.symbol).toBe('ULTJ.JK');
+  expect(String(network.mock.calls[0]?.[0])).toContain('limit=200');
+ });
+});
+
+
+describe('explicit historical financial windows', () => {
+ it('requests exact quarters without the latest-quarter parameter, and reuses the aggregate cache', async () => {
+  const fetchImpl = vi.fn(async (url: Parameters<typeof fetch>[0]) => {
+   const query = new URL(String(url)).searchParams;
+   expect(query.has('n_quarters')).toBe(false);
+   expect(query.get('approx')).toBe('false');
+   return jsonResponse([{ date: query.get('report_date'), earnings: 100 }]);
+  });
+  const { client, ledger } = makeClient({ fetchImpl: fetchImpl as typeof fetch });
+  const params = { n_quarters: 3, report_date: '2025-09-30' };
+  const first = await client.fetchQuarterlyFinancials('UNVR', params);
+  expect(first.data.map(row => row.date)).toEqual(['2025-09-30','2025-06-30','2025-03-31']);
+  expect(first.credits).toBe(3); expect(ledger.all().reduce((sum,row)=>sum+row.credits,0)).toBe(3);
+  expect((await client.fetchQuarterlyFinancials('UNVR', params)).credits).toBe(0);
+  expect(fetchImpl).toHaveBeenCalledTimes(3);
+ });
+ it('fills an older missing quarter instead of accepting unrelated newer cached data', async () => {
+  const cache = new MemoryCacheStore();
+  const params = { symbol: 'UNVR', n_quarters: 2, report_date: '2025-09-30' };
+  cache.seed({key:cacheKey('fetchQuarterlyFinancials',params),endpoint:'fetchQuarterlyFinancials',params,response:[{date:'2026-06-30',earnings:999},{date:'2025-09-30',earnings:100}],fetchedAt:new Date().toISOString(),ttlSeconds:TTL.filings});
+  const fetchImpl = vi.fn(async () => jsonResponse([{date:'2025-06-30',earnings:90}]));
+  const { client } = makeClient({ cache, fetchImpl: fetchImpl as typeof fetch });
+  const result = await client.fetchQuarterlyFinancials('UNVR',params);
+  expect(result.data.map(row=>row.date)).toEqual(['2025-09-30','2025-06-30']);
+  expect(result.credits).toBe(1); expect(fetchImpl).toHaveBeenCalledTimes(1);
+ });
+});

@@ -130,13 +130,18 @@ export function validateExtractedClaims(
     const paragraph = text.slice(paragraphStart, nextBoundary < 0 ? text.length : nextBoundary);
     const lastLabel = lastFinancialPeriod(paragraph);
     const uniqueLabel = lastLabel && !lastFinancialPeriod(paragraph.slice(0, paragraph.lastIndexOf(lastLabel))) ? lastLabel : undefined;
-    const inheritedPeriod = new Set(entities.map(entity => entity.ticker)).size === 1 && candidate.type === 'earnings_growth'
+    let inheritedPeriod = new Set(entities.map(entity => entity.ticker)).size === 1 && candidate.type === 'earnings_growth'
       ? lastFinancialPeriod(text.slice(paragraphStart, end)) ?? uniqueLabel : undefined;
+    // A unique graph date applies to repeated valuation statements in this single-stock paragraph.
+    if (candidate.type === 'valuation' && new Set(entities.map(entity => entity.ticker)).size === 1) {
+      const dates = [...new Set([...paragraph.matchAll(/\b(?:\d{1,2}\s+(?:Jan(?:uari)?|Feb(?:ruari)?|Mar(?:et)?|Apr(?:il)?|Mei|Jun(?:i)?|Jul(?:i)?|Agu(?:stus)?|Sep(?:tember)?|Okt(?:ober)?|Nov(?:ember)?|Des(?:ember)?)\s+\d{4}|\d{4}-\d{2}-\d{2})\b/gi)].map(match => match[0]))];
+      if (dates.length === 1) inheritedPeriod = dates[0];
+    }
     const context = text.slice(sentenceStart(text, start), end);
     const normalizedPeriod = asserted.period && parseFinancialPeriod(asserted.period);
     const literalPeriod = inheritedPeriod && parseFinancialPeriod(inheritedPeriod);
     const period = normalizedPeriod && literalPeriod && normalizedPeriod.reportDate === literalPeriod.reportDate
-      && normalizedPeriod.kind === literalPeriod.kind ? inheritedPeriod : asserted.period ?? inheritedPeriod;
+      && normalizedPeriod.kind === literalPeriod.kind ? inheritedPeriod : normalizedPeriod && literalPeriod && normalizedPeriod.reportDate === literalPeriod.reportDate && literalPeriod.kind === 'ytd' ? inheritedPeriod : asserted.period ?? inheritedPeriod;
     const periodContext = inheritedPeriod ? paragraph : context;
     if ((asserted.window !== null && (asserted.window.trim() === '' || !periodContext.includes(asserted.window)))
       || (period !== undefined && period !== null && (period.trim() === '' || !periodContext.includes(period)))) {
@@ -171,7 +176,7 @@ export function validateExtractedClaims(
           ...(period ? { period } : {}),
         },
       });
-      const fingerprint = JSON.stringify([claim.span, claim.ticker, claim.type, claim.asserted, claim.inScope]);
+      const fingerprint = JSON.stringify([claim.ticker, claim.type, claim.asserted.metric.toLowerCase().replace(/\s+/g, ' ').trim(), claim.asserted.value, claim.type === 'valuation' ? claim.asserted.unit ?? 'x' : claim.asserted.unit, claim.asserted.window, claim.asserted.period, claim.inScope]);
       if (seen.has(fingerprint)) { reject('DUPLICATE_CLAIM', ticker); continue; }
       seen.add(fingerprint);
       claims.push(claim);
