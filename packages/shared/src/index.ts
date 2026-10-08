@@ -9,3 +9,4 @@ export * from './financial-period.js';
 export * from './financial-metric.js';
 
 export { IDX_COMPANIES } from './idx-companies.js';
+export * from './comparison.js';

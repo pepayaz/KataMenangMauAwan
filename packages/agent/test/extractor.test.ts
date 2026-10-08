@@ -325,3 +325,15 @@ describe('video period and repeated claims regressions',()=>{
   expect(out.claims[0]?.asserted.period).toBe('hingga kuartal tiga 2025');
  });
 });
+
+it('retains a literal PBV inequality in the persisted claim',()=>{
+ const text='PBV < 1x';const c=candidate(text,{type:'valuation',asserted:{metric:'PBV',value:1,unit:'x',window:null,period:null}});
+ const out=validateExtractedClaims(text,[{surface:'ADRO',ticker:'ADRO',confidence:0.95,method:'explicit'}],[c],'bound');
+ expect(out.claims[0]?.asserted.comparison).toBe('lt');
+});
+it('uses the unique report period for a preceding relative-year summary',()=>{
+ const text='BBTN laba naik 40% dibanding tahun lalu\nSemester satu 2026 laba Rp2,4 triliun';
+ const c=candidate('BBTN laba naik 40% dibanding tahun lalu',{type:'earnings_growth',tickers:['BBTN'],asserted:{metric:'laba',value:40,unit:'%',window:null,period:'tahun lalu'}});
+ const out=validateExtractedClaims(text,[{surface:'BBTN',ticker:'BBTN',confidence:0.95,method:'explicit'}],[c],'period');
+ expect(out.claims[0]?.asserted.period).toBe('Semester satu 2026');
+});

@@ -53,6 +53,7 @@ export const AssertedSchema = z.object({
   metric: z.string(),
   value: z.number().optional(),
   unit: AssertedUnitSchema.optional(),
+  comparison: z.enum(['gt', 'gte', 'lt', 'lte']).optional(),
   window: z.string().optional(),
   period: z.string().optional(),
 });

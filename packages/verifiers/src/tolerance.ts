@@ -36,7 +36,7 @@ export const FLOW_TOLERANCE = 0.25;
  * Nilai resmi nol ditangani terpisah supaya tidak membagi dengan nol.
  */
 export function withinRelative(claimed: number, actual: number, tolerance: number): boolean {
-  if (actual === 0) return Math.abs(claimed) <= tolerance;
+  if (actual === 0) return claimed === 0;
   return Math.abs(claimed - actual) / Math.abs(actual) <= tolerance;
 }
 

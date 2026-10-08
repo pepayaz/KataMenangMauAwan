@@ -263,3 +263,5 @@ Kualitas didahulukan dari jumlah fitur: fitur yang belum stabil dimatikan lewat 
 - Kalau butuh data Sectors yang belum ada di cache, **berhenti dan laporkan** panggilan apa yang dibutuhkan beserta perkiraan kredit.
 - Kalau menemukan kontradiksi antara file ini dan kode, laporkan; jangan diam-diam memilih salah satu.
 - Setiap fungsi baru di `verifiers/` dan `agent/` wajib disertai test.
+
+Kontrak asserted juga memiliki comparison opsional: gt/gte/lt/lte. Operator diperoleh secara deterministik dari frasa literal tepat sebelum angka pada quote, bukan ditentukan LLM. Klaim batas dibandingkan sebagai pertidaksamaan; tidak diperlakukan sebagai angka persis dan tidak memakai toleransi relatif. Klaim segmen atau porsi laba tidak diganti dengan total pendapatan atau pertumbuhan laba.

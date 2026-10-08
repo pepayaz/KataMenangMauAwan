@@ -1,4 +1,4 @@
-import type { Claim } from '@cek-dulu/shared';
+import { satisfiesBound, type Claim } from '@cek-dulu/shared';
 import type { HistoricalValuation, ValuationSection } from '@cek-dulu/sectors';
 import { isMissingData } from '@cek-dulu/sectors';
 import { REL_TOLERANCE, describeRelative, withinRelative } from './tolerance.js';
@@ -163,9 +163,9 @@ export const verifyValuation: Verifier = async (claim: Claim, ctx): Promise<Veri
   return {
     evidence,
     computed: { value: comparison.official, unit: 'x', evidenceId: primary!.evidenceId },
-    matches: comparison.matches,
-    tolerance: tol,
-    note: comparison.matches
+    matches: claim.asserted.comparison ? satisfiesBound(comparison.official, comparison.claimed, claim.asserted.comparison) : comparison.matches,
+    tolerance: claim.asserted.comparison ? `Batas ${claim.asserted.comparison}; tanpa toleransi relatif` : tol,
+    note: claim.asserted.comparison ? `${upper} ${comparison.year} adalah ${comparison.official}; dibandingkan dengan batas ${claim.asserted.comparison} ${comparison.claimed}.` : comparison.matches
       ? `${upper} ${comparison.year} adalah ${comparison.official}; klaim ${comparison.claimed} masuk toleransi.`
       : `${upper} ${comparison.year} adalah ${comparison.official}, bukan ${comparison.claimed}.` +
         (comparison.matchingYears.length > 0

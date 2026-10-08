@@ -1,4 +1,4 @@
-import { parseFinancialPeriod, financialQuarterEnds, resolveFinancialMetric, resolveAnnualFinancialRatio, financialField, type Claim, type FinancialPeriod } from '@cek-dulu/shared';
+import { satisfiesBound, parseFinancialPeriod, financialQuarterEnds, resolveFinancialMetric, resolveAnnualFinancialRatio, financialField, type Claim, type FinancialPeriod } from '@cek-dulu/shared';
 import { verifyFinancialRatio } from './financial-ratio.js';
 import type { QuarterlyFinancialItem } from '@cek-dulu/sectors';
 import { SectorsError, isMissingData } from '@cek-dulu/sectors';
@@ -203,7 +203,7 @@ export const verifyEarningsGrowth: Verifier = async (claim: Claim, ctx): Promise
   const currentEvidence = makeEvidence(claim.claimId, quarterly, `${metric.label} ${claim.ticker} ${currentLabel}`, currentValue, 'IDR');
   if (nominal) return {
     evidence: [currentEvidence], computed: { value: currentValue, unit: 'IDR', evidenceId: currentEvidence.evidenceId },
-    matches: withinRelative(claim.asserted.value, currentValue, FINANCIAL_AMOUNT_REL_TOLERANCE), tolerance: tol,
+    matches: claim.asserted.comparison ? satisfiesBound(currentValue, claim.asserted.value, claim.asserted.comparison) : withinRelative(claim.asserted.value, currentValue, FINANCIAL_AMOUNT_REL_TOLERANCE), tolerance: tol,
     note: `${metric.label} dibandingkan dengan field ${metric.path.join('.')} pada periode klaim.`,
     details: { coverage: { ...coverage, status: 'CHECKED', formula: metric.basis === 'stock' ? 'snapshot' : 'period_total', currentDates: neededDates } },
   };
@@ -222,7 +222,7 @@ export const verifyEarningsGrowth: Verifier = async (claim: Claim, ctx): Promise
   if (growth.baseDegenerate) return gap('BASE_NOT_POSITIVE', 'Nilai pembanding nol atau negatif; persentase pertumbuhan biasa tidak bermakna.', {}, [currentEvidence, baseEvidence]);
   const growthEvidence = makeEvidence(claim.claimId, quarterly, `Pertumbuhan ${metric.label.toLowerCase()} ${mode.toUpperCase()} ${claim.ticker}`, round2(growth.growthPct), '%');
   return { evidence: [growthEvidence, currentEvidence, baseEvidence], computed: { value: round2(growth.growthPct), unit: '%', evidenceId: growthEvidence.evidenceId },
-    matches: withinRelative(claim.asserted.value, growth.growthPct, REL_TOLERANCE.earnings_growth) || withinAbsolute(claim.asserted.value, growth.growthPct, GROWTH_ABS_FLOOR_PP),
+    matches: claim.asserted.comparison ? satisfiesBound(growth.growthPct, claim.asserted.value, claim.asserted.comparison) : withinRelative(claim.asserted.value, growth.growthPct, REL_TOLERANCE.earnings_growth) || withinAbsolute(claim.asserted.value, growth.growthPct, GROWTH_ABS_FLOOR_PP),
     tolerance: tol, note: `${metric.label} ${mode.toUpperCase()} dihitung dari field ${metric.path.join('.')}.`,
     details: { mode, metric: metric.field, growth, coverage: { ...coverage, status: 'CHECKED', formula: '(current - base) / base * 100', currentDates: neededDates, baseDate: growth.baseDate } },
   };

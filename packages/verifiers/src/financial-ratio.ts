@@ -1,4 +1,4 @@
-import { parseFinancialPeriod, resolveAnnualFinancialRatio, type Claim } from '@cek-dulu/shared';
+import { satisfiesBound, parseFinancialPeriod, resolveAnnualFinancialRatio, type Claim } from '@cek-dulu/shared';
 import { SectorsError, isMissingData } from '@cek-dulu/sectors';
 import { GROWTH_ABS_FLOOR_PP, REL_TOLERANCE, withinAbsolute, withinRelative } from './tolerance.js';
 import { makeEvidence, type VerifierContext, type VerifierOutput } from './types.js';
@@ -43,9 +43,9 @@ export async function verifyFinancialRatio(claim: Claim, ctx: VerifierContext): 
     const baseEvidence = makeEvidence(claim.claimId, report, `${metric.label} ${claim.ticker} tahun ${period.year - 1}`, base, '%');
     const comparison = makeEvidence(claim.claimId, report, `Pertumbuhan ${metric.label} YoY`, Math.round(computed * 100) / 100, '%');
     return { evidence: [comparison, currentEvidence, baseEvidence], computed: { value: comparison.value as number, unit: '%', evidenceId: comparison.evidenceId },
-      matches: withinRelative(claim.asserted.value, computed, REL_TOLERANCE.earnings_growth) || withinAbsolute(claim.asserted.value, computed, GROWTH_ABS_FLOOR_PP),
+      matches: claim.asserted.comparison ? satisfiesBound(computed, claim.asserted.value, claim.asserted.comparison) : withinRelative(claim.asserted.value, computed, REL_TOLERANCE.earnings_growth) || withinAbsolute(claim.asserted.value, computed, GROWTH_ABS_FLOOR_PP),
       tolerance: '±10% relatif atau ±0,5 poin persen', note: `Pertumbuhan rasio ${metric.label} dihitung dari tahun yang sama pada sumber financials.`, details: { coverage: { ...coverage, status: 'CHECKED', formula: '(current_ratio / base_ratio - 1) * 100' } } };
   }
-  return { evidence: [currentEvidence], computed: { value: current, unit: '%', evidenceId: currentEvidence.evidenceId }, matches: withinAbsolute(claim.asserted.value, current, 0.1), tolerance: tol,
+  return { evidence: [currentEvidence], computed: { value: current, unit: '%', evidenceId: currentEvidence.evidenceId }, matches: claim.asserted.comparison ? satisfiesBound(current, claim.asserted.value, claim.asserted.comparison) : withinAbsolute(claim.asserted.value, current, 0.1), tolerance: tol,
     note: `${metric.label} dibandingkan langsung dengan field rasio tahunan yang dilaporkan.`, details: { coverage: { ...coverage, status: 'CHECKED', formula: 'reported_ratio * 100' } } };
 }

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { z } from 'zod';
-import { resolveAnnualFinancialRatio, parseFinancialPeriod, lastFinancialPeriod, AssertedUnitSchema, ClaimSchema, ClaimTypeSchema, EntitySchema, extractNumbers,
+import { literalBound, resolveAnnualFinancialRatio, parseFinancialPeriod, lastFinancialPeriod, AssertedUnitSchema, ClaimSchema, ClaimTypeSchema, EntitySchema, extractNumbers,
   type Claim, type Entity } from '@cek-dulu/shared';
 import { LlmAdapter } from './llm.js';
 
@@ -141,7 +141,7 @@ export function validateExtractedClaims(
     const normalizedPeriod = asserted.period && parseFinancialPeriod(asserted.period);
     const literalPeriod = inheritedPeriod && parseFinancialPeriod(inheritedPeriod);
     const period = normalizedPeriod && literalPeriod && normalizedPeriod.reportDate === literalPeriod.reportDate
-      && normalizedPeriod.kind === literalPeriod.kind ? inheritedPeriod : normalizedPeriod && literalPeriod && normalizedPeriod.reportDate === literalPeriod.reportDate && literalPeriod.kind === 'ytd' ? inheritedPeriod : asserted.period ?? inheritedPeriod;
+      && normalizedPeriod.kind === literalPeriod.kind ? inheritedPeriod : normalizedPeriod && literalPeriod && normalizedPeriod.reportDate === literalPeriod.reportDate && literalPeriod.kind === 'ytd' ? inheritedPeriod : inheritedPeriod && /^(?:tahun lalu|yoy|year[ -]on[ -]year)$/i.test(asserted.period ?? '') ? inheritedPeriod : asserted.period ?? inheritedPeriod;
     const periodContext = inheritedPeriod ? paragraph : context;
     if ((asserted.window !== null && (asserted.window.trim() === '' || !periodContext.includes(asserted.window)))
       || (period !== undefined && period !== null && (period.trim() === '' || !periodContext.includes(period)))) {
@@ -172,11 +172,12 @@ export function validateExtractedClaims(
           ...(matching && !matching.ambiguous ? { value: (matching.unit === '%' ? matching.value : matching.normalized)
             * (SIGNED_TYPES.has(candidate.type) && matching.unit === '%' && !transition && (!resolveAnnualFinancialRatio(asserted.metric) || /pertumbuhan|perubahan|growth|change/i.test(asserted.metric)) ? directionSign(quote, matching.span[0], matching.raw) : 1) } : {}),
           ...(asserted.unit !== null ? { unit: asserted.unit } : {}),
+          ...(matching && literalBound(quote.slice(Math.max(0, matching.span[0] - 30), matching.span[0])) ? { comparison: literalBound(quote.slice(Math.max(0, matching.span[0] - 30), matching.span[0])) } : {}),
           ...(asserted.window !== null ? { window: asserted.window } : {}),
           ...(period ? { period } : {}),
         },
       });
-      const fingerprint = JSON.stringify([claim.ticker, claim.type, claim.asserted.metric.toLowerCase().replace(/\s+/g, ' ').trim(), claim.asserted.value, claim.type === 'valuation' ? claim.asserted.unit ?? 'x' : claim.asserted.unit, claim.asserted.window, claim.asserted.period, claim.inScope]);
+      const fingerprint = JSON.stringify([claim.ticker, claim.type, claim.asserted.metric.toLowerCase().replace(/\s+/g, ' ').trim(), claim.asserted.value, claim.type === 'valuation' ? claim.asserted.unit ?? 'x' : claim.asserted.unit, claim.asserted.window, claim.asserted.period, claim.asserted.comparison, claim.inScope]);
       if (seen.has(fingerprint)) { reject('DUPLICATE_CLAIM', ticker); continue; }
       seen.add(fingerprint);
       claims.push(claim);

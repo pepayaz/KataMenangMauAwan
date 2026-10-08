@@ -45,6 +45,7 @@ export function createHypothesisRegistry(input: Claim, options: { today: string;
   const dividendAmount = claim.type === 'dividend' && isDividendAmountClaim(claim);
   for (const [id, claimType, description, test] of definitions) {
     if (claimType !== claim.type || (claimType === 'dividend' && dividendAmount) || (claimType === 'price_move' && longPriceWindow)) continue;
+    if (claimType === 'dividend' && /payout|rasio pembayaran|rasio pembagian/i.test(claim.asserted.metric) && id !== 'DIV_CASH_PAYOUT') continue;
     let requiredTools: ToolCall[];
     if (claimType === 'dividend') requiredTools = [report(['dividend']), ...(id === 'DIV_TTM_GAP'
       ? [{ tool: 'fetchCorporateActions', params: { symbol: claim.ticker } }] : [])];

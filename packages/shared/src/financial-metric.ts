@@ -1,6 +1,7 @@
 /** Explicit Sectors quarterly fields; unknown metrics never fall back to earnings. */
 export type FinancialMetric = { field: string; path: string[]; label: string; basis: 'flow' | 'stock' };
 const entries: Array<[RegExp, FinancialMetric | null]> = [
+  [/\b(segmen|segment|porsi|retained|laba ditahan|sisa laba)\b/i, null],
   [/\b(pendapatan provisi|fee income|commission income)\b/i, null],
   [/\b(non interest income|pendapatan non bunga)\b/i, { field: 'non_interest_income', path: ['non_interest_income'], label: 'Pendapatan non bunga', basis: 'flow' }],
   [/\b(saldo cadangan|allowance for loans|cadangan kerugian kredit)\b/i, { field: 'allowance_for_loans', path: ['financials_sector_metrics', 'allowance_for_loans'], label: 'Saldo cadangan kerugian kredit', basis: 'stock' }],

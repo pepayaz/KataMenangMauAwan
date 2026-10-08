@@ -155,7 +155,9 @@ export async function runCheck(rawInput: CheckInput, deps: PipelineDeps, emit: T
       let verified: VerifierOutput = { evidence: [], matches: null, tolerance: '-', note: '' };
       // B valuation selalu memakai tahun terbaru; composition B hanya tahun kini.
       const unsupportedPeriod = claim.type === 'accumulation' && plan.tools.filter((t) => t.tool === 'fetchShareholdersComposition').length > 1;
-      const canVerify = claim.inScope && plan.status === 'ready' && enabled.has(claim.type) && !unsupportedPeriod;
+      const unsupportedBound = claim.asserted.comparison && !['dividend', 'valuation', 'earnings_growth'].includes(claim.type);
+      if (unsupportedBound) reason.push('Pemeriksaan batas untuk jenis metrik ini belum didukung; angka batas tidak diperlakukan sebagai nilai persis.');
+      const canVerify = !unsupportedBound && claim.inScope && plan.status === 'ready' && enabled.has(claim.type) && !unsupportedPeriod;
       if (unsupportedPeriod) reason.push('Periode historis klaim ini belum didukung oleh sumber pembanding yang digunakan.');
       if (claim.inScope && plan.status === 'ready' && !enabled.has(claim.type)) reason = ['Pemeriksaan untuk jenis klaim ini belum diaktifkan.'];
       if (canVerify) {
