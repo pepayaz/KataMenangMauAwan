@@ -30,7 +30,7 @@ export const examples = [
       { code: "DIV_TTM_GAP", status: "TRIGGERED" },
       { code: "DIV_SHARE_CHANGE", status: "CLEAR" },
     ],
-    source: "SECTORS · COMPANY REPORT / DIVIDEND",
+    source: "Sectors · Laporan perusahaan · Dividen",
   },
   {
     id: "valuation",
@@ -61,7 +61,7 @@ export const examples = [
       { code: "VAL_ONE_OFF_EARNINGS", status: "CHECKED" },
       { code: "VAL_PEER_GAP", status: "CHECKED" },
     ],
-    source: "SECTORS · COMPANY REPORT / VALUATION",
+    source: "Sectors · Laporan perusahaan · Valuasi",
   },
   {
     id: "price",
@@ -91,7 +91,7 @@ export const examples = [
       { code: "PRC_SPLIT", status: "CLEAR" },
       { code: "PRC_LOW_BASE", status: "CLEAR" },
     ],
-    source: "SECTORS · DAILY PRICE",
+    source: "Sectors · Harga dan transaksi harian",
   },
 ] as const;
 

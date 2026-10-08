@@ -475,7 +475,7 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
                 </section>
               )}
 
-              {llmReady === false && !demo && <p className="integration-error" role="status">Pemeriksaan belum tersedia. Konfigurasi AI dan data tersimpan perlu disiapkan di server. Contoh offline dapat dipakai untuk mencoba alur.</p>}
+              {llmReady === false && !demo && <p className="integration-error" role="status">Pemeriksaan belum tersedia. Konfigurasi AI dan sumber data perlu disiapkan di server. Contoh offline dapat dipakai untuk mencoba alur.</p>}
               {error && <p className="integration-error" role="alert">{error}</p>}
               {traces.length > 0 && !running && <details className="trace-panel">
                 <summary>Jejak pemeriksaan · {traces.length} event</summary>
@@ -559,7 +559,7 @@ export default function Workspace({ fixtureDemo, initialPage = "check" }: { fixt
                               hour: "2-digit",
                               minute: "2-digit",
                             })}
-                            <span>· {item.demo ? "DEMO FIXTURE" : "HASIL BACKEND"}</span>
+                            <span>· {item.demo ? "DATA CONTOH" : "HASIL PEMERIKSAAN"}</span>
                           </span>
                           <h3>{item.text}</h3>
                           <VerdictBadge verdict={firstVerdict?.verdict ?? 'unverifiable'} />

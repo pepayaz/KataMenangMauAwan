@@ -56,7 +56,7 @@ export default function CheckForm({ fixtureDemo, demoText }: { fixtureDemo: bool
       </fieldset>}
       <button disabled={busy || !text.trim() || choices.some(choice => !selections[choice.surface])} type="submit">{busy ? 'Memeriksa…' : 'Cek klaim'}</button>
     </form>
-    {demo && <p>Mode demo fixture · Sectors cache_only · tanpa panggilan API live.</p>}
+    {demo && <p>Mode contoh · menggunakan data tersimpan · tanpa mengambil data baru.</p>}
     {error && <p role="alert">{error}</p>}
     <section aria-label="Jejak pemeriksaan" aria-live="polite">
       <h2>Jejak pemeriksaan</h2>

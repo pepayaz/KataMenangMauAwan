@@ -217,7 +217,7 @@ it('grafik riwayat sumber memakai periode dan nilai evidence, termasuk angka neg
     params: { synthetic: true, hunter: { metric: 'valuation.pe', symbol: 'ADRO', year } },
   }));
   render(createElement(EvidenceExplorer, { evidence: observations, verdict: fixture.result.verdicts[0]!, demo: true, onClose: vi.fn() }));
-  const chart = screen.getByRole('figure', { name: 'PER ADRO' });
+  const chart = screen.getByRole('figure', { name: 'Rasio harga terhadap laba (PER) ADRO' });
   expect(chart.textContent).toContain('2024'); expect(chart.textContent).toContain('-2×');
   expect(chart.textContent).toContain('2025'); expect(chart.textContent).toContain('6×');
   expect(chart.querySelector('.chart-column.is-negative')?.getAttribute('width')).toBe('125');
@@ -237,7 +237,7 @@ it('source charts appear without historical periods and observations are interac
   expect(record.textContent).toContain('Yield TTM');
   expect(record.textContent).toContain('5,56%');
   expect(record.textContent).toContain('Diambil');
-  expect(record.textContent).toContain('Fixture contoh');
+  expect(record.textContent).toContain('Data contoh');
   expect(drawer.querySelector('.source-conclusion')?.textContent).toContain('Benar tapi menyesatkan');
   fireEvent.change(screen.getByLabelText('Pilih grafik'), { target: { value: 'claim-comparison' } });
   expect(screen.getByRole('figure', { name: 'Klaim vs data' })).toBeDefined();
@@ -281,7 +281,7 @@ it('hover grafik hanya menunjukkan nilai; klik membuka bukti asli beserta period
   const record = screen.getByRole('region', { name: 'Bukti angka terpilih' });
   expect(record.textContent).toContain('2021–2025');
   expect(record.textContent).toContain('Rumus');
-  expect(record.textContent).toContain('Fixture contoh');
+  expect(record.textContent).toContain('Data contoh');
   expect(record.textContent).toContain('23,6%');
 });
 it('clicking a transcript number selects its exact span in the original text', async () => {

@@ -1,7 +1,8 @@
 import type { CheckSource, ClaimType, Verdict } from '@cek-dulu/shared/schemas';
 import { cleanText } from '../../../packages/agent/src/clean-text';
-import { formatEvidence, readableSourceText, verdictLabels, type HistoryItem } from './check-view';
+import { formatEvidence, readableSourceText, readableToolName, verdictLabels, type HistoryItem } from './check-view';
 import { comparisonFor, contextTitles, verdictSummaries } from './report-presentation';
+import { renderBrandedReportPdf } from './report-pdf-renderer';
 
 /**
  * Rapor PDF dari hasil pemeriksaan.
@@ -93,7 +94,7 @@ export function buildReportDocument(item: HistoryItem): ReportDocument {
       evidence: evidence.map(record => ({
         label: readableSourceText(record.label).replace(/[.\s]+$/, ''),
         value: formatEvidence(record),
-        source: `Sectors ${record.tool} · ${record.cached ? 'cache' : 'langsung'} · ${dateOnly(record.fetchedAt)}`,
+        source: `Sectors · ${readableToolName(record.tool)} · ${dateOnly(record.fetchedAt)}`,
       })),
     };
   });
@@ -129,95 +130,7 @@ export function pdfSafeText(text: string): string {
     .replace(/[^\n\t\x20-\x7E\xA0-\xFF]/gu, char => WIN_ANSI_EXTRA.has(char) ? char : '');
 }
 
-const verdictColors: Record<Verdict, [number, number, number]> = {
-  supported: [22, 128, 61], refuted: [190, 18, 60], misleading: [180, 106, 0], unverifiable: [100, 116, 139], out_of_scope: [100, 116, 139],
-};
-
-/** Menggambar ReportDocument ke PDF A4. jsPDF dimuat hanya saat tombol unduh dipakai. */
-export async function renderReportPdf(report: ReportDocument): Promise<Blob> {
-  const { jsPDF } = await import('jspdf');
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
-  const pageWidth = pdf.internal.pageSize.getWidth(), pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 18, bottom = 18, width = pageWidth - margin * 2;
-  let y = margin;
-
-  const ensure = (height: number) => {
-    if (y + height <= pageHeight - bottom) return;
-    pdf.addPage(); y = margin;
-  };
-  const write = (text: string, options: { size?: number; style?: 'normal' | 'bold' | 'italic'; color?: [number, number, number];
-    indent?: number; after?: number } = {}) => {
-    const size = options.size ?? 10, indent = options.indent ?? 0;
-    const lineHeight = size * 0.3528 * 1.4;
-    pdf.setFont('helvetica', options.style ?? 'normal').setFontSize(size).setTextColor(...(options.color ?? [30, 41, 59]));
-    for (const line of pdf.splitTextToSize(pdfSafeText(text), width - indent) as string[]) {
-      ensure(lineHeight);
-      pdf.text(line, margin + indent, y + size * 0.3528);
-      y += lineHeight;
-    }
-    y += options.after ?? 1.5;
-  };
-  const rule = (gap = 4) => {
-    ensure(gap * 2);
-    y += gap; pdf.setDrawColor(203, 213, 225).setLineWidth(0.2).line(margin, y, pageWidth - margin, y); y += gap;
-  };
-  const muted: [number, number, number] = [100, 116, 139];
-
-  write('CEK DULU', { size: 9, style: 'bold', color: [37, 99, 235], after: 0.5 });
-  write(report.title, { size: 18, style: 'bold', after: 3 });
-  for (const [key, value] of report.meta) write(`${key}: ${value}`, { size: 9, color: muted, after: 0.3 });
-  if (report.notice) { y += 2; write(report.notice, { size: 9, style: 'bold', color: verdictColors.misleading }); }
-  rule();
-
-  write('Teks yang diperiksa', { size: 11, style: 'bold' });
-  write(report.sourceText, { size: 9, style: 'italic', color: [51, 65, 85], after: 3 });
-  write('Ringkasan', { size: 11, style: 'bold' });
-  write(report.overview, { size: 10 });
-
-  report.claims.forEach((claim, index) => {
-    rule(5);
-    ensure(30);
-    const top = y, color = verdictColors[claim.verdict];
-    write(`Klaim ${index + 1} · ${claim.heading}`, { size: 12, style: 'bold', indent: 4, after: 0.5 });
-    write(claim.verdictLabel.toUpperCase(), { size: 9, style: 'bold', color, indent: 4, after: 0.5 });
-    write(claim.verdictSummary, { size: 9, color: muted, indent: 4 });
-    pdf.setFillColor(...color).rect(margin, top, 1.4, y - top, 'F');
-    y += 1;
-    write(`"${claim.quote}"`, { size: 10, style: 'italic', after: 2.5 });
-    write(`Diklaim: ${claim.claimed}`, { size: 10, style: 'bold', after: 0.5 });
-    write(`Hasil pembanding: ${claim.compared}`, { size: 10, style: 'bold', after: 0.5 });
-    write(claim.comparisonNote, { size: 9, color: muted, after: 2.5 });
-    if (claim.contexts.length) {
-      write('Konteks yang perlu diketahui', { size: 10, style: 'bold', after: 1 });
-      for (const context of claim.contexts) {
-        write(`• ${context.title}`, { size: 9.5, style: 'bold', indent: 2, after: 0.3 });
-        write(context.summary, { size: 9.5, indent: 5, after: 1.5 });
-      }
-    }
-    if (claim.explanation) {
-      write('Penjelasan', { size: 10, style: 'bold', after: 1 });
-      write(claim.explanation, { size: 9.5, after: 2.5 });
-    }
-    if (claim.evidence.length) {
-      write(`Bukti data (${claim.evidence.length})`, { size: 10, style: 'bold', after: 1 });
-      for (const line of claim.evidence) {
-        write(`${line.label}: ${line.value}`, { size: 9, indent: 2, after: 0.2 });
-        write(line.source, { size: 7.5, color: muted, indent: 2, after: 1.2 });
-      }
-    }
-  });
-
-  rule(5);
-  write(report.disclaimer, { size: 8, color: muted });
-
-  const pages = pdf.getNumberOfPages();
-  for (let page = 1; page <= pages; page += 1) {
-    pdf.setPage(page).setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(...muted);
-    pdf.text('Cek Dulu · bukan nasihat investasi', margin, pageHeight - 9);
-    pdf.text(`Halaman ${page} dari ${pages}`, pageWidth - margin, pageHeight - 9, { align: 'right' });
-  }
-  return pdf.output('blob');
-}
+export const renderReportPdf = renderBrandedReportPdf;
 
 /** Menyusun, menggambar, dan memicu unduhan di peramban. */
 export async function downloadReportPdf(item: HistoryItem): Promise<void> {

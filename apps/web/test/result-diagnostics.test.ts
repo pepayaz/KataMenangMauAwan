@@ -11,7 +11,7 @@ function render(traces: TraceEvent[], complete = false) {
   const active: HistoryItem = { id: sample.result.checkId, text: 'BBTN laba naik 40%', createdAt: sample.input.createdAt,
     saved: false, demo: false, result: complete ? sample.result : { ...sample.result, claims: [], verdicts: [], evidence: [] }, traces };
   return renderToStaticMarkup(createElement(ResultView, { active, onSave: noAction, onDownloadPdf: noAction, pdfBusy: false,
-    claimIndex: 0, onSelectClaim: noAction, onEvidence: noAction, traceOpen: false, setTraceOpen: noAction, reset: noAction,
+    claimIndex: 0, onSelectClaim: noAction, traceOpen: false, setTraceOpen: noAction, reset: noAction,
     onRetry: noAction, onEdit: noAction }));
 }
 const trace = (stage: TraceEvent['stage'], message: string, data?: unknown): TraceEvent => ({ stage, message, data,

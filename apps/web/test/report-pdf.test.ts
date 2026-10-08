@@ -21,7 +21,8 @@ describe('isi rapor PDF', () => {
     const verdict = fixture.result.verdicts[0]!;
     const records = fixture.result.evidence.filter(record => verdict.evidenceIds.includes(record.evidenceId));
     expect(report.claims[0]!.evidence.map(line => line.value)).toEqual(records.map(record => formatEvidence(record)));
-    expect(report.claims[0]!.evidence[0]!.source).toContain(`Sectors ${records[0]!.tool}`);
+    expect(report.claims[0]!.evidence[0]!.source).toContain('Sectors · Laporan perusahaan');
+    expect(report.claims[0]!.evidence[0]!.source).not.toContain(records[0]!.tool);
   });
 
   it('kutipan klaim memakai span pada teks bersih', () => {
@@ -72,5 +73,8 @@ describe('berkas PDF', () => {
     const bytes = new Uint8Array(await blob.arrayBuffer());
     expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe('%PDF-');
     expect(bytes.length).toBeGreaterThan(1000);
+    const structure = Buffer.from(bytes).toString('latin1');
+    expect(structure.match(/\/Type \/Page\b/g)?.length).toBeGreaterThanOrEqual(5);
+    expect(structure).toContain('/Title (Rapor Pemeriksaan Klaim)');
   });
 });
