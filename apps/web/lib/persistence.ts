@@ -54,6 +54,7 @@ export async function saveTraceEvent(
 export async function saveCheckResult(
   db: SupabaseClient,
   result: CheckResult,
+  status: 'done' | 'error' = 'done',
 ): Promise<PersistenceResult> {
   if (result.claims.length > 0) {
     const { error } = await db.from('claims').insert(
@@ -128,7 +129,7 @@ export async function saveCheckResult(
   const { error } = await db
     .from('checks')
     .update({
-      status: 'done',
+      status,
       credits_used: result.creditsUsed,
       finished_at: result.finishedAt,
     })

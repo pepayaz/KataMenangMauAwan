@@ -115,9 +115,12 @@ class GeminiProvider implements LlmProvider {
     if (request.feedback.length > 0) parts.push({ text:
       `Keluaran sebelumnya tidak valid. Perbaiki JSON sesuai skema; jangan menambah fakta. Kesalahan: ${JSON.stringify(request.feedback)}` });
     const model = request.model.replace(/^models\//, '');
-    // Keep extraction/media quality unchanged; reduce reasoning only for short writing/classification.
+    // Extraction is literal parsing; bound its reasoning while retaining schema and grounding checks.
+    const extraction = request.format.name === 'extracted_claims';
     const simple = ['claim_explanation', 'context_hypotheses', 'ticker_selection'].includes(request.format.name);
-    const thinkingConfig = simple && /^gemini-3[.-]/.test(model) ? { thinkingLevel: /^gemini-3\.[56]-/.test(model) ? 'minimal' : 'low' }
+    const thinkingConfig = extraction && /^gemini-3[.-]/.test(model) ? { thinkingLevel: 'low' }
+      : extraction && /^gemini-2\.5-flash(?:-|$)/.test(model) ? { thinkingBudget: 1024 }
+      : simple && /^gemini-3[.-]/.test(model) ? { thinkingLevel: /^gemini-3\.[56]-/.test(model) ? 'minimal' : 'low' }
       : simple && /^gemini-2\.5-flash(?:-|$)/.test(model) ? { thinkingBudget: 0 } : undefined;
     const body = JSON.stringify({
       systemInstruction: { parts: [{ text: request.prompt }] },

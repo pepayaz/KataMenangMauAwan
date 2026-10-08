@@ -45,6 +45,7 @@ import { HistoryItemSchema, formatEvidence, readHistory, storageKey, type Histor
 import { readTickerChoices, type UiTickerChoice } from "../../apps/web/lib/ticker-choices";
 import { downloadReportPdf } from "../../apps/web/lib/report-pdf";
 import { comparisonFor } from "../../apps/web/lib/report-presentation";
+import { checkOutcome, traceDetails } from '../../apps/web/lib/check-outcome';
 import { cleanText } from "../../packages/agent/src/clean-text";
 
 type Page = "landing" | "check" | "history" | "saved";
@@ -1064,7 +1065,16 @@ function VerdictSeal({ fixture }: { fixture?: DemoFixture }) {
   );
 }
 
-function ResultView({
+function ActualTrace({ traces }: { traces: readonly TraceEvent[] }) {
+  return <div className="trace-summary-grid">{['normalize', 'extract', 'verify', 'hunt', 'adjudicate'].map(stage => {
+    const events = traces.filter(event => event.stage === stage);
+    const error = traces.find(event => event.stage === 'error');
+    return <div key={stage}><span>{stage}</span>{events.length ? <Check size={13} /> : <MinusCircle size={13} />}
+      <b>{events.length ? 'Dijalankan' : 'Belum dijalankan'}</b><small>{events.at(-1)?.message || (error ? 'Proses berhenti sebelum tahap ini.' : 'Tidak ada event backend.')}</small>{events.flatMap(traceDetails).map((detail, index) => <small key={index}>{detail}</small>)}</div>;
+  })}{traces.filter(event => event.stage === 'error').map((event, index) => <div key={`error-${index}`} role="alert"><AlertTriangle size={15} /><b>Proses terhenti</b><small>{event.message}</small></div>)}</div>;
+}
+
+export function ResultView({
   active,
   fixture,
   onSave,
@@ -1076,6 +1086,8 @@ function ResultView({
   traceOpen,
   setTraceOpen,
   reset,
+  onRetry,
+  onEdit,
 }: {
   active: HistoryItem;
   fixture?: DemoFixture;
@@ -1088,9 +1100,19 @@ function ResultView({
   traceOpen: boolean;
   setTraceOpen: (open: boolean) => void;
   reset: () => void;
+  onRetry: () => void;
+  onEdit: () => void;
 }) {
   const tone = fixture?.tone || "violet";
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const outcome = checkOutcome(active.result, active.traces);
+  if (outcome.kind !== 'complete') return <div className="workspace-page result-view">
+    <div className="result-heading"><div><span className="page-index">PEMERIKSAAN BELUM SELESAI</span>
+      <h1>{outcome.kind === 'error' ? 'Pemeriksaan terhenti.' : outcome.kind === 'needs_user_choice' ? 'Konfirmasi saham diperlukan.' : 'Belum ada klaim terdeteksi.'}</h1>
+      <p role={outcome.kind === 'error' ? 'alert' : 'status'}>{outcome.message}</p></div></div>
+    <div className="result-meta-actions">{outcome.kind === 'error' && <button onClick={onRetry}>Coba lagi <ArrowRight size={14} /></button>}<button onClick={onEdit}>{outcome.kind === 'needs_user_choice' ? 'Konfirmasi saham' : 'Tinjau teks'}</button></div>
+    <section className="collapsed-trace open"><ActualTrace traces={active.traces} /></section>
+  </div>;
   const contextPoints = fixture
     ? [...new Set((fixture.contextPoints?.length ? fixture.contextPoints : [fixture.context, fixture.detail]).filter(Boolean))]
     : ["Evidence belum cukup untuk menyusun konteks."];
@@ -1203,15 +1225,11 @@ function ResultView({
 
       <section className={`collapsed-trace ${traceOpen ? "open" : ""}`}>
         <button onClick={() => setTraceOpen(!traceOpen)}>
-          <span><CheckCircle2 size={16} /> Jejak backend selesai {fixture ? `· ${fixture.duration}` : ""}</span>
+          <span><CheckCircle2 size={16} /> {active.traces.some(event => event.stage === 'error') ? 'Jejak backend · ada kendala' : 'Jejak backend'} {fixture ? `· ${fixture.duration}` : ""}</span>
           <span>Lihat jejak kerja <ChevronDown size={15} /></span>
         </button>
         {traceOpen && (
-          <div className="trace-summary-grid">
-            {investigationSteps.map((stage, index) => (
-              <div key={stage.id}><span>0{index + 1}</span><Check size={13} /><b>{stage.title}</b><small>{stage.meta}</small></div>
-            ))}
-          </div>
+          <ActualTrace traces={active.traces} />
         )}
       </section>
     </div>
@@ -1388,6 +1406,11 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
     clearTimers();
     setActive(item);
     setInput(item.text);
+    setInputSource(item.source ?? "paste");
+    setInputUrl(item.url);
+    const normalization = item.traces.find(event => event.stage === "normalize");
+    setChoices(normalization ? readTickerChoices(normalization) : []);
+    setSelections({});
     setPhase("result");
     setPage("check");
     setTraceOpen(false);
@@ -1501,6 +1524,8 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
                 traceOpen={traceOpen}
                 setTraceOpen={setTraceOpen}
                 reset={resetCheck}
+                onRetry={startCheck}
+                onEdit={() => { setActive(null); setPhase("idle"); }}
               />
             )}
             {page === "history" && (
