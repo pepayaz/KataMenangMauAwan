@@ -40,7 +40,7 @@ import {
 import { InputAdaptationSchema, type CheckResult, type CheckSource, type InputAdaptation, type TraceEvent, type Verdict } from "../../packages/shared/src/schemas";
 import { readCheckStream } from "../../apps/web/lib/check-stream";
 import { HistoryItemSchema, formatEvidence, readableClaimType, readableSourceText, readableToolName, readHistory, storageKey, type HistoryItem } from "../../apps/web/lib/check-view";
-import { readTickerChoices, type UiTickerChoice } from "../../apps/web/lib/ticker-choices";
+import { readTickerChoices, tickerSelections, type UiTickerChoice } from "../../apps/web/lib/ticker-choices";
 import { downloadReportPdf } from "../../apps/web/lib/report-pdf";
 import { comparisonFor, explanationParts } from "../../apps/web/lib/report-presentation";
 import { checkOutcome, traceDetails } from '../../apps/web/lib/check-outcome';
@@ -1454,7 +1454,7 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
       const response = await fetch("/api/check", {
         method: "POST", signal: controller.signal, headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: input.trim(), source: inputSource, ...(inputUrl ? { url: inputUrl } : {}),
-          userSelections: Object.entries(selections).filter(([, ticker]) => ticker).map(([surface, ticker]) => ({ surface, ticker })) }),
+          userSelections: tickerSelections(choices, selections) }),
       });
       if (!response.ok) {
         const payload: unknown = await response.json();
@@ -1623,14 +1623,14 @@ export default function App({ initialPage = "landing" }: { initialPage?: Page })
             )}
           </div>
           {choices.length > 0 && phase === "idle" && <fieldset className="ticker-choice">
-            <legend>Pilih saham yang dimaksud, lalu periksa kembali</legend>
+            <legend>Konfirmasi saham (opsional)</legend>
             {choices.map(choice => <label key={choice.surface}>Sebutan “{choice.surface}”
               <select value={selections[choice.surface] ?? ""} onChange={event => setSelections(current => ({ ...current, [choice.surface]: event.target.value }))}>
-                <option value="">Pilih saham</option>
+                <option value="">Lewati sebutan ini</option>
                 {choice.candidates.map(candidate => <option key={candidate.ticker} value={candidate.ticker}>{candidate.ticker} — {candidate.label}</option>)}
               </select>
             </label>)}
-            <button className="primary-action" disabled={choices.some(choice => !selections[choice.surface])} onClick={() => void startCheck()}>Periksa dengan pilihan ini <ArrowRight size={17} /></button>
+            <button className="primary-action" onClick={() => void startCheck()}>Lanjutkan pemeriksaan <ArrowRight size={17} /></button>
           </fieldset>}
           {error && <p className="backend-error" role="alert">{error}</p>}
         </main>

@@ -12,3 +12,16 @@ export function readTickerChoices(event: TraceEvent): UiTickerChoice[] {
   const parsed = choicesSchema.safeParse(event.data);
   return parsed.success ? parsed.data.choices : [];
 }
+
+/** Empty confirmation means skip this mention, never guess a ticker. */
+export function tickerSelections(choices: readonly UiTickerChoice[], selections: Record<string, string>) {
+  const surfaces = [...choices.map(choice => choice.surface), ...Object.keys(selections)];
+  const seen = new Set<string>();
+  return surfaces.flatMap(surface => {
+    const normalized = surface.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    if (seen.has(normalized)) return [];
+    seen.add(normalized);
+    const match = Object.entries(selections).find(([name]) => name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim() === normalized);
+    return [{ surface, ticker: match?.[1] || null }];
+  });
+}

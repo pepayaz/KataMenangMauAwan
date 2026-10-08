@@ -219,3 +219,23 @@ describe('ambang fuzzy menolak kata umum Indonesia', () => {
     expect(FUZZY_MIN_SCORE).toBe(0.8);
   });
 });
+
+it('does not fuzzy-match bukan, BUKAN or massa as stocks', async () => {
+  const directory = createFixtureTickerDirectory({ tickers: ['BUKA', 'ASSA', 'BBTN'], aliases: [] });
+  const opts = mock([]);
+  const result = await normalizeText('BBTN bukan massa BUKAN', { directory, ...opts });
+  expect(result.status).toBe('ready');
+  expect(result.entities.map(entity => entity.ticker)).toEqual(['BBTN']);
+  expect(opts.provider.requests).toHaveLength(0);
+});
+it('asks once for the same fuzzy mention with different capitalization', async () => {
+  const result = await normalizeText('Adarro ADARRO', { directory: createFixtureTickerDirectory() });
+  expect(result.choices).toHaveLength(1);
+});
+
+it('accepts skipping an old common-word prompt after the fuzzy filter is updated', async () => {
+  const result = await normalizeText('BBTN bukan massa', { directory: createFixtureTickerDirectory({ tickers: ['BBTN', 'BUKA', 'ASSA'] }),
+    userSelections: [{ surface: 'bukan', ticker: null }, { surface: 'massa', ticker: null }] });
+  expect(result.status).toBe('ready');
+  expect(result.entities.map(entity => entity.ticker)).toEqual(['BBTN']);
+});
