@@ -57,6 +57,20 @@ export function readableToolName(tool: string): string {
   return labels[tool] ?? 'Data pendukung';
 }
 
+/** Nama tipe klaim untuk UI; nilai kontrak tetap memakai identifier internal. */
+export function readableClaimType(type: string): string {
+  const labels: Record<string, string> = {
+    valuation: 'Valuasi',
+    dividend: 'Dividen',
+    price_move: 'Pergerakan harga',
+    earnings_growth: 'Pertumbuhan laba',
+    foreign_flow: 'Arus dana asing',
+    accumulation: 'Akumulasi',
+    safety: 'Risiko saham',
+  };
+  return labels[type] ?? 'Klaim saham';
+}
+
 /** Present documented fixture field names as prose without changing evidence or values. */
 export function readableSourceText(text: string): string {
   const labels: Record<string, string> = {
@@ -72,8 +86,10 @@ export function readableSourceText(text: string): string {
     'dividend.avg_period': 'Periode rata-rata dividen', 'dividend.cash_payout_ratio': 'Rasio pembayaran dividen terhadap kas',
     'dividend.total': 'Total dividen', 'dividend.payment': 'Pembayaran dividen',
     'dividend.year_coverage': 'Ketersediaan data dividen', 'dividend.actions_coverage': 'Ketersediaan aksi korporasi dividen',
-    'valuation.year': 'Tahun valuasi', 'valuation.pe': 'PER', 'valuation.pb': 'PBV', 'valuation.peg': 'PEG',
-    'peer.pe': 'PER pembanding', 'daily.close': 'Harga penutupan', 'daily.volume': 'Volume transaksi',
+    'valuation.year': 'Tahun data', 'valuation.pe': 'Rasio harga terhadap laba (PER)',
+    'valuation.pb': 'Rasio harga terhadap nilai buku (PBV)',
+    'valuation.peg': 'Rasio harga terhadap pertumbuhan laba (PEG)',
+    'peer.pe': 'PER perusahaan pembanding', 'daily.close': 'Harga penutupan', 'daily.volume': 'Volume transaksi',
   };
   const [metric, ...context] = text.split(' ');
   return metric && metrics[metric] ? [metrics[metric], ...context].join(' ') : text;

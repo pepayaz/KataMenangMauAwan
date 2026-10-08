@@ -13,7 +13,7 @@ function EvidenceDetails({ record, demo }: { record: Evidence; demo: boolean }) 
   const params = { ...(hunter && typeof hunter === 'object' && !Array.isArray(hunter) ? hunter : {}), ...record.params };
   return <dl><div><dt>Nilai lengkap</dt><dd>{formatEvidence(record, 20)}</dd></div>
     <div><dt>Diambil</dt><dd>{new Date(record.fetchedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' })} WIB</dd></div>
-    <div><dt>Asal</dt><dd>{demo || record.tool.startsWith('fixture:') ? 'Data contoh, bukan data pasar terkini' : `Sectors · ${readableToolName(record.tool)} · ${record.cached ? 'data tersimpan' : 'data terbaru'}`}</dd></div>
+    <div><dt>Asal</dt><dd>{demo || record.tool.startsWith('fixture:') ? 'Data contoh, bukan data pasar terkini' : `Sectors · ${readableToolName(record.tool)}`}</dd></div>
     {Object.entries(params).filter(([key, value]) => key in sourceParamLabels && (typeof value === 'string' || typeof value === 'number')).map(([key, value]) => <div key={key}><dt>{sourceParamLabels[key]}</dt><dd>{readableSourceText(String(value))}</dd></div>)}
   </dl>;
 }

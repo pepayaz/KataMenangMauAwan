@@ -93,7 +93,7 @@ export function buildReportDocument(item: HistoryItem): ReportDocument {
       evidence: evidence.map(record => ({
         label: readableSourceText(record.label).replace(/[.\s]+$/, ''),
         value: formatEvidence(record),
-        source: `Sectors · ${readableToolName(record.tool)} · ${record.cached ? 'data tersimpan' : 'data terbaru'} · ${dateOnly(record.fetchedAt)}`,
+        source: `Sectors · ${readableToolName(record.tool)} · ${dateOnly(record.fetchedAt)}`,
       })),
     };
   });

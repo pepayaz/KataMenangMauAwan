@@ -217,7 +217,7 @@ it('grafik riwayat sumber memakai periode dan nilai evidence, termasuk angka neg
     params: { synthetic: true, hunter: { metric: 'valuation.pe', symbol: 'ADRO', year } },
   }));
   render(createElement(EvidenceExplorer, { evidence: observations, verdict: fixture.result.verdicts[0]!, demo: true, onClose: vi.fn() }));
-  const chart = screen.getByRole('figure', { name: 'PER ADRO' });
+  const chart = screen.getByRole('figure', { name: 'Rasio harga terhadap laba (PER) ADRO' });
   expect(chart.textContent).toContain('2024'); expect(chart.textContent).toContain('-2×');
   expect(chart.textContent).toContain('2025'); expect(chart.textContent).toContain('6×');
   expect(chart.querySelector('.chart-column.is-negative')?.getAttribute('width')).toBe('125');

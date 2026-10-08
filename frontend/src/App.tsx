@@ -39,7 +39,7 @@ import {
 } from "./demo";
 import { InputAdaptationSchema, type CheckResult, type CheckSource, type InputAdaptation, type TraceEvent, type Verdict } from "../../packages/shared/src/schemas";
 import { readCheckStream } from "../../apps/web/lib/check-stream";
-import { HistoryItemSchema, formatEvidence, readableToolName, readHistory, storageKey, type HistoryItem } from "../../apps/web/lib/check-view";
+import { HistoryItemSchema, formatEvidence, readableClaimType, readableSourceText, readableToolName, readHistory, storageKey, type HistoryItem } from "../../apps/web/lib/check-view";
 import { readTickerChoices, type UiTickerChoice } from "../../apps/web/lib/ticker-choices";
 import { downloadReportPdf } from "../../apps/web/lib/report-pdf";
 import { comparisonFor, explanationParts } from "../../apps/web/lib/report-presentation";
@@ -55,7 +55,7 @@ type UiFixture = {
   headline: string; summary: string; claimed: string; verified: string; delta: string;
   context: string; detail: string; evidenceCount: number; duration: string;
   contextPoints?: readonly string[];
-  evidence: readonly { evidenceId?: string; label: string; value: string; flag: string }[];
+  evidence: readonly { evidenceId?: string; label: string; value: string }[];
   hypotheses: readonly { code: string; status: string }[]; source: string;
 };
 type DemoFixture = UiFixture & { quote?: string };
@@ -78,13 +78,13 @@ function resultFixture(result: CheckResult, index = 0, text = ""): DemoFixture |
   const comparison = comparisonFor(claim, verdict);
   const quote = claim && text ? cleanText(text).slice(claim.span[0], claim.span[1]) : "";
   return {
-    ticker: claim?.ticker ?? "—", category: claim?.type.replaceAll("_", " ").toUpperCase() ?? "UNRESOLVED",
+    ticker: claim?.ticker ?? "—", category: claim ? readableClaimType(claim.type) : "Klaim belum dikenali",
     ...presentation, summary: verdict.explanation, claimed: claim?.asserted.value === undefined ? "—" : comparison.left,
     verified: verdict.computed ? comparison.right : "—", delta: "—", ...(quote ? { quote } : {}),
     context: verdict.missingContext[0]?.summary ?? "Tidak ada konteks tambahan yang terpicu.",
     contextPoints: verdict.missingContext.map(item => item.summary),
     detail: verdict.explanation, evidenceCount: evidence.length, duration: `${result.creditsUsed} kredit`,
-    evidence: evidence.map(item => ({ evidenceId: item.evidenceId, label: item.label, value: formatEvidence(item), flag: item.cached ? "CACHE" : "EVIDENCE" })),
+    evidence: evidence.map(item => ({ evidenceId: item.evidenceId, label: readableSourceText(item.label), value: formatEvidence(item) })),
     hypotheses: verdict.missingContext.map(item => ({ code: item.hypId, status: "TRIGGERED" })),
     source: `Sectors · ${[...new Set(evidence.map(item => readableToolName(item.tool)))].join(" · ") || "Data pendukung"}`,
   };
@@ -291,7 +291,7 @@ function ProductPreview() {
                 </ul>
               </div>
               <div className="preview-evidence-panel">
-                <div className="preview-evidence-head"><span>EVIDENCE / 04</span><span>Gulir daftar</span></div>
+                <div className="preview-evidence-head"><span>EVIDENCE / 04</span><span><Search size={11} /> Cari data</span></div>
                 <div className="preview-evidence-row"><span>Rata-rata yield dividen</span><b>25,5%</b></div>
                 <div className="preview-evidence-row"><span>Yield 12 bulan terakhir</span><b>5,56%</b></div>
                 <div className="preview-evidence-row"><span>Dividen khusus</span><b>Rp1.358,18</b></div>
@@ -1108,6 +1108,22 @@ function ResultView({
   reset: () => void;
 }) {
   const tone = fixture?.tone || "violet";
+  const [claimQuery, setClaimQuery] = useState("");
+  const [evidenceQuery, setEvidenceQuery] = useState("");
+  useEffect(() => setClaimQuery(""), [active.id]);
+  useEffect(() => setEvidenceQuery(""), [active.id, claimIndex]);
+  const normalizedClaimQuery = claimQuery.trim().toLocaleLowerCase("id-ID");
+  const claimRows = active.result.verdicts.map((verdict, index) => ({
+    verdict,
+    index,
+    item: resultFixture(active.result, index, active.text)!,
+  }));
+  const filteredClaimRows = claimRows.filter(({ item }) => !normalizedClaimQuery
+    || `${item.ticker} ${item.category} ${item.quote || active.text} ${item.status} ${item.shortStatus}`
+      .toLocaleLowerCase("id-ID").includes(normalizedClaimQuery));
+  const normalizedEvidenceQuery = evidenceQuery.trim().toLocaleLowerCase("id-ID");
+  const filteredEvidence = fixture?.evidence.filter(row => !normalizedEvidenceQuery
+    || `${row.label} ${row.value}`.toLocaleLowerCase("id-ID").includes(normalizedEvidenceQuery)) ?? [];
   const contextPoints = [...new Set((fixture
     ? fixture.contextPoints?.length ? fixture.contextPoints.flatMap(explanationParts) : explanationParts(fixture.detail)
     : ["Evidence belum cukup untuk menyusun konteks."]).map(point => point.trim()).filter(Boolean))];
@@ -1138,21 +1154,26 @@ function ResultView({
       {active.result.verdicts.length > 1 && (
         <section className="claim-switcher" aria-label="Klaim yang diperiksa">
           <div className="claim-switcher-head"><span>KLAIM DIPERIKSA / {String(active.result.verdicts.length).padStart(2, "0")}</span>
-            <span>{Object.entries(active.result.verdicts.reduce<Record<string, number>>((counts, verdict) => ({ ...counts,
+            <label className="inspector-search claim-switcher-search">
+              <Search size={13} aria-hidden="true" />
+              <input type="search" value={claimQuery} onChange={event => setClaimQuery(event.target.value)}
+                placeholder="Cari klaim" aria-label="Cari klaim" />
+            </label>
+            <span className="claim-switcher-summary">{Object.entries(active.result.verdicts.reduce<Record<string, number>>((counts, verdict) => ({ ...counts,
               [verdictPresentation[verdict.verdict].status]: (counts[verdictPresentation[verdict.verdict].status] ?? 0) + 1 }), {}))
               .map(([status, count]) => `${count} ${status.toLowerCase()}`).join(" · ")}</span></div>
           <div className="claim-switcher-list">
-            {active.result.verdicts.map((verdict, index) => {
-              const item = resultFixture(active.result, index, active.text)!;
-              return (
+            {filteredClaimRows.map(({ verdict, index, item }) => (
                 <button key={verdict.claimId} className={index === claimIndex ? "selected" : ""} aria-pressed={index === claimIndex}
                   onClick={() => onSelectClaim(index)}>
                   <span className="claim-switcher-index">{String(index + 1).padStart(2, "0")}</span>
                   <span className="claim-switcher-text"><b>{item.ticker} · {item.category}</b><small>{item.quote || active.text}</small></span>
                   <span className={`status-flag ${item.tone}`}><VerdictIcon tone={item.tone} size={12} /> {item.shortStatus}</span>
                 </button>
-              );
-            })}
+            ))}
+            {normalizedClaimQuery && filteredClaimRows.length === 0 && (
+              <div className="claim-switcher-empty"><Search size={22} /><span>Klaim yang dicari tidak ditemukan.</span></div>
+            )}
           </div>
         </section>
       )}
@@ -1191,18 +1212,25 @@ function ResultView({
         <aside className="evidence-inspector" aria-label="Daftar evidence">
           <div className="inspector-head">
             <span>EVIDENCE / {String(fixture?.evidenceCount || 0).padStart(2, "0")}</span>
-            <span className="inspector-scroll-hint">Gulir daftar</span>
+            <label className="inspector-search">
+              <Search size={13} aria-hidden="true" />
+              <input type="search" value={evidenceQuery} onChange={event => setEvidenceQuery(event.target.value)}
+                placeholder="Cari data" aria-label="Cari evidence" disabled={!fixture?.evidence.length} />
+            </label>
           </div>
           <div className="inspector-content">
             <div className="inspector-content-inner">
               {fixture ? (
                 <>
                   <div className="inspector-source"><span>SUMBER DATA</span><b>{fixture.source}</b></div>
-                  {fixture.evidence.map((row, index) => (
+                  {filteredEvidence.map((row, index) => (
                     <div className="inspector-row" key={row.evidenceId ?? `${row.label}-${index}`}>
-                      <span>0{index + 1}</span><div><b>{row.label}</b><small>{row.flag}</small></div><strong>{row.value}</strong>
+                      <span>0{index + 1}</span><div><b>{row.label}</b></div><strong>{row.value}</strong>
                     </div>
                   ))}
+                  {normalizedEvidenceQuery && filteredEvidence.length === 0 && (
+                    <div className="inspector-empty inspector-search-empty"><Search size={24} /><p>Data yang dicari tidak ditemukan.</p></div>
+                  )}
                 </>
               ) : (
                 <div className="inspector-empty"><CircleDashed size={28} /><p>Belum ada bukti data untuk klaim ini.</p></div>
