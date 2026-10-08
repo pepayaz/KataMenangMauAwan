@@ -1,0 +1,84 @@
+{
+  "unvrDividend": {
+    "amounts2025": [
+      87,
+      47
+    ],
+    "interim87Present": true,
+    "dateCaution": "Cached date 2025-12-15 must not be labeled payment date; issuer confirms payment on 2025-12-30."
+  },
+  "method": "Independent Python sum and growth formula over exact raw Sectors cache rows; no application verifier or computed evidence used as the reference. This tests arithmetic, not video transcription fidelity or semantic period assignment.",
+  "reference": {
+    "earnings": {
+      "current": 2402212000000,
+      "base": 1706389000000,
+      "growthPercent": 40.77751321650573
+    },
+    "financials_sector_metrics.interest_income": {
+      "current": 16331530000000,
+      "base": 18500696000000,
+      "growthPercent": -11.724780516365438
+    },
+    "provision": {
+      "current": 1545723000000,
+      "base": 3673746000000,
+      "growthPercent": -57.92515323596133
+    }
+  },
+  "comparisons": [
+    {
+      "case": "bbtn-h1",
+      "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c3",
+      "field": "earnings",
+      "expected": 40.77751321650573,
+      "actual": 40.78,
+      "difference": 0.002486783494269673,
+      "pass": true
+    },
+    {
+      "case": "bbtn-h1",
+      "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c4",
+      "field": "earnings",
+      "expected": 2402212000000,
+      "actual": 2402212000000,
+      "difference": 0,
+      "pass": true
+    },
+    {
+      "case": "bbtn-h1",
+      "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c5",
+      "field": "earnings",
+      "expected": 2402212000000,
+      "actual": 2402212000000,
+      "difference": 0,
+      "pass": true
+    },
+    {
+      "case": "bbtn-h1",
+      "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c6",
+      "field": "earnings",
+      "expected": 40.77751321650573,
+      "actual": 40.78,
+      "difference": 0.002486783494269673,
+      "pass": true
+    },
+    {
+      "case": "bbtn-h1",
+      "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c7",
+      "field": "financials_sector_metrics.interest_income",
+      "expected": -11.724780516365438,
+      "actual": -11.72,
+      "difference": 0.004780516365437748,
+      "pass": true
+    },
+    {
+      "case": "bbtn-h1",
+      "claimId": "321548de-cc50-48a6-8da0-5888d2e7bf82-c9",
+      "field": "provision",
+      "expected": -57.92515323596133,
+      "actual": -57.93000000000001,
+      "difference": 0.004846764038674678,
+      "pass": true
+    }
+  ]
+}
